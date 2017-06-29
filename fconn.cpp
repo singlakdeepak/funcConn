@@ -227,13 +227,56 @@ void correl()
   if(seedcmp == true){
 	// ########################################### MAKING A SEED VECTOR ##########################################################################################################################
 
+  	std::vector<Valid> seeds;
 	double * seed = (double * )malloc( sizeof(double)*g[3]);
 	double * Corr = (double * )malloc( sizeof(double)*valid.size());
+	if(roi == true){
+		image::basic_image<double,4> image_data_cpy2;
+		if(nifti_parser.load_from_file(roifname));
+		nifti_parser >> image_data_cpy2;
+		int no_roi = 0;
+		image::geometry<3> geo;
+		geo = image_data_cpy2.geometry();
 
-	for (int t = 0; t < g[3]; ++t){
 
-		seed[t]= image_data[((t*g[2] + seedz)*g[1]+seedy)*g[0]+seedx];
 
+	 #pragma omp parallel for collapse(3) shared(no_roi)
+	  for (int x = 0; x < geo[0]; ++x)
+		for (int y = 0; y < geo[1]; ++y)
+		   for (int z = 0; z < geo[2]; ++z)
+			  if(image_data_cpy2[((z)*g[1]+y)*g[0]+x]>0){
+			  	no_roi++;
+			  	Valid tv;
+				tv.x = x;
+				tv.y = y;
+				tv.z = z;
+				seeds.push_back(tv);
+
+			  }
+				
+
+	}else{
+		no_roi++;
+		Valid tv;
+		tv.x = seedx;
+		tv.y = seedy;
+		tv.z = seedz;
+		seeds.push_back(tv);		
+
+	}
+
+	for (int tempi = 0;tempi<no_roi;tempi++)
+		for (int t = 0; t < g[3]; ++t){
+
+			if(tempi == 0)
+				seed[t]= (image_data[((t*g[2] + seeds[tempi].z)*g[1]+seeds[tempi].y)*g[0]+seeds[tempi].x]);
+			else
+				seed[t]+= (image_data[((t*g[2] + seeds[tempi].z)*g[1]+seeds[tempi].y)*g[0]+seeds[tempi].x]);
+
+		}
+
+	for(int t =0;t<g[3] && no_roi!=1;t++){
+		seed[t]/=no_roi;
 	}
 
 	// ##########################################END######################################################################################################################################################################
@@ -570,6 +613,14 @@ void getattributes(int argc,char *argv[])
 	  break;
 	  case 's':
 		 seedcmp = true;
+		 tmp =getopt(argc,argv,"r");
+		 
+		 if(tmp~=":"){
+		 roi= true;
+		 strcpy(roifname,optarg);
+		 break;
+
+		}
 		 tmp =getopt(argc,argv,"x");
 		 switch(tmp)
 		 {
@@ -619,9 +670,10 @@ void showhelpinfo()
   std::cout<<" one of the arguments must be present \n";
   std::cout<<"\t -r \t\t filename of the volume containg the desired ROI \n";
   std::cout<<"\t -s 1 \t\t for seed to all voxel mode(no argument) \n";
-  std::cout<<"\t\t -x \t\t x-coordinate for seed (compulosry in -s mode)\n";
-  std::cout<<"\t\t -y \t\t y-coordinate for seed (compulosry in -s mode)\n";
-  std::cout<<"\t\t -z \t\t z-coordinate for seed (compulosry in -s mode)\n";
+  std::cout<<"\t\t -x \t\t x-coordinate for seed (compulosry in -s mode if -r options not there)\n";
+  std::cout<<"\t\t -y \t\t y-coordinate for seed (compulosry in -s mode if -r options not there)\n";
+  std::cout<<"\t\t -z \t\t z-coordinate for seed (compulosry in -s mode if -r options not there)\n";
+  std::cout<<"\t\t -r \t\t roi whose average will be seed (compulosry in -s mode if -x -y -z options not there)\n";
   std::cout<<"\t -a 1 \t\t for all voxels to all voxels mode(no argument) \n";
   std::cout<<"Optional arguments(You may optionally specify the following)\n";
   std::cout<<"\t -t \t an upper threshold  \n ";
