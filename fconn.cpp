@@ -226,15 +226,14 @@ void correl()
   free(EX_sq);
   if(seedcmp == true){
 	// ########################################### MAKING A SEED VECTOR ##########################################################################################################################
-
+  	int no_roi = 0;
   	std::vector<Valid> seeds;
 	double * seed = (double * )malloc( sizeof(double)*g[3]);
 	double * Corr = (double * )malloc( sizeof(double)*valid.size());
 	if(roi == true){
-		image::basic_image<double,4> image_data_cpy2;
+		image::basic_image<double,3> image_data_cpy2;
 		if(nifti_parser.load_from_file(roifname));
 		nifti_parser >> image_data_cpy2;
-		int no_roi = 0;
 		image::geometry<3> geo;
 		geo = image_data_cpy2.geometry();
 
@@ -615,7 +614,7 @@ void getattributes(int argc,char *argv[])
 		 seedcmp = true;
 		 tmp =getopt(argc,argv,"r");
 		 
-		 if(tmp~=":"){
+		 if(tmp!=':'){
 		 roi= true;
 		 strcpy(roifname,optarg);
 		 break;
