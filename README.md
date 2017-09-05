@@ -35,10 +35,10 @@ Optional arguments(You may optionally specify the following)
 	-h	display the help message
 
 ## UNDERSTANDING THE OUTPUT
-The toolkit will create a directory named the same as that of the name given as in -o option. Inside the directory there will be 
-roi directory 		which will contain all the roi to all voxels correlations
-voxel directory		which will contain all the voxels to all voxels correlations
-voxelmap file		which contains all the voxel to file mappings
+The toolkit will create a directory named the same as that of the name given as in -o option. Inside the directory there will be:
+* ROI directory: Which will contain all the roi to all voxels correlations
+* Voxel directory: Which will contain all the voxels to all voxels correlations
+* Voxelmap file: Which contains all the voxel to file mappings
 
 
 
