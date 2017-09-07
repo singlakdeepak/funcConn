@@ -9,7 +9,7 @@
 #include <QTextStream>
 #include <QMessageBox>
 #include<QFileDialog>
-//New comments added
+
 editFeat::editFeat(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::editFeat)

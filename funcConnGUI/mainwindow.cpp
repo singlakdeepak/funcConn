@@ -255,7 +255,13 @@ void MainWindow::on_radioButton_wt_Groups_clicked(bool checked)
 
 void MainWindow::on_chooseCombsButton_clicked()
 {
+    /*
+     * For testing purpose
+    QList<int> list;
+    list<<100<<500;
+    */
     chooseCombinations choosecombinations;
+    //choosecombinations.setCheckboxes(list);
     choosecombinations.setModal(true);
     choosecombinations.exec();
 }
