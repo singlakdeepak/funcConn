@@ -294,7 +294,7 @@ void correl()
 
 	// #############################FINDING MATRIX FOR CORRELATION OF A SEED######################################################################################################################
 
-
+	clock_t tStart = clock();
 
 	if(EX[(seedx*g[1] +seedy)*g[2] + seedz] == 0){
 	  // return null values
@@ -332,7 +332,7 @@ void correl()
 	nifti_parser2.save_to_file(ofname.c_str());
 	//std::cout<<valid[0].x<<std::endl;
 	//std::cout<<"nC2 begin"<<std::endl;
-	// std::cout<< ((double)(clock() - tStart)/CLOCKS_PER_SEC)<<",";
+	 std::cout<< ((double)(clock() - tStart)/CLOCKS_PER_SEC)<<",";
 
 	// #####################################################END#########################################################################################################################
 
@@ -362,16 +362,16 @@ void correl()
 	  exit(0);
 	}
    
-
+	double timeTk =0;
 	// std::cout<<valid.size()<<std::endl;
-	// clock_t tStart = clock();
+	 clock_t tStart = clock();
   // #pragma omp parallel for
   for(int starti = 0;starti<valid.size();starti+=n)
 	for(int startj = starti;startj<valid.size();startj+=n)
 	{
 
 
-	// clock_t tStart = clock();
+	  tStart = clock();
 	 
 	  // std::cout<<starti<<","<<startj<<std::endl;
 	  int n2 = min(n,valid.size()-starti);
@@ -397,8 +397,8 @@ void correl()
 	  // std::cout<<"cblas_dgemm("<<CblasRowMajor<<","<<CblasNoTrans<<","<<CblasNoTrans<<","<<n<<","<<n<<","<<dime<<","<<1.0<<","<<"Valid_matrix"<<","<<dime<<","<<"Valid_matrix_trans,"<<n<<","<<0.0<<",res,"<<n<<")"<<std::endl;
 	  
 	  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,n2,n3,dime,1.0,Valid_matrix_chunk,dime,Valid_matrix_chunk_trans,n3,0.0,res,n3);
-	  // std::cout<<"Time taken:  for CORRELATION "<< ((double)(clock() - tStart)/CLOCKS_PER_SEC)<<std::endl;
-	  // tStart = clock();
+	   //std::cout<<"Time taken:  for CORRELATION "<< ((double)(clock() - tStart)/CLOCKS_PER_SEC)<<std::endl;
+	  timeTk += (double)(clock() - tStart)/CLOCKS_PER_SEC ;
 	  # pragma omp parallel for
 	  for (int resi = 0; resi < n2; ++resi)
 	  {
@@ -441,7 +441,7 @@ void correl()
 	  }
 
 	}
-
+	std::cout<<"Time taken:  for CORRELATION "<< timeTk<<std::endl;
   }
   else{
 	if(nifti_parser.load_from_file(roifname));
@@ -505,13 +505,10 @@ void correl()
 	 
 
 	  // std::cout<<valid.size()<<std::endl;
-	  // clock_t tStart = clock();
+	   clock_t tStart = clock();
 	// #pragma omp parallel for
 	for(int starti = 0;starti<roi_val.size();starti+=n)
-	  for(int startj = 0;startj<valid.size();startj+=n){
-
-	  // clock_t tStart = clock();
-	   
+	  for(int startj = 0;startj<valid.size();startj+=n){ 
 		// std::cout<<starti<<","<<startj<<std::endl;
 		int n2 = min(n,roi_val.size()-starti);
 		int n3 = min(n,valid.size()-startj);
@@ -535,8 +532,8 @@ void correl()
 		// std::cout<<"cblas_dgemm("<<CblasRowMajor<<","<<CblasNoTrans<<","<<CblasNoTrans<<","<<n<<","<<n<<","<<dime<<","<<1.0<<","<<"Valid_matrix"<<","<<dime<<","<<"Valid_matrix_trans,"<<n<<","<<0.0<<",res,"<<n<<")"<<std::endl;
 		
 		cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,n2,n3,dime,1.0,Valid_matrix_chunk,dime,Valid_matrix_chunk_trans,n3,0.0,res,n3);
-		// std::cout<<"Time taken:  for CORRELATION "<< ((double)(clock() - tStart)/CLOCKS_PER_SEC)<<std::endl;
-		// tStart = clock();
+		 std::cout<<"Time taken:  for CORRELATION "<< ((double)(clock() - tStart)/CLOCKS_PER_SEC)<<std::endl;
+		 tStart = clock();
 		# pragma omp parallel for
 		for (int resi = 0; resi < n2; ++resi)
 		{
