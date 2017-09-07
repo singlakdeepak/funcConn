@@ -10,8 +10,6 @@
 #include <QMessageBox>
 #include<QFileDialog>
 
-
-
 editFeat::editFeat(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::editFeat)

@@ -2,7 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-
+#include <QPushButton>
 namespace Ui {
 class MainWindow;
 }
@@ -43,9 +43,20 @@ private slots:
 
     void on_lineEdit_AnalysisName_textEdited(const QString &arg1);
 
+    void on_radioButton_bw_Groups_clicked(bool checked);
+
+
+
+    void on_radioButton_wt_Groups_clicked(bool checked);
+
+    void on_chooseCombsButton_clicked();
+
+    void on_spinBox_valueChanged(int arg1);
+
 private:
     QString CommonDir ="/home/";
     QString OutDir = "/home/";
+
     Ui::MainWindow *ui;
 };
 

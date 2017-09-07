@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include "editlist.h"
 #include "editfeat.h"
+#include "choosecombinations.h"
 #include <QSpinBox>
 #include <QMessageBox>
 #include<QFileDialog>
@@ -18,6 +19,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->checkBox_2->setChecked(false);
     ui->checkBox_3->setChecked(false);
     ui->spinBox->setRange(1,5);
+    ui->radioButton_wt_Groups->setChecked(true);
+    ui->chooseCombsButton->hide();
 
     QString DefAnalysisName = "FConnectivityAnl";
     QString FSLDIRpos1 = "/usr/share/fsl/5.0/bin/";
@@ -135,8 +138,8 @@ void MainWindow::on_commandLinkButton_OutDir_clicked()
                                                 CommonDir);
     }
     if (new_Dir!=NULL){
-    ui->lineEdit_OutDir->setText(new_Dir +"/"+ ui->lineEdit_AnalysisName->text());
-    OutDir = new_Dir+"/";
+        ui->lineEdit_OutDir->setText(new_Dir +"/"+ ui->lineEdit_AnalysisName->text());
+        OutDir = new_Dir+"/";
     }
     else{
         ui->lineEdit_OutDir->setText(OutDir + ui->lineEdit_AnalysisName->text());
@@ -151,7 +154,7 @@ void MainWindow::on_commandLinkButton_ROIFile_clicked()
 
     if (Fout.exists())
     {
-            already_input=QFileDialog::getOpenFileName(
+        already_input=QFileDialog::getOpenFileName(
                                                     this,
                                                     tr("Open File"),
                                                     already_input,
@@ -231,4 +234,38 @@ void MainWindow::on_lineEdit_AnalysisName_textEdited(const QString &arg1)
 {
     ui->lineEdit_OutDir->setText(OutDir + arg1);
 
+}
+
+void MainWindow::on_radioButton_bw_Groups_clicked(bool checked)
+{
+
+    if (checked){
+         ui->chooseCombsButton->show();
+     }
+}
+
+
+
+void MainWindow::on_radioButton_wt_Groups_clicked(bool checked)
+{
+    if (checked){
+        ui->chooseCombsButton->hide();
+    }
+}
+
+void MainWindow::on_chooseCombsButton_clicked()
+{
+    chooseCombinations choosecombinations;
+    choosecombinations.setModal(true);
+    choosecombinations.exec();
+}
+
+void MainWindow::on_spinBox_valueChanged(int arg1)
+{
+    if (arg1==1){
+        ui->radioButton_bw_Groups->hide();
+    }
+    else {
+        ui->radioButton_bw_Groups->show();
+    }
 }
