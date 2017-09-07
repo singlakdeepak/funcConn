@@ -48,19 +48,32 @@ void editFeat::on_pushButton_Save_clicked()
      *
      */
     int Groupindex = ui->comboBox_Groups->currentIndex();
-
-    QFile file(WorkingDir+"/Group_"+QString::number(Groupindex +1)+"_FeatDirs.txt");
-    if (!file.open(QFile::WriteOnly | QFile::Text)){
-        // Gives the warning if the following file couldn't be created.
-        QMessageBox::warning(this, "title","file not open");
-    }
-    QTextStream out(&file);
-    // Flushes the data extracted from the file into the Plain
-    // Text Editor.
+    bool write = true;
     QString text = ui->TextEdit_FeatDirs->toPlainText();
-    out << text;
-    file.flush();
-    file.close();
+    QStringList FeatUrls = text.split("\n");
+    QString tempFeatDir;
+    int length_Urls = FeatUrls.size();
+    for (int i =0; i < length_Urls; i++){
+        tempFeatDir = FeatUrls.at(i);
+        if (!QDir(tempFeatDir).exists()){
+            QMessageBox::warning(this,"title","Folder with the following path: ''"+ tempFeatDir + "'' doesn't exist. Try again.");
+            write = false;
+            break;
+        }
+    }
+    if (write){
+        QFile file(WorkingDir+"/Group_"+QString::number(Groupindex +1)+"_FeatDirs.txt");
+        if (!file.open(QFile::WriteOnly | QFile::Text)){
+            // Gives the warning if the following file couldn't be created.
+            QMessageBox::warning(this, "title","file not open");
+        }
+        QTextStream out(&file);
+        // Flushes the data extracted from the file into the Plain
+        // Text Editor.
+        out << text;
+        file.flush();
+        file.close();
+    }
 }
 
 void editFeat::on_comboBox_Groups_currentIndexChanged(int index)

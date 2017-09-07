@@ -31,8 +31,9 @@ void EditList::setGroups(int groups)
 void EditList::on_pushButton_Save_clicked()
 {
     int Groupindex = ui->comboBox->currentIndex();
-    bool write = true;
+
     if (ui->checkBox->isChecked()){
+        bool write = true;
         QString text = ui->TextEdit_Functional->toPlainText();
         QStringList FuncUrls = text.split("\n");
         QString tempFuncString;
@@ -41,7 +42,7 @@ void EditList::on_pushButton_Save_clicked()
             tempFuncString = FuncUrls.at(i);
             QFile funcFile(tempFuncString);
             if (!funcFile.exists()){
-                QMessageBox::warning(this,"title","File with the following path: "+ tempFuncString + " doesn't exist. Try again.");
+                QMessageBox::warning(this,"title","File with the following path: ''"+ tempFuncString + "'' doesn't exist. Try again.");
                 write = false;
                 break;
             }
@@ -59,15 +60,30 @@ void EditList::on_pushButton_Save_clicked()
     }
     if (ui->checkBox_2->isChecked())
     {
-        QFile file(WorkingDir+"/Group_"+QString::number(Groupindex +1)+"_Structural.txt");
-        if (!file.open(QFile::WriteOnly | QFile::Text)){
-            QMessageBox::warning(this, "title","file not open");
-        }
-        QTextStream out(&file);
+        bool write = true;
         QString text = ui->TextEdit_Structural->toPlainText();
-        out << text;
-        file.flush();
-        file.close();
+        QStringList StructUrls = text.split("\n");
+        QString tempStructString;
+        int length_Urls = StructUrls.size();
+        for (int i =0; i < length_Urls; i++){
+            tempStructString = StructUrls.at(i);
+            QFile StructFile(tempStructString);
+            if (!StructFile.exists()){
+                QMessageBox::warning(this,"title","File with the following path: ''"+ tempStructString + "'' doesn't exist. Try again.");
+                write = false;
+                break;
+            }
+        }
+        if (write){
+            QFile file(WorkingDir+"/Group_"+QString::number(Groupindex +1)+"_Structural.txt");
+            if (!file.open(QFile::WriteOnly | QFile::Text)){
+                QMessageBox::warning(this, "title","file not open");
+            }
+            QTextStream out(&file);
+            out << text;
+            file.flush();
+            file.close();
+        }
     }
 }
 
