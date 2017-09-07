@@ -21,6 +21,13 @@ editFeat::~editFeat()
 
 void editFeat::setGroups(int groups)
 {
+    /*
+     * It makes the number of groups in the comboBox according to
+     * the number of groups added in the main window.
+     *
+     * INPUT:
+     * int groups: Number of groups to be created.
+     */
     for (int i =1; i<=groups;i++){
         ui->comboBox_Groups->addItem("Group " + QString::number(i));
     }
@@ -28,13 +35,23 @@ void editFeat::setGroups(int groups)
 
 void editFeat::on_pushButton_Save_clicked()
 {
+    /*
+     * On clicking the save button in the window, it checks
+     * whether the folders written row by row in the text editor
+     * are present or not. If all files are present, it saves them
+     * in a file with the name Group_<IndexNo>_<FeatDirs>.txt
+     *
+     */
     int Groupindex = ui->comboBox_Groups->currentIndex();
 
     QFile file(WorkingDir+"/Group_"+QString::number(Groupindex +1)+"_FeatDirs.txt");
     if (!file.open(QFile::WriteOnly | QFile::Text)){
+        // Gives the warning if the following file couldn't be created.
         QMessageBox::warning(this, "title","file not open");
     }
     QTextStream out(&file);
+    // Flushes the data extracted from the file into the Plain
+    // Text Editor.
     QString text = ui->TextEdit_FeatDirs->toPlainText();
     out << text;
     file.flush();

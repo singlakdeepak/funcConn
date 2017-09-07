@@ -40,7 +40,10 @@ The toolkit will create a directory named the same as that of the name given as 
 * Voxel directory: Which will contain all the voxels to all voxels correlations
 * Voxelmap file: Which contains all the voxel to file mappings
 
-
-
+Ankita's makefile:
+```
+ all: fconn.cpp
+g++ -L /usr/local/atlas -I . -std=c++11 -Wdeprecated-declarations fconn.cpp -o fconn.o -fopenmp -llapack -llapack -lcblas
+```
 
 
