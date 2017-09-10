@@ -53,6 +53,8 @@ private slots:
 
     void on_spinBox_valueChanged(int arg1);
 
+    void on_checkBox_AllCombs_clicked(bool checked);
+
 private:
     QString CommonDir ="/home/";
     QString OutDir = "/home/";

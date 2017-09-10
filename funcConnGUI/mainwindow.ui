@@ -540,20 +540,7 @@
        <string>--------------------------------------------------------------------Optional Files--------------------------------------------------------------</string>
       </property>
      </widget>
-     <widget class="QCommandLinkButton" name="chooseCombsButton">
-      <property name="geometry">
-       <rect>
-        <x>442</x>
-        <y>41</y>
-        <width>209</width>
-        <height>36</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Choose Combinations</string>
-      </property>
-     </widget>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>9</x>
@@ -618,12 +605,12 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>10</x>
         <y>90</y>
-        <width>335</width>
+        <width>386</width>
         <height>22</height>
        </rect>
       </property>
@@ -631,7 +618,7 @@
        <item>
         <widget class="QLabel" name="label_11">
          <property name="text">
-          <string>Norm Method</string>
+          <string>Normalization Method</string>
          </property>
         </widget>
        </item>
@@ -651,7 +638,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>10</x>
@@ -689,7 +676,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>12</x>
@@ -715,14 +702,39 @@
        </item>
       </layout>
      </widget>
+     <widget class="QWidget" name="">
+      <property name="geometry">
+       <rect>
+        <x>410</x>
+        <y>40</y>
+        <width>227</width>
+        <height>38</height>
+       </rect>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout_22">
+       <item>
+        <widget class="QCheckBox" name="checkBox_AllCombs">
+         <property name="text">
+          <string>All</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCommandLinkButton" name="chooseCombsButton">
+         <property name="text">
+          <string>Choose Combinations</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <zorder>layoutWidget</zorder>
+     <zorder>layoutWidget</zorder>
+     <zorder>layoutWidget</zorder>
+     <zorder>layoutWidget</zorder>
      <zorder>label_15</zorder>
-     <zorder>radioButton_wt_Groups</zorder>
-     <zorder>radioButton_bw_Groups</zorder>
-     <zorder>label_11</zorder>
-     <zorder>radioButton_3</zorder>
-     <zorder>radioButton_4</zorder>
-     <zorder>radioButton_bw_Groups</zorder>
      <zorder>chooseCombsButton</zorder>
+     <zorder>checkBox_AllCombs</zorder>
     </widget>
    </widget>
   </widget>

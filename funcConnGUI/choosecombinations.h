@@ -14,7 +14,7 @@ class chooseCombinations : public QDialog
 public:
     explicit chooseCombinations(QWidget *parent = 0);
     ~chooseCombinations();
-    void setCheckboxes(QList<int> groupNumbers);
+    void setCheckboxes(int groupNumbers);
 private:
     Ui::chooseCombinations *ui;
     //QGroupBox *createNonExclusiveGroup();

@@ -6,7 +6,7 @@
 #include <QSpinBox>
 #include <QMessageBox>
 #include<QFileDialog>
-
+#include<QJsonDocument>
 
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -240,7 +240,9 @@ void MainWindow::on_radioButton_bw_Groups_clicked(bool checked)
 {
 
     if (checked){
-         ui->chooseCombsButton->show();
+        ui->checkBox_AllCombs->show();
+        ui->checkBox_AllCombs->setChecked(true);
+
      }
 }
 
@@ -250,6 +252,7 @@ void MainWindow::on_radioButton_wt_Groups_clicked(bool checked)
 {
     if (checked){
         ui->chooseCombsButton->hide();
+        ui->checkBox_AllCombs->hide();
     }
 }
 
@@ -261,7 +264,7 @@ void MainWindow::on_chooseCombsButton_clicked()
     list<<100<<500;
     */
     chooseCombinations choosecombinations;
-    //choosecombinations.setCheckboxes(list);
+    choosecombinations.setCheckboxes(ui->spinBox->value());
     choosecombinations.setModal(true);
     choosecombinations.exec();
 }
@@ -270,8 +273,20 @@ void MainWindow::on_spinBox_valueChanged(int arg1)
 {
     if (arg1==1){
         ui->radioButton_bw_Groups->hide();
+        ui->checkBox_AllCombs->hide();
     }
     else {
         ui->radioButton_bw_Groups->show();
+
+    }
+}
+
+void MainWindow::on_checkBox_AllCombs_clicked(bool checked)
+{
+    if (!checked){
+        ui->chooseCombsButton->show();
+    }
+    else {
+        ui->chooseCombsButton->hide();
     }
 }

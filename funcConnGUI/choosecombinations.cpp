@@ -14,12 +14,18 @@ chooseCombinations::~chooseCombinations()
     delete ui;
 }
 
-void chooseCombinations::setCheckboxes(QList<int> groupNumbers){
+void chooseCombinations::setCheckboxes(int groupNumbers){
     QVector<QCheckBox*> checkBoxVector;
-    for(int x = 0; x < groupNumbers.at(0); ++x){
-        for(int y = 0; y < groupNumbers.at(1); ++y){
-            checkBoxVector.append(new QCheckBox(this));
-            checkBoxVector.last()->setGeometry(x * 20, y * 20, 20, 20);
+    int posY = 1;
+    for(int x = 1; x < groupNumbers; ++x){
+        for(int y = x+1; y < (groupNumbers+1); ++y){
+            QCheckBox *A = new QCheckBox(this);
+            A->setText("Group_"+QString::number(x)+"_and_Group_"+QString::number(y));
+            A->setChecked(true);
+            checkBoxVector.append(A);
+            checkBoxVector.last()->setGeometry(20, posY*20, 160, 20);
+            posY++;
         }
     }
 }
+
