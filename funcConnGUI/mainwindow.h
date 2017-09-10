@@ -58,7 +58,7 @@ private slots:
 private:
     QString CommonDir ="/home/";
     QString OutDir = "/home/";
-
+    QList<int> mirrored_checkStates;
     Ui::MainWindow *ui;
 };
 

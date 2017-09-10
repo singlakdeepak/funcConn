@@ -26,6 +26,13 @@
        </property>
       </widget>
      </item>
+     <item>
+      <widget class="QCommandLinkButton" name="commandLinkButton">
+       <property name="text">
+        <string>Open Folders</string>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
    <item>

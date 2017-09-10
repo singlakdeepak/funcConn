@@ -2,7 +2,8 @@
 #define CHOOSECOMBINATIONS_H
 
 #include <QDialog>
-
+#include <QList>
+#include<QCheckBox>
 namespace Ui {
 class chooseCombinations;
 }
@@ -15,6 +16,12 @@ public:
     explicit chooseCombinations(QWidget *parent = 0);
     ~chooseCombinations();
     void setCheckboxes(int groupNumbers);
+    QVector<QCheckBox*> checkBoxVector;
+    QList<int> checkedGroups;
+
+private slots:
+    void on_buttonBox_accepted();
+
 private:
     Ui::chooseCombinations *ui;
     //QGroupBox *createNonExclusiveGroup();

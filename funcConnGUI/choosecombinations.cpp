@@ -1,6 +1,6 @@
 #include "choosecombinations.h"
 #include "ui_choosecombinations.h"
-#include<QCheckBox>
+
 chooseCombinations::chooseCombinations(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::chooseCombinations)
@@ -15,7 +15,7 @@ chooseCombinations::~chooseCombinations()
 }
 
 void chooseCombinations::setCheckboxes(int groupNumbers){
-    QVector<QCheckBox*> checkBoxVector;
+
     int posY = 1;
     for(int x = 1; x < groupNumbers; ++x){
         for(int y = x+1; y < (groupNumbers+1); ++y){
@@ -29,3 +29,13 @@ void chooseCombinations::setCheckboxes(int groupNumbers){
     }
 }
 
+
+void chooseCombinations::on_buttonBox_accepted()
+{
+    QVectorIterator<QCheckBox*> i(checkBoxVector);
+    //QCheckBox *A = new QCheckBox(this);
+    while (i.hasNext()){
+        checkedGroups << i.next()->checkState();
+
+    }
+}

@@ -85,6 +85,7 @@ void MainWindow::on_pushButton_12_clicked()
 void MainWindow::on_pushButton_18_clicked()
 {
     QMessageBox::information(this,"Help", "If correlation files given, then there is no requirement of input.");
+
 }
 
 void MainWindow::on_commandLinkButton_Reference_clicked()
@@ -263,10 +264,18 @@ void MainWindow::on_chooseCombsButton_clicked()
     QList<int> list;
     list<<100<<500;
     */
+    QString AB;
     chooseCombinations choosecombinations;
     choosecombinations.setCheckboxes(ui->spinBox->value());
     choosecombinations.setModal(true);
     choosecombinations.exec();
+    //QMessageBox::information(this,"Help",QString::number(choosecombinations.checkedGroups[0]) );
+    mirrored_checkStates = choosecombinations.checkedGroups;
+    for (int i = 0; i < mirrored_checkStates.size(); ++i) {
+        if (mirrored_checkStates.at(i) == 2)
+            AB+= '_'+ QString::number(i);
+    }
+    QMessageBox::information(this,"Help",AB);
 }
 
 void MainWindow::on_spinBox_valueChanged(int arg1)
@@ -277,7 +286,6 @@ void MainWindow::on_spinBox_valueChanged(int arg1)
     }
     else {
         ui->radioButton_bw_Groups->show();
-
     }
 }
 
