@@ -55,6 +55,8 @@ private slots:
 
     void on_checkBox_AllCombs_clicked(bool checked);
 
+ //   void on_pushButton_Go_clicked();
+
 private:
     QString CommonDir ="/home/";
     QString OutDir = "/home/";

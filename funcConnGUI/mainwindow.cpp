@@ -7,7 +7,7 @@
 #include <QMessageBox>
 #include<QFileDialog>
 #include<QJsonDocument>
-
+#include<QJsonObject>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -26,6 +26,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->radioButton_G1_gr_G2->setChecked(true);
     ui->radioButton_G2_gr_G1->hide();
     ui->radioButton_NormFischer->setChecked(true);
+    ui->radioButton_reg_y->setChecked(true);
 
 
     QString DefAnalysisName = "FConnectivityAnl";
@@ -294,7 +295,6 @@ void MainWindow::on_chooseCombsButton_clicked()
 
             AB+= "Group_" + QString::number(lastOne) + "_vs_Group_" + QString::number(GroupB) +",";
         }
-
         GroupB++;
         if (GroupB>ui->spinBox->value()){
             lastOne++;
@@ -306,14 +306,35 @@ void MainWindow::on_chooseCombsButton_clicked()
 
 void MainWindow::on_spinBox_valueChanged(int arg1)
 {
+    bool check_bw_groups = ui->radioButton_bw_Groups->isChecked();
     if (arg1==1){
+        ui->radioButton_wt_Groups->setChecked(true);
         ui->radioButton_bw_Groups->hide();
         ui->checkBox_AllCombs->hide();
         ui->label_Hypothesis->hide();
-
+        ui->radioButton_G1_gr_G2->hide();
+        ui->radioButton_G2_gr_G1->hide();
+    }
+    else if (arg1==2){
+        ui->radioButton_bw_Groups->show();
+        ui->checkBox_AllCombs->hide();
+        ui->chooseCombsButton->hide();
+        if (check_bw_groups){
+            ui->label_Hypothesis->show();
+            ui->radioButton_G1_gr_G2->show();
+            ui->radioButton_G2_gr_G1->show();
+            ui->radioButton_G1_gr_G2->setChecked(true);
+        }
     }
     else {
         ui->radioButton_bw_Groups->show();
+        ui->label_Hypothesis->hide();
+        ui->radioButton_G1_gr_G2->hide();
+        ui->radioButton_G2_gr_G1->hide();
+        if (check_bw_groups){
+            ui->checkBox_AllCombs->show();
+            ui->checkBox_AllCombs->setChecked(true);
+        }
 
     }
 }
@@ -327,3 +348,25 @@ void MainWindow::on_checkBox_AllCombs_clicked(bool checked)
         ui->chooseCombsButton->hide();
     }
 }
+
+//void MainWindow::write(QJsonObject &json) const
+//{
+//    QJsonObject bigObject;
+//    json["player"] = "ABC";
+
+//    QJsonArray levelArray;
+//    foreach (const Level level, mLevels) {
+//        QJsonObject levelObject;
+//        level.write(levelObject);
+//        levelArray.append(levelObject);
+//    }
+//    json["levels"] = levelArray;
+//}
+//void MainWindow::on_pushButton_Go_clicked()
+//{
+//    QFile saveFile( QStringLiteral("save.json"));
+//    if (!saveFile.open(QIODevice::WriteOnly)) {
+//        qWarning("Couldn't open save file.");
+//        return false;
+//    }
+//}
