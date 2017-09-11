@@ -287,10 +287,18 @@ void MainWindow::on_chooseCombsButton_clicked()
     choosecombinations.exec();
     //QMessageBox::information(this,"Help",QString::number(choosecombinations.checkedGroups[0]) );
     mirrored_checkStates = choosecombinations.checkedGroups;
+    int GroupB = 2;
+    int lastOne =1;
     for (int i = 0; i < mirrored_checkStates.size(); ++i) {
         if (mirrored_checkStates.at(i) == 2){
 
-            AB+= '_'+ QString::number(i);
+            AB+= "Group_" + QString::number(lastOne) + "_vs_Group_" + QString::number(GroupB) +",";
+        }
+
+        GroupB++;
+        if (GroupB>ui->spinBox->value()){
+            lastOne++;
+            GroupB =lastOne + 1;
         }
     }
     QMessageBox::information(this,"Help",AB);
