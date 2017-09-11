@@ -21,6 +21,12 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->spinBox->setRange(1,5);
     ui->radioButton_wt_Groups->setChecked(true);
     ui->chooseCombsButton->hide();
+    ui->label_Hypothesis->hide();
+    ui->radioButton_G1_gr_G2->hide();
+    ui->radioButton_G1_gr_G2->setChecked(true);
+    ui->radioButton_G2_gr_G1->hide();
+    ui->radioButton_NormFischer->setChecked(true);
+
 
     QString DefAnalysisName = "FConnectivityAnl";
     QString FSLDIRpos1 = "/usr/share/fsl/5.0/bin/";
@@ -47,7 +53,7 @@ void MainWindow::on_pushButton_chooseData_clicked()
 {
     QString spin = ui->spinBox->text();
     int spin_1 = spin.toInt();
-    if (ui->radioButton_PreprocwtFSL->isChecked()){
+    if (ui->radioButton_PreprocwFSL->isChecked()){
         editFeat editfeat;
         editfeat.setGroups(spin_1);
         editfeat.setModal(true);
@@ -64,7 +70,7 @@ void MainWindow::on_pushButton_chooseData_clicked()
 
 void MainWindow::on_pushButton_7_clicked()
 {
-    ui->statusBar->showMessage("Put the reference MNI structural file here.",10000); //It will show message for 10 s.
+    QMessageBox::information(this,"Help", "Put the reference MNI structural file here.");
 }
 
 void MainWindow::on_pushButton_3_clicked()
@@ -241,9 +247,16 @@ void MainWindow::on_radioButton_bw_Groups_clicked(bool checked)
 {
 
     if (checked){
-        ui->checkBox_AllCombs->show();
-        ui->checkBox_AllCombs->setChecked(true);
+        if (ui->spinBox->value() == 2){
 
+            ui->label_Hypothesis->show();
+            ui->radioButton_G1_gr_G2->show();
+            ui->radioButton_G2_gr_G1->show();
+        }
+        else{
+            ui->checkBox_AllCombs->show();
+            ui->checkBox_AllCombs->setChecked(true);
+        }
      }
 }
 
@@ -254,6 +267,9 @@ void MainWindow::on_radioButton_wt_Groups_clicked(bool checked)
     if (checked){
         ui->chooseCombsButton->hide();
         ui->checkBox_AllCombs->hide();
+        ui->label_Hypothesis->hide();
+        ui->radioButton_G1_gr_G2->hide();
+        ui->radioButton_G2_gr_G1->hide();
     }
 }
 
@@ -272,8 +288,10 @@ void MainWindow::on_chooseCombsButton_clicked()
     //QMessageBox::information(this,"Help",QString::number(choosecombinations.checkedGroups[0]) );
     mirrored_checkStates = choosecombinations.checkedGroups;
     for (int i = 0; i < mirrored_checkStates.size(); ++i) {
-        if (mirrored_checkStates.at(i) == 2)
+        if (mirrored_checkStates.at(i) == 2){
+
             AB+= '_'+ QString::number(i);
+        }
     }
     QMessageBox::information(this,"Help",AB);
 }
@@ -283,9 +301,12 @@ void MainWindow::on_spinBox_valueChanged(int arg1)
     if (arg1==1){
         ui->radioButton_bw_Groups->hide();
         ui->checkBox_AllCombs->hide();
+        ui->label_Hypothesis->hide();
+
     }
     else {
         ui->radioButton_bw_Groups->show();
+
     }
 }
 
