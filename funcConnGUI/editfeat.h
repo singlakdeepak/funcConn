@@ -3,6 +3,7 @@
 
 #include <QDialog>
 #include <QDir>
+#include <QList>
 namespace Ui {
 class editFeat;
 }
@@ -14,6 +15,7 @@ class editFeat : public QDialog
 public:
     explicit editFeat(QWidget *parent = 0);
     void setGroups(int groups);
+    QList<QString> get_FileNames();
     ~editFeat();
 
 private slots:
@@ -23,10 +25,15 @@ private slots:
 
     void on_ld_featDirList_clicked();
 
+    void on_buttonBox_accepted();
+
+
 private:
     QString WorkingDir = QDir::currentPath();
     QString currentFeatDir;
     QString CommonDir ="/home/";
+    int NGroups;
+    QList<QString> FileNames;
     Ui::editFeat *ui;
 };
 

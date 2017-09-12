@@ -49,6 +49,13 @@
         <item>
          <widget class="QLineEdit" name="lineEdit_AnalysisName"/>
         </item>
+        <item>
+         <widget class="QPushButton" name="pushButton_ld_Analysis">
+          <property name="text">
+           <string>Load Analysis File (*.json)</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
       <item>

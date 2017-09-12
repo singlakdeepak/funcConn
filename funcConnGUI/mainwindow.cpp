@@ -52,13 +52,13 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_pushButton_chooseData_clicked()
 {
-    QString spin = ui->spinBox->text();
-    int spin_1 = spin.toInt();
+    int spin_1 = spinBoxValue;
     if (ui->radioButton_PreprocwFSL->isChecked()){
         editFeat editfeat;
         editfeat.setGroups(spin_1);
         editfeat.setModal(true);
         editfeat.exec();
+        FeatFileNames= editfeat.get_FileNames();
     }
     else {
         EditList editlist;
@@ -248,7 +248,7 @@ void MainWindow::on_radioButton_bw_Groups_clicked(bool checked)
 {
 
     if (checked){
-        if (ui->spinBox->value() == 2){
+        if (spinBoxValue == 2){
 
             ui->label_Hypothesis->show();
             ui->radioButton_G1_gr_G2->show();
@@ -283,7 +283,7 @@ void MainWindow::on_chooseCombsButton_clicked()
     */
     QString AB;
     chooseCombinations choosecombinations;
-    choosecombinations.setCheckboxes(ui->spinBox->value());
+    choosecombinations.setCheckboxes(spinBoxValue);
     choosecombinations.setModal(true);
     choosecombinations.exec();
     //QMessageBox::information(this,"Help",QString::number(choosecombinations.checkedGroups[0]) );
@@ -296,7 +296,7 @@ void MainWindow::on_chooseCombsButton_clicked()
             AB+= "Group_" + QString::number(lastOne) + "_vs_Group_" + QString::number(GroupB) +",";
         }
         GroupB++;
-        if (GroupB>ui->spinBox->value()){
+        if (GroupB>spinBoxValue){
             lastOne++;
             GroupB =lastOne + 1;
         }
@@ -307,6 +307,7 @@ void MainWindow::on_chooseCombsButton_clicked()
 void MainWindow::on_spinBox_valueChanged(int arg1)
 {
     bool check_bw_groups = ui->radioButton_bw_Groups->isChecked();
+    spinBoxValue = arg1;
     if (arg1==1){
         ui->radioButton_wt_Groups->setChecked(true);
         ui->radioButton_bw_Groups->hide();
@@ -349,10 +350,36 @@ void MainWindow::on_checkBox_AllCombs_clicked(bool checked)
     }
 }
 
-//void MainWindow::write(QJsonObject &json) const
-//{
-//    QJsonObject bigObject;
-//    json["player"] = "ABC";
+void MainWindow::writeReferImgpath(QJsonObject &json) const
+{
+    QJsonObject ReferSummary;
+    ReferSummary["Title"] = QString("It tells the path of the file used for reference.");
+    ReferSummary["ReferImgPath"] = ui->lineEdit_Reference->text();
+    json["ReferSummary"] = ReferSummary;
+
+    QJsonObject ProcessingType;
+    ProcessingType["Title"] = QString("The inputs can be of 3 types: "
+                                      "#0 : Unprocessed "
+                                      "#1 : Preprocessed without FSL "
+                                      "#2 : Preprocessed with FSL");
+    ProcessingType["ProcessingWay"] = ProcessingWay;
+    json["ProcessingType"] = ProcessingType;
+
+    if (ProcessingWay ==2){
+        QJsonObject FeatList;
+        FeatList["No of Groups"] = spinBoxValue;
+
+    }
+}
+
+
+void MainWindow::writeAnalysisName(QJsonObject &json) const
+{
+    json["Analysis Name"] = ui->lineEdit_AnalysisName->text();
+    QJsonObject ReferenceImgpath;
+    writeReferImgpath(ReferenceImgpath);
+    json["AnalysisParams"] = ReferenceImgpath;
+
 
 //    QJsonArray levelArray;
 //    foreach (const Level level, mLevels) {
@@ -361,12 +388,30 @@ void MainWindow::on_checkBox_AllCombs_clicked(bool checked)
 //        levelArray.append(levelObject);
 //    }
 //    json["levels"] = levelArray;
-//}
-//void MainWindow::on_pushButton_Go_clicked()
-//{
-//    QFile saveFile( QStringLiteral("save.json"));
-//    if (!saveFile.open(QIODevice::WriteOnly)) {
-//        qWarning("Couldn't open save file.");
-//        return false;
-//    }
-//}
+}
+void MainWindow::on_pushButton_Go_clicked()
+{
+    QFile saveFile( QStringLiteral("save.json"));
+    if (!saveFile.open(QIODevice::WriteOnly)) {
+        qWarning("Couldn't open save file.");
+    }
+    QJsonObject gameObject;
+    writeAnalysisName(gameObject);
+    QJsonDocument saveDoc(gameObject);
+    saveFile.write(saveDoc.toJson());
+}
+
+void MainWindow::on_radioButton_Unprocessed_clicked()
+{
+    ProcessingWay = 0;
+}
+
+void MainWindow::on_radioButton_PreprocwtFSL_clicked()
+{
+    ProcessingWay = 1;
+}
+
+void MainWindow::on_radioButton_PreprocwFSL_clicked()
+{
+    ProcessingWay = 2;
+}

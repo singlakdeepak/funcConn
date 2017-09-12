@@ -55,12 +55,26 @@ private slots:
 
     void on_checkBox_AllCombs_clicked(bool checked);
 
- //   void on_pushButton_Go_clicked();
+    void writeReferImgpath(QJsonObject &json) const;
+
+
+    void writeAnalysisName(QJsonObject &json) const;
+
+    void on_pushButton_Go_clicked();
+
+    void on_radioButton_Unprocessed_clicked();
+
+    void on_radioButton_PreprocwtFSL_clicked();
+
+    void on_radioButton_PreprocwFSL_clicked();
 
 private:
     QString CommonDir ="/home/";
     QString OutDir = "/home/";
     QList<int> mirrored_checkStates;
+    QList<QString> FeatFileNames;
+    int ProcessingWay =0;
+    int spinBoxValue =1;
     Ui::MainWindow *ui;
 };
 

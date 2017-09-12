@@ -31,6 +31,7 @@ void editFeat::setGroups(int groups)
      * INPUT:
      * int groups: Number of groups to be created.
      */
+    NGroups = groups;
     for (int i =1; i<=groups;i++){
         ui->comboBox_Groups->addItem("Group " + QString::number(i));
     }
@@ -152,3 +153,24 @@ void editFeat::on_ld_featDirList_clicked()
         currentFeatDir = new_input;
     }
 }
+
+void editFeat::on_buttonBox_accepted()
+{   QString FileName;
+    for (int i =1;i<=NGroups; i++){
+        FileName = WorkingDir+"/Group_"+QString::number(i)+"_FeatDirs.txt";
+        QFile file(FileName);
+        if (file.exists()){
+            FileNames << FileName;
+        }
+        else {
+            QMessageBox::warning(this,"title","File for Group: "+ QString::number(i) + " doesn't exist. Try again.");
+        }
+    }
+}
+
+QList<QString> editFeat::get_FileNames()
+{
+    return FileNames;
+}
+
+
