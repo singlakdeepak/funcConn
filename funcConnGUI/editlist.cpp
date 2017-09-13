@@ -22,6 +22,7 @@ EditList::~EditList()
 
 void EditList::setGroups(int groups)
 {
+    NGroups = groups;
     for (int i =1; i<=groups;i++){
         ui->comboBox->addItem("Group " + QString::number(i));
     }
@@ -192,4 +193,41 @@ void EditList::on_ld_StrFile_clicked()
         file.close();
         CurrentStructFile = new_input;
     }
+}
+
+QList<QString> EditList::get_StructuralFileNames()
+{
+    return StructuralFileNames;
+}
+
+QList<QString> EditList::get_FunctionalFileNames()
+{
+    return FunctionalFileNames;
+}
+
+void EditList::on_buttonBox_OK_accepted()
+{
+    QString FileName;
+       for (int i =1;i<=NGroups; i++){
+           FileName =  WorkingDir+ "/Group_"+QString::number(i)+"_Functional.txt";
+           QFile file(FileName);
+           if (file.exists()){
+               FunctionalFileNames << FileName;
+           }
+           else {
+               QMessageBox::warning(this,"title","Functional File for Group: "+ QString::number(i) + " doesn't exist. Try again.");
+           }
+       }
+
+       for (int j =1;j<=NGroups; j++){
+           FileName =  WorkingDir+ "/Group_"+QString::number(j)+"_Structural.txt";
+           QFile file(FileName);
+           if (file.exists()){
+               StructuralFileNames << FileName;
+           }
+           else {
+               QMessageBox::warning(this,"title","Structural File for Group: "+ QString::number(j) + " doesn't exist. Try again.");
+           }
+       }
+
 }

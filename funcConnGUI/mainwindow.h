@@ -73,6 +73,9 @@ private:
     QString OutDir = "/home/";
     QList<int> mirrored_checkStates;
     QList<QString> FeatFileNames;
+    QList<QString> FunctionalFileNames;
+    QList<QString> StructuralFileNames;
+    QString OutChosenPath;
     int ProcessingWay =0;
     int spinBoxValue =1;
     Ui::MainWindow *ui;

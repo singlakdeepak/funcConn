@@ -8,7 +8,7 @@
 #include<QFileDialog>
 #include<QJsonDocument>
 #include<QJsonObject>
-
+#include<QJsonArray>
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -65,6 +65,8 @@ void MainWindow::on_pushButton_chooseData_clicked()
         editlist.setGroups(spin_1);
         editlist.setModal(true);
         editlist.exec();
+        StructuralFileNames = editlist.get_StructuralFileNames();
+        FunctionalFileNames = editlist.get_FunctionalFileNames();
     }
 
 }
@@ -352,6 +354,7 @@ void MainWindow::on_checkBox_AllCombs_clicked(bool checked)
 
 void MainWindow::writeReferImgpath(QJsonObject &json) const
 {
+    QString FilePath;
     QJsonObject ReferSummary;
     ReferSummary["Title"] = QString("It tells the path of the file used for reference.");
     ReferSummary["ReferImgPath"] = ui->lineEdit_Reference->text();
@@ -367,9 +370,51 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
 
     if (ProcessingWay ==2){
         QJsonObject FeatList;
+        FeatList["Info"] = QString("This is for case 2. We shall require the list of only the feat directories.");
         FeatList["No of Groups"] = spinBoxValue;
-
+        QJsonArray FeatFilesArray;
+        for (int i=1 ; i<=FeatFileNames.size() ; i++)
+        {
+            FilePath = OutChosenPath + "/"+ ui->lineEdit_AnalysisName->text() + "_Group_" + QString::number(i)+"_FeatDirs.txt";
+            QFile::copy(FeatFileNames.at(i-1), FilePath );
+            QFile file(FeatFileNames.at(i-1));
+            file.remove();
+            FeatFilesArray.append(FilePath);
+        }
+//        FeatFileNames.clear();
+        FeatList["FeatFilePaths"] = FeatFilesArray;
+        json["FeatFilesInfo"] = FeatList;
     }
+
+    else{
+        QJsonObject FilesInfo;
+        FilesInfo["Info"] = QString("This is for case 0 and case 1. We shall require the list of both structural and functional files.");
+        FilesInfo["No of Groups"] = spinBoxValue;
+        QJsonArray StructuralArray;
+        QJsonArray FunctionalArray;
+        for (int i=1 ; i<=FunctionalFileNames.size() ; i++)
+        {
+            FilePath = OutChosenPath + "/"+ ui->lineEdit_AnalysisName->text() + "_Group_" + QString::number(i)+"_FunctionalFiles.txt";
+            QFile::copy(FunctionalFileNames.at(i-1), FilePath);
+            QFile file(FunctionalFileNames.at(i-1));
+            file.remove();
+            FunctionalArray.append(FilePath);
+        }
+        for (int i=1 ; i<=FunctionalFileNames.size() ; i++)
+        {
+            FilePath = OutChosenPath + "/"+ ui->lineEdit_AnalysisName->text() + "_Group_" + QString::number(i)+"_StructuralFiles.txt";
+            QFile::copy(StructuralFileNames.at(i-1), FilePath);
+            QFile file(StructuralFileNames.at(i-1));
+            file.remove();
+            StructuralArray.append(FilePath);
+        }
+//        FunctionalFileNames.clear();
+//        StructuralFileNames.clear();
+        FilesInfo["FunctionalFilePaths"] = FunctionalArray;
+        FilesInfo["StructuralFilePaths"] = StructuralArray;
+        json["FilesInfo"] = FilesInfo;
+    }
+
 }
 
 
@@ -391,7 +436,17 @@ void MainWindow::writeAnalysisName(QJsonObject &json) const
 }
 void MainWindow::on_pushButton_Go_clicked()
 {
-    QFile saveFile( QStringLiteral("save.json"));
+    OutChosenPath = ui->lineEdit_OutDir->text();
+    if (!QDir(OutChosenPath).exists()){
+        QDir dir;
+        bool created = dir.mkdir(OutChosenPath);
+        if (!created){
+            QMessageBox::warning(this,"Help","Not able to create Directory: "+ OutChosenPath);
+            return;
+        }
+    }
+
+    QFile saveFile( OutChosenPath + QStringLiteral( "/Design.json"));
     if (!saveFile.open(QIODevice::WriteOnly)) {
         qWarning("Couldn't open save file.");
     }

@@ -164,6 +164,7 @@ void editFeat::on_buttonBox_accepted()
         }
         else {
             QMessageBox::warning(this,"title","File for Group: "+ QString::number(i) + " doesn't exist. Try again.");
+
         }
     }
 }
