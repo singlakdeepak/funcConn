@@ -9,15 +9,18 @@
 #include<QJsonDocument>
 #include<QJsonObject>
 #include<QJsonArray>
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
+//    Environment.currentEnv():{
+    char* env = getenv("FSLDIR");
     ui->setupUi(this);
     ui->radioButton_Unprocessed->setChecked(true);
     ui->checkBox->setChecked(false);
-    ui->checkBox_2->setChecked(false);
-    ui->checkBox_3->setChecked(false);
+    ui->checkBox_preprocFeat->setChecked(false);
+    ui->checkBox_ROICorrs->setChecked(false);
     ui->spinBox->setRange(1,5);
     ui->radioButton_wt_Groups->setChecked(true);
     ui->chooseCombsButton->hide();
@@ -27,17 +30,12 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->radioButton_G2_gr_G1->hide();
     ui->radioButton_NormFischer->setChecked(true);
     ui->radioButton_reg_y->setChecked(true);
-
+    ui->radioButton_JointFDR->setChecked(true);
 
     QString DefAnalysisName = "FConnectivityAnl";
-    QString FSLDIRpos1 = "/usr/share/fsl/5.0/bin/";
-    QString FSLDIRpos2 = "/usr/share/fsl/bin/";
 
-    if (QDir(FSLDIRpos1).exists()){
-        ui->lineEdit_FSLDIR->setText(FSLDIRpos1);
-    }
-    else if (QDir(FSLDIRpos2).exists()){
-        ui->lineEdit_FSLDIR->setText(FSLDIRpos2);
+    if (QDir(env).exists()){
+        ui->lineEdit_FSLDIR->setText(env);
     }
 
     ui->lineEdit_AnalysisName->setText(DefAnalysisName);
@@ -52,17 +50,17 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_pushButton_chooseData_clicked()
 {
-    int spin_1 = spinBoxValue;
+
     if (ui->radioButton_PreprocwFSL->isChecked()){
         editFeat editfeat;
-        editfeat.setGroups(spin_1);
+        editfeat.setGroups(spinBoxValue);
         editfeat.setModal(true);
         editfeat.exec();
         FeatFileNames= editfeat.get_FileNames();
     }
     else {
         EditList editlist;
-        editlist.setGroups(spin_1);
+        editlist.setGroups(spinBoxValue);
         editlist.setModal(true);
         editlist.exec();
         StructuralFileNames = editlist.get_StructuralFileNames();
@@ -288,7 +286,6 @@ void MainWindow::on_chooseCombsButton_clicked()
     choosecombinations.setCheckboxes(spinBoxValue);
     choosecombinations.setModal(true);
     choosecombinations.exec();
-    //QMessageBox::information(this,"Help",QString::number(choosecombinations.checkedGroups[0]) );
     mirrored_checkStates = choosecombinations.checkedGroups;
     int GroupB = 2;
     int lastOne =1;
@@ -310,6 +307,9 @@ void MainWindow::on_spinBox_valueChanged(int arg1)
 {
     bool check_bw_groups = ui->radioButton_bw_Groups->isChecked();
     spinBoxValue = arg1;
+    FeatFileNames.clear();
+    FunctionalFileNames.clear();
+    StructuralFileNames.clear();
     if (arg1==1){
         ui->radioButton_wt_Groups->setChecked(true);
         ui->radioButton_bw_Groups->hide();
@@ -356,12 +356,12 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
 {
     QString FilePath;
     QJsonObject ReferSummary;
-    ReferSummary["Title"] = QString("It tells the path of the file used for reference.");
+    ReferSummary["Info"] = QString("It tells the path of the file used for reference.");
     ReferSummary["ReferImgPath"] = ui->lineEdit_Reference->text();
     json["ReferSummary"] = ReferSummary;
 
     QJsonObject ProcessingType;
-    ProcessingType["Title"] = QString("The inputs can be of 3 types: "
+    ProcessingType["Info"] = QString("The inputs can be of 3 types: "
                                       "#0 : Unprocessed "
                                       "#1 : Preprocessed without FSL "
                                       "#2 : Preprocessed with FSL");
@@ -381,7 +381,6 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
             file.remove();
             FeatFilesArray.append(FilePath);
         }
-//        FeatFileNames.clear();
         FeatList["FeatFilePaths"] = FeatFilesArray;
         json["FeatFilesInfo"] = FeatList;
     }
@@ -408,11 +407,43 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
             file.remove();
             StructuralArray.append(FilePath);
         }
-//        FunctionalFileNames.clear();
-//        StructuralFileNames.clear();
         FilesInfo["FunctionalFilePaths"] = FunctionalArray;
         FilesInfo["StructuralFilePaths"] = StructuralArray;
         json["FilesInfo"] = FilesInfo;
+    }
+
+    QJsonObject OutputInfo;
+    OutputInfo["Info"] = QString("This tells the output directory where files are to be saved.");
+    OutputInfo["OutDirectory"] = OutChosenPath;
+    OutputInfo["Save preprocessed .feat"] = ui->checkBox_preprocFeat->isChecked();
+    OutputInfo["Save 4D ROI wise Corrs"] = ui->checkBox_ROICorrs->isChecked();
+    json["OutputInfo"] = OutputInfo;
+
+    json["ROIFilePath"] = ui->lineEdit_ROIFile->text();
+    json["FSLDirectory"] = ui->lineEdit_FSLDIR->text();
+
+    if (ProcessingWay == 0){
+        json["Info"] = QString("The motion Correction can be of two types:"
+                               " #0 : None, "
+                               "#1 : MCFlirt"
+                               ""
+                               "The Slice Time Correction can be of 5 types: "
+                               "#0 : None, "
+                               "#1 : Regular Up, "
+                               "#2 : Regular Down, "
+                               "#3 : Interleaved, "
+                               "#4 : Use Slice Order File, "
+                               "#5 : Use Slice timings File.");
+        json["Registration"] = ui->radioButton_reg_y->isChecked();
+        json["Motion Correction"] = ui->comboBox_MCorrect->currentIndex();
+        json["B0 Unwarping"] = ui->checkBox_B0->isChecked();
+        json["Slice Time Correct"] = ui->comboBox_STimeCorrect->currentIndex();
+        json["BET Brain Extract"] = ui->checkBox_BET->isChecked();
+        json["FWHM"] = ui->doubleSpinBox_FWHM->value();
+        json["Intensity Normalization"] = ui->checkBox_IntensityNorm->isChecked();
+        json["Perfusion Subtraction"] = ui->checkBox_PerfusionSubtract->isChecked();
+        json["High Pass"] = ui->checkBox_HighPass->isChecked();
+        json["Melodic ICA"] = ui->checkBox_MelodicICA->isChecked();
     }
 
 }
@@ -420,40 +451,46 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
 
 void MainWindow::writeAnalysisName(QJsonObject &json) const
 {
+    /*
+     * The above JSON file making has been done till preprocessing.
+     * I haven't yet added some blocks for preprocessing such as
+     * Text box for Custom Slice Time Correction File.
+     * Other Functions for Perfusion subtraction also.
+     *
+     */
     json["Analysis Name"] = ui->lineEdit_AnalysisName->text();
     QJsonObject ReferenceImgpath;
     writeReferImgpath(ReferenceImgpath);
     json["AnalysisParams"] = ReferenceImgpath;
-
-
-//    QJsonArray levelArray;
-//    foreach (const Level level, mLevels) {
-//        QJsonObject levelObject;
-//        level.write(levelObject);
-//        levelArray.append(levelObject);
-//    }
-//    json["levels"] = levelArray;
 }
 void MainWindow::on_pushButton_Go_clicked()
 {
-    OutChosenPath = ui->lineEdit_OutDir->text();
-    if (!QDir(OutChosenPath).exists()){
-        QDir dir;
-        bool created = dir.mkdir(OutChosenPath);
-        if (!created){
-            QMessageBox::warning(this,"Help","Not able to create Directory: "+ OutChosenPath);
-            return;
+    int lenFuncFiles= FunctionalFileNames.size();
+    int lenStructFiles = StructuralFileNames.size();
+    int lenFeatFiles = FeatFileNames.size();
+    if (((lenFuncFiles!=spinBoxValue)||(lenStructFiles!=spinBoxValue)) && (lenFeatFiles != spinBoxValue)){
+        QMessageBox::warning(this,"Title","You haven't specified the complete 4D data files.");
+    }
+    else{
+        OutChosenPath = ui->lineEdit_OutDir->text();
+        if (!QDir(OutChosenPath).exists()){
+            QDir dir;
+            bool created = dir.mkdir(OutChosenPath);
+            if (!created){
+                QMessageBox::warning(this,"Help","Not able to create Directory: "+ OutChosenPath);
+                return;
+            }
         }
-    }
 
-    QFile saveFile( OutChosenPath + QStringLiteral( "/Design.json"));
-    if (!saveFile.open(QIODevice::WriteOnly)) {
-        qWarning("Couldn't open save file.");
+        QFile saveFile( OutChosenPath + QString( "/"+ui->lineEdit_AnalysisName->text()+"Design.json"));
+        if (!saveFile.open(QIODevice::WriteOnly)) {
+            qWarning("Couldn't open save file.");
+        }
+        QJsonObject Object;
+        writeAnalysisName(Object);
+        QJsonDocument saveDoc(Object);
+        saveFile.write(saveDoc.toJson());
     }
-    QJsonObject gameObject;
-    writeAnalysisName(gameObject);
-    QJsonDocument saveDoc(gameObject);
-    saveFile.write(saveDoc.toJson());
 }
 
 void MainWindow::on_radioButton_Unprocessed_clicked()
