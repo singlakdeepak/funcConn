@@ -13,7 +13,7 @@ bin-release/
 *.air
 *.ipa
 *.apk
-
+*.ipynb_checkpoints
 *.nii.gz
 *.mat
 
