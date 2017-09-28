@@ -1,1 +1,0 @@
-bet /usr/share/fsl/5.0/data/standard/MNI152_T1_2mm_brain.nii.gz /home/deepak/Desktop/funcConn/funcConnGUI/Scripts/tmp/registration/stripper/MNI152_T1_2mm_brain_brain.nii.gz

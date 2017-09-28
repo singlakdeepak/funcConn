@@ -1,1 +1,0 @@
-fslmaths /home/deepak/Desktop/funcConn/funcConnGUI/data/NYU_Cocaine/cocaine/1065809/session_1/rest_1/rest_linearMNI3mm.nii.gz -Tmean /home/deepak/Desktop/funcConn/funcConnGUI/Scripts/tmp/registration/meanfunc/rest_linearMNI3mm_mean.nii.gz

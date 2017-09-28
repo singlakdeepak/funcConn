@@ -1,1 +1,0 @@
-fast -S 1 /home/deepak/Desktop/funcConn/funcConnGUI/Scripts/tmp/registration/fast/MNI152_T1_2mm_brain_brain.nii.gz

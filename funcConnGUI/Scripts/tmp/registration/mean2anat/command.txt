@@ -1,1 +1,0 @@
-flirt -in /home/deepak/Desktop/funcConn/funcConnGUI/Scripts/tmp/registration/meanfunc/rest_linearMNI3mm_mean.nii.gz -ref /home/deepak/Desktop/funcConn/funcConnGUI/Scripts/tmp/registration/stripper/MNI152_T1_2mm_brain_brain.nii.gz -out rest_linearMNI3mm_mean_flirt.nii.gz -omat rest_linearMNI3mm_mean_flirt.mat -dof 6
