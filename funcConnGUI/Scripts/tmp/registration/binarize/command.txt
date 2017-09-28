@@ -1,0 +1,1 @@
+fslmaths /home/deepak/Desktop/funcConn/funcConnGUI/Scripts/tmp/registration/fast/MNI152_T1_2mm_brain_brain_pve_2.nii.gz -nan -thr 0.5 -bin /home/deepak/Desktop/funcConn/funcConnGUI/Scripts/tmp/registration/binarize/MNI152_T1_2mm_brain_brain_pve_2_maths.nii.gz

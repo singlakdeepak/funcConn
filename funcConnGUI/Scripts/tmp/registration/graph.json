@@ -1,0 +1,84 @@
+[
+    {
+        "group": 1,
+        "imports": [],
+        "name": "0_stripper",
+        "size": 1
+    },
+    {
+        "group": 1,
+        "imports": [
+            "0_stripper"
+        ],
+        "name": "1_fast",
+        "size": 1
+    },
+    {
+        "group": 1,
+        "imports": [
+            "1_fast"
+        ],
+        "name": "2_binarize",
+        "size": 1
+    },
+    {
+        "group": 1,
+        "imports": [
+            "0_stripper"
+        ],
+        "name": "3_anat2target_linear",
+        "size": 1
+    },
+    {
+        "group": 1,
+        "imports": [],
+        "name": "4_meanfunc",
+        "size": 1
+    },
+    {
+        "group": 1,
+        "imports": [
+            "4_meanfunc",
+            "0_stripper"
+        ],
+        "name": "5_mean2anat",
+        "size": 1
+    },
+    {
+        "group": 1,
+        "imports": [
+            "4_meanfunc",
+            "2_binarize",
+            "5_mean2anat"
+        ],
+        "name": "6_mean2anatbbr",
+        "size": 1
+    },
+    {
+        "group": 1,
+        "imports": [
+            "6_mean2anatbbr",
+            "3_anat2target_linear"
+        ],
+        "name": "7_warpall",
+        "size": 1
+    },
+    {
+        "group": 1,
+        "imports": [
+            "7_warpall"
+        ],
+        "name": "8_datasink",
+        "size": 1
+    },
+    {
+        "group": 1,
+        "imports": [
+            "4_meanfunc",
+            "6_mean2anatbbr",
+            "3_anat2target_linear"
+        ],
+        "name": "9_warpmean",
+        "size": 1
+    }
+]

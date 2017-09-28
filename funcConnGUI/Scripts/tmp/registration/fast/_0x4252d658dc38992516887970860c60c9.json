@@ -1,0 +1,21 @@
+[
+    [
+        "in_files",
+        [
+            [
+                "/home/deepak/Desktop/funcConn/funcConnGUI/Scripts/tmp/registration/stripper/MNI152_T1_2mm_brain_brain.nii.gz",
+                "6a95d5b63c9099a3631a69641726e015"
+            ]
+        ]
+    ],
+    [
+        "output_type",
+        "NIFTI_GZ"
+    ],
+    [
+        "needed_outputs",
+        [
+            "partial_volume_files"
+        ]
+    ]
+]

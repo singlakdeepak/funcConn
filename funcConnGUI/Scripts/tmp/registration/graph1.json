@@ -1,0 +1,155 @@
+{
+    "groups": [
+        {
+            "name": "Group_00001",
+            "procs": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+            ],
+            "total": 10
+        }
+    ],
+    "links": [
+        {
+            "source": 0,
+            "target": 1,
+            "value": 1
+        },
+        {
+            "source": 1,
+            "target": 2,
+            "value": 1
+        },
+        {
+            "source": 4,
+            "target": 5,
+            "value": 1
+        },
+        {
+            "source": 0,
+            "target": 5,
+            "value": 1
+        },
+        {
+            "source": 4,
+            "target": 6,
+            "value": 1
+        },
+        {
+            "source": 2,
+            "target": 6,
+            "value": 1
+        },
+        {
+            "source": 5,
+            "target": 6,
+            "value": 1
+        },
+        {
+            "source": 0,
+            "target": 3,
+            "value": 1
+        },
+        {
+            "source": 4,
+            "target": 9,
+            "value": 1
+        },
+        {
+            "source": 6,
+            "target": 9,
+            "value": 1
+        },
+        {
+            "source": 3,
+            "target": 9,
+            "value": 1
+        },
+        {
+            "source": 6,
+            "target": 7,
+            "value": 1
+        },
+        {
+            "source": 3,
+            "target": 7,
+            "value": 1
+        },
+        {
+            "source": 7,
+            "target": 8,
+            "value": 1
+        }
+    ],
+    "maxN": 10,
+    "nodes": [
+        {
+            "group": 1,
+            "name": "0_stripper",
+            "report": "/stripper/_report/report.rst",
+            "result": "/stripper/result_stripper.pklz"
+        },
+        {
+            "group": 1,
+            "name": "1_fast",
+            "report": "/fast/_report/report.rst",
+            "result": "/fast/result_fast.pklz"
+        },
+        {
+            "group": 1,
+            "name": "2_binarize",
+            "report": "/binarize/_report/report.rst",
+            "result": "/binarize/result_binarize.pklz"
+        },
+        {
+            "group": 1,
+            "name": "3_anat2target_linear",
+            "report": "/anat2target_linear/_report/report.rst",
+            "result": "/anat2target_linear/result_anat2target_linear.pklz"
+        },
+        {
+            "group": 1,
+            "name": "4_meanfunc",
+            "report": "/meanfunc/_report/report.rst",
+            "result": "/meanfunc/result_meanfunc.pklz"
+        },
+        {
+            "group": 1,
+            "name": "5_mean2anat",
+            "report": "/mean2anat/_report/report.rst",
+            "result": "/mean2anat/result_mean2anat.pklz"
+        },
+        {
+            "group": 1,
+            "name": "6_mean2anatbbr",
+            "report": "/mean2anatbbr/_report/report.rst",
+            "result": "/mean2anatbbr/result_mean2anatbbr.pklz"
+        },
+        {
+            "group": 1,
+            "name": "7_warpall",
+            "report": "/warpall/_report/report.rst",
+            "result": "/warpall/result_warpall.pklz"
+        },
+        {
+            "group": 1,
+            "name": "8_datasink",
+            "report": "/datasink/_report/report.rst",
+            "result": "/datasink/result_datasink.pklz"
+        },
+        {
+            "group": 1,
+            "name": "9_warpmean",
+            "report": "/warpmean/_report/report.rst",
+            "result": "/warpmean/result_warpmean.pklz"
+        }
+    ]
+}

@@ -1,0 +1,24 @@
+[
+    [
+        "_outputs",
+        [
+            [
+                "out_file",
+                [
+                    [
+                        "/home/deepak/Desktop/funcConn/funcConnGUI/Scripts/tmp/registration/warpall/mapflow/_warpall0/rest_linearMNI3mm_warp.nii.gz",
+                        "3d1cdd7acb0d3636b8b759eea29837dc"
+                    ]
+                ]
+            ]
+        ]
+    ],
+    [
+        "parameterization",
+        true
+    ],
+    [
+        "remove_dest_dir",
+        false
+    ]
+]

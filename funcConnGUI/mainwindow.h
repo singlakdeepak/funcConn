@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QPushButton>
+#include <QDir>
 namespace Ui {
 class MainWindow;
 }
@@ -76,6 +77,7 @@ private:
     QList<QString> FunctionalFileNames;
     QList<QString> StructuralFileNames;
     QString OutChosenPath;
+    QString WorkingDir = QDir::currentPath();
     int ProcessingWay =0;
     int spinBoxValue =1;
     Ui::MainWindow *ui;

@@ -1,0 +1,1 @@
+flirt -in /home/deepak/Desktop/funcConn/funcConnGUI/Scripts/tmp/registration/stripper/MNI152_T1_2mm_brain_brain.nii.gz -ref /usr/share/fsl/5.0/data/standard/MNI152_T1_2mm_brain.nii.gz -out MNI152_T1_2mm_brain_brain_flirt.nii.gz -omat MNI152_T1_2mm_brain_brain_flirt.mat -searchrx -180 180 -searchry -180 180 -searchrz -180 180

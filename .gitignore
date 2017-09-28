@@ -16,7 +16,10 @@ bin-release/
 
 *.nii.gz
 *.mat
+__pycache__
 
+funcConnGUI/Scripts/data
+funcConnGUI/Scripts/data/tmp
 *.o
 *.nii.gz
 build*

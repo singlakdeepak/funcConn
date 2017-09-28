@@ -9,7 +9,7 @@
 #include<QJsonDocument>
 #include<QJsonObject>
 #include<QJsonArray>
-
+#include<QProcess>
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -367,11 +367,11 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
                                       "#2 : Preprocessed with FSL");
     ProcessingType["ProcessingWay"] = ProcessingWay;
     json["ProcessingType"] = ProcessingType;
+    json["No of Groups"] = spinBoxValue;
 
     if (ProcessingWay ==2){
         QJsonObject FeatList;
         FeatList["Info"] = QString("This is for case 2. We shall require the list of only the feat directories.");
-        FeatList["No of Groups"] = spinBoxValue;
         QJsonArray FeatFilesArray;
         for (int i=1 ; i<=FeatFileNames.size() ; i++)
         {
@@ -388,7 +388,6 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
     else{
         QJsonObject FilesInfo;
         FilesInfo["Info"] = QString("This is for case 0 and case 1. We shall require the list of both structural and functional files.");
-        FilesInfo["No of Groups"] = spinBoxValue;
         QJsonArray StructuralArray;
         QJsonArray FunctionalArray;
         for (int i=1 ; i<=FunctionalFileNames.size() ; i++)
@@ -459,6 +458,7 @@ void MainWindow::writeAnalysisName(QJsonObject &json) const
      *
      */
     json["Analysis Name"] = ui->lineEdit_AnalysisName->text();
+    json["WorkingDir"] = WorkingDir;
     QJsonObject ReferenceImgpath;
     writeReferImgpath(ReferenceImgpath);
     json["AnalysisParams"] = ReferenceImgpath;
@@ -472,6 +472,7 @@ void MainWindow::on_pushButton_Go_clicked()
         QMessageBox::warning(this,"Title","You haven't specified the complete 4D data files.");
     }
     else{
+        QString JSONFile= OutChosenPath + QString( "/"+ui->lineEdit_AnalysisName->text()+"Design.json");
         OutChosenPath = ui->lineEdit_OutDir->text();
         if (!QDir(OutChosenPath).exists()){
             QDir dir;
@@ -482,7 +483,7 @@ void MainWindow::on_pushButton_Go_clicked()
             }
         }
 
-        QFile saveFile( OutChosenPath + QString( "/"+ui->lineEdit_AnalysisName->text()+"Design.json"));
+        QFile saveFile( JSONFile);
         if (!saveFile.open(QIODevice::WriteOnly)) {
             qWarning("Couldn't open save file.");
         }
@@ -490,6 +491,13 @@ void MainWindow::on_pushButton_Go_clicked()
         writeAnalysisName(Object);
         QJsonDocument saveDoc(Object);
         saveFile.write(saveDoc.toJson());
+
+
+//        QProcess p;
+//        p.start("python " + JSONFile);
+//        p.waitForFinished(-1);
+        //QString p_stdout = p.readAllStandardOutput();
+
     }
 }
 
