@@ -19,6 +19,13 @@ with open(JSONFile) as JSON:
     except :
         print('Unexpected error:', sys.exc_info()[0])
         raise
+
+def get_TR(in_file):
+    import nibabel
+    f = nibabel.load(in_file)
+    return f.get_header()['dim'][0]#['pixdim'][1:4].tolist(), f.get_header()['pixdim'][4]
+
+
 def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
 
     ReferenceFile = AnalysisParams['ReferSummary']['ReferImgPath']
@@ -37,15 +44,17 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
     FeatProcessName = 'featpreproc_group%s'%Group
     RegistrationName = 'registration_group%s'%Group
     RESULTS_FEAT_DATASINK = OUTPUT_DIR + '/tmp/%s/datasink/'%FeatProcessName
-    
+    TR = get_TR(FunctionalFiles[0])
+    print('Using Repetition time: %s'%TR)
     if HighPass:
         preproc = parallelPreproc.create_parallelfeat_preproc(name = FeatProcessName,
                                     highpass= HighPass, 
                                     Intensity_Norm = Intensity_Norm,
                                     BETextract = BETextract,
                                     MotionCorrection = MotionCorrection, 
-                                    SliceTimeCorrect = SliceTimeCorrect)
-        preproc.inputs.inputspec.highpass = 128./(2*2.5)
+                                    SliceTimeCorrect = SliceTimeCorrect,
+                                    time_repeat = TR)
+        preproc.inputs.inputspec.highpass = 1/(0.09*TR)
         preproc.inputs.inputspec.func = FunctionalFiles
         preproc.inputs.inputspec.fwhm = FWHM
         preproc.base_dir = TEMP_DIR_FOR_STORAGE
@@ -57,7 +66,8 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
                                     Intensity_Norm = Intensity_Norm,
                                     BETextract = BETextract,
                                     MotionCorrection = MotionCorrection, 
-                                    SliceTimeCorrect = SliceTimeCorrect)
+                                    SliceTimeCorrect = SliceTimeCorrect,
+                                    time_repeat = TR)
         preproc.inputs.inputspec.func = FunctionalFiles
         preproc.inputs.inputspec.fwhm = FWHM
         preproc.base_dir = TEMP_DIR_FOR_STORAGE

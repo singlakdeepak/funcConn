@@ -12,25 +12,21 @@ def getthreshop(thresh):
 
 tolist = lambda x: [x]
 highpass_operand = lambda x: '-bptf %.10f -1' % x
-TR = 3
-def get_voxel_dimension_and_TR(in_file):
-    import nibabel
-    f = nibabel.load(in_file)
-    return f.get_header()['pixdim'][1:4].tolist(), f.get_header()['pixdim'][4]
 
-def give_Slice_Timer_Node(SliceTimeCorrect):
+
+def give_Slice_Timer_Node(SliceTimeCorrect,time_repeat):
     if (SliceTimeCorrect ==1):
         slicetimer = MapNode(fsl.SliceTimer(index_dir=True,
                                      interleaved=False,
                                      output_type='NIFTI_GZ',
-                                     time_repetition=TR),
+                                     time_repetition=time_repeat),
                              iterfield=['in_file'],
                           name="slicetimer")
     elif (SliceTimeCorrect == 2):
         slicetimer = MapNode(fsl.SliceTimer(index_dir=False,
                                      interleaved=False,
                                      output_type='NIFTI_GZ',
-                                     time_repetition=TR),
+                                     time_repetition=time_repeat),
                               iterfield=['in_file'],
                           name="slicetimer")
 
@@ -38,19 +34,19 @@ def give_Slice_Timer_Node(SliceTimeCorrect):
         slicetimer = MapNode(fsl.SliceTimer(index_dir=False,
                                      interleaved=True,
                                      output_type='NIFTI_GZ',
-                                     time_repetition=TR),
+                                     time_repetition=time_repeat),
                               iterfield=['in_file'],
                           name="slicetimer")
     elif (SliceTimeCorrect == 4):
         slicetimer = MapNode(fsl.SliceTimer(custom_order = '',
                                     output_type='NIFTI_GZ',
-                                     time_repetition=TR),
+                                     time_repetition=time_repeat),
                               iterfield=['in_file'],
                           name="slicetimer")
     elif (SliceTimeCorrect == 5):
         slicetimer = MapNode(fsl.SliceTimer(custom_timings = '',
                                     output_type='NIFTI_GZ',
-                                     time_repetition=TR),
+                                     time_repetition=time_repeat),
                               iterfield=['in_file'],
                           name="slicetimer")
     return slicetimer
@@ -59,7 +55,8 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
                                 Intensity_Norm = True,
                                 BETextract = True,
                                 MotionCorrection = 0, 
-                                SliceTimeCorrect = 0):
+                                SliceTimeCorrect = 0,
+                                time_repeat = 3):
     """
     Preprocess each run with FSL independently of the others
     Parameters
@@ -304,7 +301,7 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
         SliceTimer - correct for slice wise acquisition
         """
         if (SliceTimeCorrect != 0):
-            slicetimer = give_Slice_Timer_Node(SliceTimeCorrect)
+            slicetimer = give_Slice_Timer_Node(SliceTimeCorrect,time_repeat)
 
             featpreproc.connect(motion_correct, 'out_file', slicetimer, 'in_file')
             
@@ -350,7 +347,7 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
         SliceTimer - correct for slice wise acquisition
         """
         if (SliceTimeCorrect != 0):
-            slicetimer = give_Slice_Timer_Node(SliceTimeCorrect)
+            slicetimer = give_Slice_Timer_Node(SliceTimeCorrect,time_repeat)
             
             featpreproc.connect(img2float, 'out_file', slicetimer, 'in_file')
             featpreproc = whether_BETextract_or_not(featpreproc,
