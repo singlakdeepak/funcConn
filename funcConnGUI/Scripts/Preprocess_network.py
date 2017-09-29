@@ -117,7 +117,8 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
                                                              name='outputspec')
     else:
         inputnode = Node(interface=util.IdentityInterface(fields=['func',
-                                                                     'fwhm']),
+                                                                     'fwhm'
+                                                                     ]),
                             name='inputspec')
         outputnode = Node(interface=util.IdentityInterface(fields=['reference',
                                                                   'motion_parameters',
@@ -422,9 +423,9 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
     """
     Perform temporal highpass filtering on the data
     """
-    highpass = MapNode(interface=fsl.ImageMaths(suffix='_tempfilt'),
+    highpassfilt = MapNode(interface=fsl.ImageMaths(suffix='_tempfilt'),
                       iterfield=['in_file'],
-                      name='highpass')
+                      name='highpassfilt')
 #     """
 #     Generate a mean functional image from the first run
 #     """
@@ -463,21 +464,23 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
         
         if highpass:
 
-            featpreproc.connect(inputnode, ('highpass', highpass_operand), highpass, 'op_string')
-            featpreproc.connect(meanscale, 'out_file', highpass, 'in_file')
-            featpreproc.connect(highpass, 'out_file', outputnode, 'highpassed_files')
-            featpreproc.connect(highpass, 'out_file',
+            featpreproc.connect(inputnode, ('highpass', highpass_operand), highpassfilt, 'op_string')
+            featpreproc.connect(meanscale, 'out_file', highpassfilt, 'in_file')
+            featpreproc.connect(highpassfilt, 'out_file', outputnode, 'highpassed_files')
+            featpreproc.connect(outputnode, 'highpassed_files',
                       datasink, 'out_file')
         else:
-            featpreproc.connect(meanscale, 'out_file', datasink, 'out_file')
+            featpreproc.connect(outputnode, 'normalized_files', datasink, 'out_file')
 
     else :
         if highpass:
-            featpreproc.connect(inputnode, ('highpass', highpass_operand), highpass, 'op_string')
-            featpreproc.connect(selectnode, 'out', highpass, 'in_file')
-            featpreproc.connect(highpass, 'out_file', outputnode, 'highpassed_files')
-            featpreproc.connect(highpass, 'out_file',
+            featpreproc.connect(inputnode, ('highpass', highpass_operand), highpassfilt, 'op_string')
+            featpreproc.connect(selectnode, 'out', highpassfilt, 'in_file')
+            featpreproc.connect(highpassfilt, 'out_file', outputnode, 'highpassed_files')
+            featpreproc.connect(outputnode, 'highpassed_files',
                       datasink, 'out_file')
+        else:
+          featpreproc.connect(outputnode, 'smoothed_files', datasink, 'out_file')
 
 #     if highpass:
 #         featpreproc.connect(highpass, 'out_file', meanfunc3, 'in_file')

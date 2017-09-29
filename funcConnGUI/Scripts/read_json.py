@@ -52,7 +52,7 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
         preproc.write_graph(graph2use='colored', format='png', simple_form=True)
         preproc.run('MultiProc', plugin_args={'n_procs': 4})
     else:
-        preproc = parallelPreproc.create_parallelfeat_preproc(name = RegistrationName,
+        preproc = parallelPreproc.create_parallelfeat_preproc(name = FeatProcessName,
                                     highpass= HighPass, 
                                     Intensity_Norm = Intensity_Norm,
                                     BETextract = BETextract,
