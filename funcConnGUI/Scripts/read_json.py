@@ -4,6 +4,7 @@ import json
 import Preprocess_network as parallelPreproc
 import timeit
 import os
+import shutil
 start = timeit.default_timer()
 # JSONFile = sys.argv[1]
 JSONFile = '/home/deepak/Desktop/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
@@ -46,6 +47,8 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
     RESULTS_FEAT_DATASINK = OUTPUT_DIR + '/tmp/%s/datasink/'%FeatProcessName
     TR = get_TR(FunctionalFiles[0])
     print('Using Repetition time: %s'%TR)
+
+
     if HighPass:
         preproc = parallelPreproc.create_parallelfeat_preproc(name = FeatProcessName,
                                     highpass= HighPass, 
@@ -81,10 +84,18 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
         datafile =datafile[0][1][0][1]
     datasinkouts = []
     datasinkouts += [datafile[i][0] for i in range(len(datafile))]
+    no_subjects = len(datasinkouts)
+    ProcessedFilesDIRADDRESSES = []
+    dst = OUTPUT_DIR + '/Preprocessing_group%s/'%Group
+    if not (os.path.exists(dst)):
+        os.mkdir(dst)
+    else:
+        shutil.rmtree(dst)
+        os.mkdir(dst)
 
     if Registration:
         datasinkouts_afterreg = []
-        for i in range(len(datasinkouts)):
+        for i in range(no_subjects):
             RESULTS_REG_DATASINK = OUTPUT_DIR + '/tmp/%s_%s/datasink/'%(RegistrationName,i)
             Reg_WorkFlow = parallelPreproc.reg_workflow(name = '%s_%s'%(RegistrationName ,i))
 
@@ -97,12 +108,17 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
             datasink_results += [each for each in os.listdir(RESULTS_REG_DATASINK) if each.endswith('.json')]
             with open(RESULTS_REG_DATASINK + datasink_results[0]) as JSON:
                 datafile = json.load(JSON)
-                datafile = datafile[0][1][0][1]
-            
-            datasinkouts_afterreg += [datafile[i][0] for i in range(len(datafile))]
-        return datasinkouts_afterreg
+                datafile = datafile[0][1][0][1][0][0]
+            ProcessedFiles_Address = '%sProcessedFile_sub%s.nii.gz'%(dst,i)
+            ProcessedFilesDIRADDRESSES += [ProcessedFiles_Address]
+            shutil.copy(datafile,ProcessedFiles_Address)
+        return ProcessedFilesDIRADDRESSES
     else:
-        return datasinkouts
+        for j in range(no_subjects):
+            ProcessedFiles_Address = '%sProcessedFile_sub%s.nii.gz'%(dst,j)
+            ProcessedFilesDIRADDRESSES += [ProcessedFiles_Address]
+            shutil.copy(datasinkouts[j],ProcessedFiles_Address)
+        return ProcessedFilesDIRADDRESSES
 
 ReferenceFile = AnalysisParams['ReferSummary']['ReferImgPath']
 ProcessingWay = AnalysisParams['ProcessingType']['ProcessingWay']
