@@ -11,7 +11,7 @@ def getthreshop(thresh):
     return ['-thr %.10f -Tmin -bin' % (0.1 * val[1]) for val in thresh]
 
 tolist = lambda x: [x]
-highpass_operand = lambda x: '-bptf %.10f -1' % x
+highpass_lowpass_operand = lambda x: '-bptf %.10f %.10f' % x
 
 
 def give_Slice_Timer_Node(SliceTimeCorrect,time_repeat):
@@ -461,7 +461,7 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
         
         if highpass:
 
-            featpreproc.connect(inputnode, ('highpass', highpass_operand), highpassfilt, 'op_string')
+            featpreproc.connect(inputnode, ('highpass', highpass_lowpass_operand), highpassfilt, 'op_string')
             featpreproc.connect(meanscale, 'out_file', highpassfilt, 'in_file')
             featpreproc.connect(highpassfilt, 'out_file', outputnode, 'highpassed_files')
             featpreproc.connect(outputnode, 'highpassed_files',
@@ -471,7 +471,7 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
 
     else :
         if highpass:
-            featpreproc.connect(inputnode, ('highpass', highpass_operand), highpassfilt, 'op_string')
+            featpreproc.connect(inputnode, ('highpass', highpass_lowpass_operand), highpassfilt, 'op_string')
             featpreproc.connect(selectnode, 'out', highpassfilt, 'in_file')
             featpreproc.connect(highpassfilt, 'out_file', outputnode, 'highpassed_files')
             featpreproc.connect(outputnode, 'highpassed_files',

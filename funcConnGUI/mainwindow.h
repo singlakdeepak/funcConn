@@ -69,6 +69,10 @@ private slots:
 
     void on_radioButton_PreprocwFSL_clicked();
 
+    void on_checkBox_HighPass_clicked(bool checked);
+
+    void on_checkBox_LowPass_clicked(bool checked);
+
 private:
     QString CommonDir ="/home/";
     QString OutDir = "/home/";

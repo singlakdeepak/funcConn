@@ -31,7 +31,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->radioButton_NormFischer->setChecked(true);
     ui->radioButton_reg_y->setChecked(true);
     ui->radioButton_JointFDR->setChecked(true);
-
+    ui->lineEdit_highpass->hide();
+    ui->lineEdit_lowpass->hide();
     QString DefAnalysisName = "FConnectivityAnl";
 
     if (QDir(env).exists()){
@@ -440,8 +441,13 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
         json["BET Brain Extract"] = ui->checkBox_BET->isChecked();
         json["FWHM"] = ui->doubleSpinBox_FWHM->value();
         json["Intensity Normalization"] = ui->checkBox_IntensityNorm->isChecked();
-        json["Perfusion Subtraction"] = ui->checkBox_PerfusionSubtract->isChecked();
-        json["High Pass"] = ui->checkBox_HighPass->isChecked();
+        json["Temporal Filtering"] = (ui->checkBox_HighPass->isChecked())||(ui->checkBox_LowPass->isChecked());
+
+        json["High Pass Value (in sigma)"] = ui->checkBox_HighPass->isChecked() ? ui->lineEdit_highpass->text().toFloat() : float(-1);
+
+        json["Low Pass Value (in sigma)"] = ui->checkBox_LowPass->isChecked() ? ui->lineEdit_lowpass->text().toFloat() : float(-1);
+
+
         json["Melodic ICA"] = ui->checkBox_MelodicICA->isChecked();
     }
 
@@ -472,8 +478,8 @@ void MainWindow::on_pushButton_Go_clicked()
         QMessageBox::warning(this,"Title","You haven't specified the complete 4D data files.");
     }
     else{
-        QString JSONFile= OutChosenPath + QString( "/"+ui->lineEdit_AnalysisName->text()+"Design.json");
         OutChosenPath = ui->lineEdit_OutDir->text();
+        QString JSONFile= OutChosenPath + QString( "/"+ui->lineEdit_AnalysisName->text()+"Design.json");
         if (!QDir(OutChosenPath).exists()){
             QDir dir;
             bool created = dir.mkdir(OutChosenPath);
@@ -514,4 +520,20 @@ void MainWindow::on_radioButton_PreprocwtFSL_clicked()
 void MainWindow::on_radioButton_PreprocwFSL_clicked()
 {
     ProcessingWay = 2;
+}
+
+void MainWindow::on_checkBox_HighPass_clicked(bool checked)
+{
+    if (checked)
+        ui->lineEdit_highpass->show();
+    else
+        ui->lineEdit_highpass->hide();
+}
+
+void MainWindow::on_checkBox_LowPass_clicked(bool checked)
+{
+    if (checked)
+        ui->lineEdit_lowpass->show();
+    else
+        ui->lineEdit_lowpass->hide();
 }

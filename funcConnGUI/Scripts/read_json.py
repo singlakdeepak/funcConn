@@ -33,7 +33,9 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
     B0unwarping = AnalysisParams['B0 Unwarping']
     BETextract = AnalysisParams['BET Brain Extract']
     FWHM = AnalysisParams['FWHM']
-    HighPass = AnalysisParams['High Pass']
+    TemporalFilt = AnalysisParams['Temporal Filtering']
+    HPsigma = AnalysisParams['High Pass Value (in sigma)']
+    LPsigma = AnalysisParams['Low Pass Value (in sigma)']
     MotionCorrection = AnalysisParams['Motion Correction']
     Registration = AnalysisParams['Registration']
     SliceTimeCorrect = AnalysisParams['Slice Time Correct']
@@ -49,15 +51,15 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
     print('Using Repetition time: %s'%TR)
 
 
-    if HighPass:
+    if TemporalFilt:
         preproc = parallelPreproc.create_parallelfeat_preproc(name = FeatProcessName,
-                                    highpass= HighPass, 
+                                    highpass= TemporalFilt, 
                                     Intensity_Norm = Intensity_Norm,
                                     BETextract = BETextract,
                                     MotionCorrection = MotionCorrection, 
                                     SliceTimeCorrect = SliceTimeCorrect,
                                     time_repeat = TR)
-        preproc.inputs.inputspec.highpass = 1/(0.09*TR)
+        preproc.inputs.inputspec.highpass = (HPsigma,LPsigma)
         preproc.inputs.inputspec.func = FunctionalFiles
         preproc.inputs.inputspec.fwhm = FWHM
         preproc.base_dir = TEMP_DIR_FOR_STORAGE
@@ -65,7 +67,7 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
         preproc.run('MultiProc', plugin_args={'n_procs': 4})
     else:
         preproc = parallelPreproc.create_parallelfeat_preproc(name = FeatProcessName,
-                                    highpass= HighPass, 
+                                    highpass= TemporalFilt, 
                                     Intensity_Norm = Intensity_Norm,
                                     BETextract = BETextract,
                                     MotionCorrection = MotionCorrection, 
