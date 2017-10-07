@@ -487,6 +487,7 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
 #    featpreproc.connect(meanfunc3, 'out_file', outputnode, 'mean')
     return featpreproc
 
+'''
 def reg_workflow(name = 'registration'):
     """Create a FEAT preprocessing workflow
     Parameters
@@ -632,5 +633,151 @@ def reg_workflow(name = 'registration'):
     register.connect(anat2target_affine, 'out_matrix_file',
                      outputnode, 'anat2target_transform')
     register.connect(warpall, 'out_file', datasink,'out_file')
+
+    return register
+'''
+
+def reg_workflow(no_subjects, name = 'registration'):
+    """Create a FEAT preprocessing workflow
+    Parameters
+    ----------
+    ::
+        name : name of workflow (default: 'registration')
+    Inputs::
+        inputspec.source_files : files (filename or list of filenames to register)
+        inputspec.mean_image : reference image to use
+        inputspec.anatomical_image : anatomical image to coregister to
+        inputspec.target_image : registration target
+    Outputs::
+        outputspec.func2anat_transform : FLIRT transform
+        outputspec.anat2target_transform : FLIRT+FNIRT transform
+        outputspec.transformed_files : transformed files in target space
+        outputspec.transformed_mean : mean image in target space
+    Example
+    -------
+    """
+
+    register = Workflow(name=name)
+
+    inputnode = Node(interface=util.IdentityInterface(fields=['source_files',
+                                                                 'anatomical_images',
+                                                                 'target_image']),
+                        name='inputspec')
+    outputnode = Node(interface=util.IdentityInterface(fields=['func2anat_transform',
+                                                                  'transformed_files'
+                                                                  ]),
+                         name='outputspec')
+    if (no_subjects ==1):
+        meanfunc = Node(fsl.ImageMaths(op_string='-Tmean',suffix='_mean'), name = 'meanfunc')
+        stripper = Node(fsl.BET(), name='stripper')
+        fast = Node(fsl.FAST(), name = 'fast')
+        binarize = Node(fsl.ImageMaths(op_string='-nan -thr 0.5 -bin'),
+                                             name='binarize')
+        mean2anat = Node(fsl.FLIRT(), name='mean2anat')
+        mean2anatbbr = Node(fsl.FLIRT(),  name='mean2anatbbr')
+        anat2target_affine = Node(fsl.FLIRT(), name='anat2target_linear')
+        anat2targetmask = Node(interface=fsl.BET(mask = True,
+                                             no_output=True,
+                                             frac = 0.3),
+                              name = 'anat2targetmask')
+        warpfile = Node(fsl.ApplyXFM(interp='spline'), name='txm_registered')
+        """
+        Mask the functional runs with the extracted mask
+        """
+        maskWarpFile = Node(interface=fsl.ImageMaths(suffix='_masked',
+                                                   op_string='-mas'),
+                          name = 'maskfunc')
+
+    else:
+        meanfunc = MapNode(fsl.ImageMaths(op_string='-Tmean',suffix='_mean'), iterfield = ['in_file'],name = 'meanfunc')
+        stripper = MapNode(fsl.BET(), iterfield = ['in_file'], name='stripper')
+        fast = MapNode(fsl.FAST(), iterfield =['in_files'], name='fast')
+        binarize = MapNode(fsl.ImageMaths(op_string='-nan -thr 0.5 -bin'),
+                       iterfield = ['in_file'],
+                       name='binarize')
+        mean2anat = MapNode(fsl.FLIRT(), iterfield = ['in_file','reference'], name='mean2anat')
+        mean2anatbbr = MapNode(fsl.FLIRT(), iterfield = ['in_file','wm_seg','reference','in_matrix_file'], name='mean2anatbbr')
+        anat2target_affine = MapNode(fsl.FLIRT(), iterfield = ['in_file'], name='anat2target_linear')
+        anat2targetmask = MapNode(interface=fsl.BET(mask = True,
+                                             no_output=True,
+                                             frac = 0.3),
+                              iterfield=['in_file'],
+                              name = 'anat2targetmask') 
+        warpfile = MapNode(fsl.ApplyXFM(interp='spline'), iterfield = ['in_file', 'in_matrix_file'],name='txm_registered')
+        """
+        Mask the functional runs with the extracted mask
+        """
+        maskWarpFile = MapNode(interface=fsl.ImageMaths(suffix='_masked',
+                                                   op_string='-mas'),
+                          iterfield=['in_file', 'in_file2'],
+                          name = 'maskfunc')
+
+    register.connect(inputnode, 'source_files', meanfunc, 'in_file')
+    """
+    Estimate the tissue classes from the anatomical image. But use spm's segment
+    as FSL appears to be breaking.
+    """
+    
+    register.connect(inputnode, 'anatomical_images', stripper, 'in_file')
+
+    register.connect(stripper, 'out_file', fast, 'in_files')
+
+    """
+    Binarize the segmentation
+    """
+    pickindex = lambda x, i: x[i]
+    register.connect(fast, ('partial_volume_files', pickindex, 2),
+                     binarize, 'in_file')
+
+    """
+    Calculate rigid transform from mean image to anatomical image
+    """
+    mean2anat.inputs.dof = 12
+    register.connect(meanfunc,'out_file', mean2anat, 'in_file')
+    register.connect(stripper, 'out_file', mean2anat, 'reference')
+
+    """
+    Now use bbr cost function to improve the transform
+    """
+
+    mean2anatbbr.inputs.dof = 12
+    mean2anatbbr.inputs.cost = 'bbr'
+    mean2anatbbr.inputs.schedule = os.path.join(os.getenv('FSLDIR'),
+                                                'etc/flirtsch/bbr.sch')
+    register.connect(meanfunc,'out_file', mean2anatbbr, 'in_file')
+    register.connect(binarize, 'out_file', mean2anatbbr, 'wm_seg')
+    register.connect(inputnode, 'anatomical_images', mean2anatbbr, 'reference')
+    register.connect(mean2anat, 'out_matrix_file',
+                     mean2anatbbr, 'in_matrix_file')
+    """
+    Calculate affine transform from anatomical to target
+    """
+
+    anat2target_affine.inputs.searchr_x = [-180, 180]
+    anat2target_affine.inputs.searchr_y = [-180, 180]
+    anat2target_affine.inputs.searchr_z = [-180, 180]
+    register.connect(stripper, 'out_file', anat2target_affine, 'in_file')
+    register.connect(inputnode, 'target_image',
+                     anat2target_affine, 'reference')
+    register.connect(anat2target_affine,'out_file', anat2targetmask, 'in_file')
+
+    warpfile.inputs.padding_size = 0
+
+    register.connect(inputnode, 'source_files', warpfile, 'in_file')
+    register.connect(mean2anatbbr, 'out_matrix_file', warpfile, 'in_matrix_file')
+    register.connect(inputnode, 'target_image', warpfile, 'reference')
+
+    register.connect(warpfile,'out_file', maskWarpFile, 'in_file')
+    register.connect(anat2targetmask, 'mask_file', maskWarpFile, 'in_file2')
+
+
+    datasink = Node(interface=DataSink(), name="datasink")
+    """
+    Assign all the output files
+    """
+    register.connect(maskWarpFile, 'out_file', outputnode, 'transformed_files')
+    register.connect(mean2anatbbr, 'out_matrix_file',
+                     outputnode, 'func2anat_transform')
+    register.connect(maskWarpFile, 'out_file', datasink,'out_file')
 
     return register
