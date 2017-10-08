@@ -40,7 +40,7 @@ void getattributes(int argc,char *argv[]);
 int main (int argc,char *argv[])
 {
   omp_set_num_threads(8);
-  /*if the program is ran witout options ,it will show the usgage and exit*/
+  /*if the program is ran witout options ,it will show the usage and exit*/
   if(argc < 2)
   {
 	showhelpinfo();
@@ -154,7 +154,7 @@ void correl()
   const char *s1 = filename2.c_str();
   std::ofstream f(s1,std::ios::binary);
 
-  // #########################CALCULATING THE MEAN AND STD DEVIATION OF DATA AND CREATING A VALID VOXEL MAPPINGS #######################################################################################
+  // #########################CALCULATING THE MEAN AND STD DEVIATION OF DATA AND CREATING A VALID VOXEL MAPPINGS ################################
   // for (int x = 0; x < g[0]; ++x){
   //   for (int y = 0; y < g[1]; ++y)
   //     {
@@ -207,7 +207,7 @@ void correl()
 
 
 
-  // ########################################### MAKING A MATRIX OF NORMALIZED DATA##########################################################################################################################
+  // ########################################### MAKING A MATRIX OF NORMALIZED DATA###########################################
   double * Valid_matrix = (double * )malloc( sizeof(double)*valid.size()*g[3]);
   # pragma omp parallel for
   for (int i = 0; i < valid.size(); ++i)
@@ -219,13 +219,12 @@ void correl()
 	}
   }
 
-  // ##########################################END######################################################################################################################################################################
-
+  // ##########################################END#############################################################################
    // clock_t tStart = clock();
   // free(EXY);
   free(EX_sq);
   if(seedcmp == true){
-	// ########################################### MAKING A SEED VECTOR ##########################################################################################################################
+	// ########################################### MAKING A SEED VECTOR #######################################################
   	int no_roi = 0;
   	std::vector<Valid> seeds;
 	double * seed = (double * )malloc( sizeof(double)*g[3]);
@@ -278,7 +277,7 @@ void correl()
 		seed[t]/=no_roi;
 	}
 
-	// ##########################################END######################################################################################################################################################################
+	// ##########################################END#############################################################
 
 	g_copy.dim[0] = g[0];
 	g_copy.dim[1] = g[1];
@@ -292,7 +291,7 @@ void correl()
 		 for (int z = 0; z < g[2]; ++z)
 			image_data_cpy[((z)*g[1]+y)*g[0]+x] = 0;
 
-	// #############################FINDING MATRIX FOR CORRELATION OF A SEED######################################################################################################################
+	// #############################FINDING MATRIX FOR CORRELATION OF A SEED#####################################
 
 	clock_t tStart = clock();
 
@@ -334,12 +333,12 @@ void correl()
 	//std::cout<<"nC2 begin"<<std::endl;
 	 std::cout<< ((double)(clock() - tStart)/CLOCKS_PER_SEC)<<",";
 
-	// #####################################################END#########################################################################################################################
+	// #####################################################END##########################################################
 
   }else if(all == true){
 
 	
-	// #############################FINDING MATRIX FOR CORRELATION OF COMBINATION######################################################################################################################
+	// #############################FINDING MATRIX FOR CORRELATION OF COMBINATION########################################
 	free(EX);
 	int dime = g[3];
 	int n =  8192;
@@ -395,8 +394,9 @@ void correl()
 	  // std::cout<<<<std::endl;
 	  // std::cout<<"done something..."<<std::endl;
 	  // std::cout<<"cblas_dgemm("<<CblasRowMajor<<","<<CblasNoTrans<<","<<CblasNoTrans<<","<<n<<","<<n<<","<<dime<<","<<1.0<<","<<"Valid_matrix"<<","<<dime<<","<<"Valid_matrix_trans,"<<n<<","<<0.0<<",res,"<<n<<")"<<std::endl;
-	  
-	  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,n2,n3,dime,1.0,Valid_matrix_chunk,dime,Valid_matrix_chunk_trans,n3,0.0,res,n3);
+	  double timeseries = 1/float(g[3]);
+
+	  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,n2,n3,dime,timeseries,Valid_matrix_chunk,dime,Valid_matrix_chunk_trans,n3,0.0,res,n3);
 	   //std::cout<<"Time taken:  for CORRELATION "<< ((double)(clock() - tStart)/CLOCKS_PER_SEC)<<std::endl;
 	  timeTk += (double)(clock() - tStart)/CLOCKS_PER_SEC ;
 	  # pragma omp parallel for

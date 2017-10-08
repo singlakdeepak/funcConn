@@ -15,6 +15,23 @@ highpass_lowpass_operand = lambda x: '-bptf %.10f %.10f' % x
 
 
 def give_Slice_Timer_Node(SliceTimeCorrect,time_repeat):
+'''
+    It gives the type of slicetimer to be used in the script according to SliceTimeCorrect
+    Parameters
+    ----------
+    Inputs::
+    Slicetimcorrect:
+    # 1 : From top to down
+    # 2 : From bottom to up
+    # 3 : Interleaved
+    # 4 : Custom order file is given 
+    # 5 : Custom timings file is given
+
+    time_repeat : repetition time in seconds
+    
+    Outputs::
+    slicetimer: Slice Timer Node
+'''
     if (SliceTimeCorrect ==1):
         slicetimer = MapNode(fsl.SliceTimer(index_dir=True,
                                      interleaved=False,
@@ -58,7 +75,9 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
                                 SliceTimeCorrect = 0,
                                 time_repeat = 3):
     """
-    Preprocess each run with FSL independently of the others
+    Preprocess each run with FSL independently of the others. It has some modifications. 
+    In case we don't want to use some nodes, those are specified to be false.
+
     Parameters
     ----------
     ::
@@ -67,7 +86,21 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
     Inputs::
         inputspec.func : functional runs (filename or list of filenames)
         inputspec.fwhm : fwhm for smoothing with SUSAN
-        inputspec.highpass : HWHM in TRs (if created with highpass=True)
+        inputspec.highpass : It is a tuple (Highpass sigma, LowPass sigma). To be passed only when
+                            highpass is true.
+        highpass : whether Highpass and/or lowpass is to be done or not.
+        Intensity_Norm : whether Intensity Normalization is to be done or not.
+        BETextract : whether BETextract is to be done or not.
+        MotionCorrection: #0 : No motion correction, #1: MCFlirt
+        SliceTimeCorrect: 
+              #0 : No Slice Time Correction
+              # 1 : From top to down
+              # 2 : From bottom to up
+              # 3 : Interleaved
+              # 4 : Custom order file is given 
+              # 5 : Custom timings file is given
+        time_repeat: Repetion time of the volume or scan.
+
     Outputs::
         outputspec.reference : volume to which runs are realigned
         outputspec.motion_parameters : motion correction parameters
@@ -82,7 +115,7 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
     >>> preproc = create_parallelfeat_preproc()
     >>> preproc.inputs.inputspec.func = ['f3.nii', 'f5.nii']
     >>> preproc.inputs.inputspec.fwhm = 5
-    >>> preproc.inputs.inputspec.highpass = 128./(2*2.5)
+    >>> preproc.inputs.inputspec.highpass = (12,15)
     >>> preproc.base_dir = '/tmp'
     >>> preproc.run() # doctest: +SKIP
     >>> preproc = create_parallelfeat_preproc(highpass=False)
@@ -154,7 +187,8 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
     
     
     """
-    Realign the functional runs to the reference (1st volume of first run)
+    Realign the functional runs to the reference (1st volume of first run).
+    The MCFLIRT uses the mean image for aligning all the other volumes to it.
     """
     
     motion_correct = MapNode(interface=fsl.MCFLIRT(save_mats = True,
@@ -172,7 +206,8 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
     plot_motion.iterables = ('plot_type', ['rotations', 'translations'])
 
     """
-    Extract the mean volume of the first functional run
+    Extract the mean volume of the first functional run.
+    This extract the mean volume of the functional run. 
     """
 
     meanfunc = MapNode(interface=fsl.ImageMaths(op_string = '-Tmean',
@@ -206,7 +241,8 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
                            name='getthreshold')        
 
     """
-    Threshold the first run of the functional data at 10% of the 98th percentile
+    Threshold the first run of the functional data at 10% of the 98th percentile.
+
     """
 
     threshold = MapNode(interface=fsl.ImageMaths(out_data_type='char',
@@ -215,7 +251,8 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
                            name='threshold')    
 
     """
-    Determine the median value of the functional runs using the mask
+    Determine the median value of the functional runs using the mask.
+    The median values means having p 50.
     """
 
     medianval = MapNode(interface=fsl.ImageStats(op_string='-k %s -p 50'),
@@ -223,7 +260,8 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
                            name='medianval')
 
     """
-    Dilate the mask
+    Dilate the mask. It is used for SUSAN smoothing since dilating the mask 
+    makes the smoothing go better.
     """
     dilatemask = MapNode(interface=fsl.ImageMaths(suffix='_dil',
                                                   op_string='-dilF'),
@@ -231,7 +269,9 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
                             name='dilatemask')
 
     """
-    Mask the motion corrected functional runs with the dilated mask
+    Mask the motion corrected functional runs with the dilated mask.
+    Dilate mask is also applied on all the volumes and in case the output of 
+    SUSAN smoothing is not chosen, it comes out to be the final answer. 
     """
 
     maskfunc2 = MapNode(interface=fsl.ImageMaths(suffix='_mask',
@@ -240,7 +280,11 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
                           name='maskfunc2')
     
     def whether_BETextract_or_not(featpreproc,MotionCorrection = 0, SliceTimeCorrect =0, BETextract = True):
-
+    '''
+    It selects whether BET is to be done or not and in according to that attaches the nodes. 
+    In case the Motion Correction is not done, then MCFLIRT node is not attached. In case the Slice Time 
+    Correction is not required, then it is not attached in the pipeline. 
+    '''
         if ((MotionCorrection ==0)and (SliceTimeCorrect==0)):
             if BETextract:
                 featpreproc.connect(img2float, 'out_file', meanfunc, 'in_file')
@@ -283,6 +327,10 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
     """
     Realign the functional runs to the reference (1st volume of first run)
     """
+    '''
+    Also, in case the Motion Correction is done, it becomes an input to the latter nodes. If the 
+    slice timing is done then it is used as the input. 
+    '''
     if (MotionCorrection == 1):
         featpreproc.connect(img2float, 'out_file', extract_ref, 'in_file')
         featpreproc.connect(img2float, ('out_file', Preprocessor.pickmiddle), extract_ref, 't_min')
@@ -410,7 +458,8 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
     selectnode = Node(interface=util.Select(),name='select')
     
     """
-    Scale the median value of the run is set to 10000
+    Scale the median value of the run is set to 10000.
+    This node is for Intensity normalization. 
     """
 
     meanscale = MapNode(interface=fsl.ImageMaths(suffix='_gms'),
@@ -645,14 +694,11 @@ def reg_workflow(no_subjects, name = 'registration'):
         name : name of workflow (default: 'registration')
     Inputs::
         inputspec.source_files : files (filename or list of filenames to register)
-        inputspec.mean_image : reference image to use
-        inputspec.anatomical_image : anatomical image to coregister to
+        inputspec.anatomical_images : anatomical images in the same subject-wise order for coregistration.
         inputspec.target_image : registration target
     Outputs::
         outputspec.func2anat_transform : FLIRT transform
-        outputspec.anat2target_transform : FLIRT+FNIRT transform
         outputspec.transformed_files : transformed files in target space
-        outputspec.transformed_mean : mean image in target space
     Example
     -------
     """
@@ -668,6 +714,26 @@ def reg_workflow(no_subjects, name = 'registration'):
                                                                   ]),
                          name='outputspec')
     if (no_subjects ==1):
+        '''
+        Different case defined in case the number of subjects are 1. Otherwise fsl.FAST() node was 
+        giving the error. 
+        Pipeline:
+        #1 : Calculate the mean image from the functional run.
+        #2 : Do BET on the mean image.
+        #3 : FAST is done for segmenting the White matter.
+        #4 : Binarize is done for making the mask out of the file generated after the
+             FAST segmentation.
+        #5 : Now calculate the mean 2 anamtomical co-registration matrix. 
+        #6 : BBR is done for refining the matrix generated from mean2anatomical co-reg.
+        #7 : Now, calculate the transformation from anatomical to reference file. 
+        #8 : Calculate the mask from the transformed anat2target file.
+        #9 : Now , apply transformation using the target_image as reference and 
+             mean2anat matrix as transformation matrix. Keep Spline interpolation.
+        #10 : Now mask the output with the anat2targetmask so that the values outside 
+              the brain go zero. 
+
+        '''
+
         meanfunc = Node(fsl.ImageMaths(op_string='-Tmean',suffix='_mean'), name = 'meanfunc')
         stripper = Node(fsl.BET(), name='stripper')
         fast = Node(fsl.FAST(), name = 'fast')

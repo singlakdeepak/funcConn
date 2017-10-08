@@ -24,7 +24,7 @@ with open(JSONFile) as JSON:
 def get_TR(in_file):
     import nibabel
     f = nibabel.load(in_file)
-    return f.get_header()['dim'][0]#['pixdim'][1:4].tolist(), f.get_header()['pixdim'][4]
+    return f.get_header()['dim'][0]
 
 
 def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
@@ -99,24 +99,6 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
 
     if Registration:
         datasinkouts_afterreg = []
-        # for i in range(no_subjects):
-            # RESULTS_REG_DATASINK = OUTPUT_DIR + '/tmp/%s_%s/datasink/'%(RegistrationName,i)
-        #     Reg_WorkFlow = parallelPreproc.reg_workflow(name = '%s_%s'%(RegistrationName ,i))
-
-        #     Reg_WorkFlow.inputs.inputspec.source_files = datasinkouts[i]
-        #     Reg_WorkFlow.inputs.inputspec.anatomical_images = StructuralFiles[i]
-        #     Reg_WorkFlow.inputs.inputspec.target_image = ReferenceFile
-        #     Reg_WorkFlow.base_dir = TEMP_DIR_FOR_STORAGE
-        #     Reg_WorkFlow.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
-        #     regoutputs = Reg_WorkFlow.run()
-        #     datasink_results=[]
-        #     datasink_results += [each for each in os.listdir(RESULTS_REG_DATASINK) if each.endswith('.json')]
-        #     with open(RESULTS_REG_DATASINK + datasink_results[0]) as JSON:
-        #         datafile = json.load(JSON)
-        #         datafile = datafile[0][1][0][1][0][0]
-        #     ProcessedFiles_Address = '%sProcessedFile_sub%s.nii.gz'%(dst,i)
-        #     ProcessedFilesDIRADDRESSES += [ProcessedFiles_Address]
-        #     shutil.copy(datafile,ProcessedFiles_Address)
         RESULTS_REG_DATASINK = OUTPUT_DIR + '/tmp/%s/datasink/'%RegistrationName
         Reg_WorkFlow = parallelPreproc.reg_workflow(no_subjects,name = RegistrationName)
         if (no_subjects ==1):
@@ -135,9 +117,7 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
             datafile = json.load(JSON)
 
             datafile = datafile[0][1][0][1]
-        # # ProcessedFiles_Address = '%sProcessedFile_sub%s.nii.gz'%(dst,i)
-        # # ProcessedFilesDIRADDRESSES += [ProcessedFiles_Address]
-        # # shutil.copy(datafile,ProcessedFiles_Address)
+
         datasinkouts=[]
         if (no_subjects==1):
             datasinkouts +=[datafile[0]]
