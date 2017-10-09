@@ -23,7 +23,7 @@ struct Valid{
 int x,y,z;
 };
 
-std::string type(".bin"),ofname,ipfilename;
+std::string type(".csv"),ofname,ipfilename;
 bool input = false,roi = false,output=false,gzip = false;
 // dcm = false;
 // char ipfilename[400]
@@ -396,47 +396,48 @@ void correl()
 	  // std::cout<<"cblas_dgemm("<<CblasRowMajor<<","<<CblasNoTrans<<","<<CblasNoTrans<<","<<n<<","<<n<<","<<dime<<","<<1.0<<","<<"Valid_matrix"<<","<<dime<<","<<"Valid_matrix_trans,"<<n<<","<<0.0<<",res,"<<n<<")"<<std::endl;
 	  double timeseries = 1/float(g[3]);
 
-	  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,n2,n3,dime,timeseries,Valid_matrix_chunk,dime,Valid_matrix_chunk_trans,n3,0.0,res,n3);
+	  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,n2,n3,dime,1.0,Valid_matrix_chunk,dime,Valid_matrix_chunk_trans,n3,0.0,res,n3);
 	   //std::cout<<"Time taken:  for CORRELATION "<< ((double)(clock() - tStart)/CLOCKS_PER_SEC)<<std::endl;
 	  timeTk += (double)(clock() - tStart)/CLOCKS_PER_SEC ;
 	  # pragma omp parallel for
 	  for (int resi = 0; resi < n2; ++resi)
 	  {
-		double *arr = (double *)malloc(sizeof(double)*n3);
+		// double *arr = (double *)malloc(sizeof(double)*n3);
 		std::string filename("/voxel/voxel_");
 		filename = ofname + filename;
 		filename+= std::to_string(starti+resi);
 		filename+=type;
 		//direc.insert( ( ( valid[starti + resi].z*g[1] + valid[starti + resi].y )*g[0] + valid[starti + resi]x ) ,starti+resi);
 		const char *s1 = filename.c_str();
-		std::ofstream f(s1,std::ios::binary|std::ios::app);
+//		std::ofstream f(s1,std::ios::binary|std::ios::app);
+		std::ofstream f(s1,std::ios::app);
 		for (int resj = 0; resj < n3; ++resj)
-		   arr[resj] = res[resi*n+resj];
-		  f.write(reinterpret_cast<char *>(&arr),sizeof(double)*n3);
-		  // fprintf(f, "%f ",res[resi*n+resj]);
+		   f<< res[resi*n+resj]<<'\n';
+		  //f.write(reinterpret_cast<char *>(&arr),sizeof(double)*n3);
+		   //fprintf(f, "%f ",res[resi*n+resj]);
 
 		f.close();
-		free(arr);
+		// free(arr);
 
 	  }
 	if(starti!=startj){
 		#pragma omp parallel for
 		for (int resj = 0; resj < n3; ++resj)
 		{
-		  double *arr = (double *)malloc(sizeof(double)*n3);
+		  //double *arr = (double *)malloc(sizeof(double)*n3);
 		  std::string filename("/voxel/voxel_");
 		  filename = ofname + filename;
 		  filename+= std::to_string(startj+resj);
 		  const char *s1 = filename.c_str();
 		  filename+=type;
-		  std::ofstream f(s1,std::ios::binary|std::ios::app);
+		  std::ofstream f(s1,std::ios::app);
 		  for (int resi = 0; resi < n2; ++resi)
-			arr[resj] = res[resi*n+resj];
-			f.write(reinterpret_cast<char *>(&arr),sizeof(double)*n3);
+			f << res[resi*n+resj]<<'\n';
+			//f.write(reinterpret_cast<char *>(&arr),sizeof(double)*n3);
 			// f.write((char*)&res[resi*n+resj],sizeof(double));
 			// fprintf(f, "%f ",res[resi*n+resj]);
 		  f.close();
-		  free(arr);
+		  //free(arr);
 		}  
 	  }
 
