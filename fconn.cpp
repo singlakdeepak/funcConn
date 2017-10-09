@@ -193,7 +193,8 @@ void correl()
 		  }
 		  
 		  EX[ (x*g[1] +y)*g[2] + z] = temp;
-		  EX_sq[ (x*g[1] +y)*g[2] + z] = sqrt(temp2);
+		  EX_sq[ (x*g[1] +y)*g[2] + z] = sqrt(temp2- temp*temp);
+
 		  // image_data_cpy[((z)*g[1]+y)*g[0]+x] = 0;
 		}
 	  } 
@@ -213,8 +214,13 @@ void correl()
   for (int i = 0; i < valid.size(); ++i)
   {
 	for (int t = 0; t < g[3]; ++t){
-	  image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] =(double)(image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] - EX[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z])/(EX_sq[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z]);
-	  Valid_matrix[i*g[3]+t] = image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x];
+		double currentdev = EX_sq[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z];
+		if (currentdev < 0.005)
+			image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] = 0; 
+		else{
+	  		image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] =(double)(image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] - EX[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z])/currentdev;
+	  		Valid_matrix[i*g[3]+t] = image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x];
+		}
 
 	}
   }
@@ -396,7 +402,7 @@ void correl()
 	  // std::cout<<"cblas_dgemm("<<CblasRowMajor<<","<<CblasNoTrans<<","<<CblasNoTrans<<","<<n<<","<<n<<","<<dime<<","<<1.0<<","<<"Valid_matrix"<<","<<dime<<","<<"Valid_matrix_trans,"<<n<<","<<0.0<<",res,"<<n<<")"<<std::endl;
 	  double timeseries = 1/float(g[3]);
 
-	  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,n2,n3,dime,1.0,Valid_matrix_chunk,dime,Valid_matrix_chunk_trans,n3,0.0,res,n3);
+	  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,n2,n3,dime,timeseries,Valid_matrix_chunk,dime,Valid_matrix_chunk_trans,n3,0.0,res,n3);
 	   //std::cout<<"Time taken:  for CORRELATION "<< ((double)(clock() - tStart)/CLOCKS_PER_SEC)<<std::endl;
 	  timeTk += (double)(clock() - tStart)/CLOCKS_PER_SEC ;
 	  # pragma omp parallel for
@@ -410,9 +416,13 @@ void correl()
 		//direc.insert( ( ( valid[starti + resi].z*g[1] + valid[starti + resi].y )*g[0] + valid[starti + resi]x ) ,starti+resi);
 		const char *s1 = filename.c_str();
 //		std::ofstream f(s1,std::ios::binary|std::ios::app);
-		std::ofstream f(s1,std::ios::app);
-		for (int resj = 0; resj < n3; ++resj)
-		   f<< res[resi*n+resj]<<'\n';
+		std::ofstream f(s1,std::ios::binary|std::ios::app);
+		for (int resj = 0; resj < n3; ++resj){
+		   // f<< res[resi*n+resj]<<'\n';
+		   double tmp = res[resi*n+resj];
+		  f.write(reinterpret_cast<char *>(&tmp),sizeof(double));
+
+		}
 		  //f.write(reinterpret_cast<char *>(&arr),sizeof(double)*n3);
 		   //fprintf(f, "%f ",res[resi*n+resj]);
 
@@ -430,9 +440,12 @@ void correl()
 		  filename+= std::to_string(startj+resj);
 		  const char *s1 = filename.c_str();
 		  filename+=type;
-		  std::ofstream f(s1,std::ios::app);
-		  for (int resi = 0; resi < n2; ++resi)
-			f << res[resi*n+resj]<<'\n';
+		  std::ofstream f(s1,std::ios::binary|std::ios::app);
+		  for (int resi = 0; resi < n2; ++resi){
+		  	double tmp = res[resi*n+resj];
+		  	f.write(reinterpret_cast<char *>(&tmp),sizeof(double));
+		  }
+			// f << res[resi*n+resj]<<'\n';
 			//f.write(reinterpret_cast<char *>(&arr),sizeof(double)*n3);
 			// f.write((char*)&res[resi*n+resj],sizeof(double));
 			// fprintf(f, "%f ",res[resi*n+resj]);
