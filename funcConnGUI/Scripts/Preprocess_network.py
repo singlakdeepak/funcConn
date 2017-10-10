@@ -331,12 +331,20 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
     Also, in case the Motion Correction is done, it becomes an input to the latter nodes. If the 
     slice timing is done then it is used as the input. 
     '''
+
     if (MotionCorrection == 1):
-        featpreproc.connect(img2float, 'out_file', extract_ref, 'in_file')
-        featpreproc.connect(img2float, ('out_file', Preprocessor.pickmiddle), extract_ref, 't_min')
-        featpreproc.connect(extract_ref, 'roi_file', outputnode, 'reference')
+        if (SliceTimeCorrect != 0): 
+            slicetimer = give_Slice_Timer_Node(SliceTimeCorrect,time_repeat)
+            featpreproc.connect(img2float, 'out_file', slicetimer, 'in_file')
+            featpreproc.connect(slicetimer, 'out_file', extract_ref, 'in_file')
+            featpreproc.connect(slicetimer, ('out_file', Preprocessor.pickmiddle), extract_ref, 't_min')
+            featpreproc.connect(slicetimer, 'out_file', motion_correct, 'in_file')
+        else:
+            featpreproc.connect(img2float, 'out_file', extract_ref, 'in_file')
+            featpreproc.connect(img2float, ('out_file', Preprocessor.pickmiddle), extract_ref, 't_min')
+            featpreproc.connect(img2float, 'out_file', motion_correct, 'in_file')
         
-        featpreproc.connect(img2float, 'out_file', motion_correct, 'in_file')
+        featpreproc.connect(extract_ref, 'roi_file', outputnode, 'reference')
         featpreproc.connect(extract_ref, 'roi_file', motion_correct, 'ref_file')
         featpreproc.connect(motion_correct, 'par_file', outputnode, 'motion_parameters')
         featpreproc.connect(motion_correct, 'out_file', outputnode, 'realigned_files')
@@ -348,47 +356,27 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
         """
         SliceTimer - correct for slice wise acquisition
         """
-        if (SliceTimeCorrect != 0):
-            slicetimer = give_Slice_Timer_Node(SliceTimeCorrect,time_repeat)
-
-            featpreproc.connect(motion_correct, 'out_file', slicetimer, 'in_file')
             
-            featpreproc = whether_BETextract_or_not(featpreproc,
-                                                    MotionCorrection = MotionCorrection, 
-                                                    SliceTimeCorrect = SliceTimeCorrect, 
-                                                    BETextract = BETextract)
-            """
-            Define a function to get 10% of the intensity
-            """
-            featpreproc.connect(getthresh, ('out_stat', getthreshop), threshold, 'op_string')
-            featpreproc.connect(slicetimer, 'slice_time_corrected_file', medianval, 'in_file')
-            featpreproc.connect(threshold, 'out_file', medianval, 'mask_file')
-            featpreproc.connect(threshold, 'out_file', dilatemask, 'in_file')
-            featpreproc.connect(dilatemask, 'out_file', outputnode, 'mask')
-            featpreproc.connect(slicetimer, 'slice_time_corrected_file', maskfunc2, 'in_file')
-            featpreproc.connect(dilatemask, 'out_file', maskfunc2, 'in_file2')            
-            
-        else:
-            featpreproc = whether_BETextract_or_not(featpreproc,
+        featpreproc = whether_BETextract_or_not(featpreproc,
                                                     MotionCorrection = MotionCorrection, 
                                                     SliceTimeCorrect = SliceTimeCorrect, 
                                                     BETextract = BETextract)         
-            """
-            Define a function to get 10% of the intensity
-            """
+        """
+        Define a function to get 10% of the intensity
+        """
 
-            featpreproc.connect(getthresh, ('out_stat', getthreshop), threshold, 'op_string')
+        featpreproc.connect(getthresh, ('out_stat', getthreshop), threshold, 'op_string')
 
-            featpreproc.connect(motion_correct, 'out_file', medianval, 'in_file')
-            featpreproc.connect(threshold, 'out_file', medianval, 'mask_file')
+        featpreproc.connect(motion_correct, 'out_file', medianval, 'in_file')
+        featpreproc.connect(threshold, 'out_file', medianval, 'mask_file')
 
 
-            featpreproc.connect(threshold, 'out_file', dilatemask, 'in_file')
-            featpreproc.connect(dilatemask, 'out_file', outputnode, 'mask')
+        featpreproc.connect(threshold, 'out_file', dilatemask, 'in_file')
+        featpreproc.connect(dilatemask, 'out_file', outputnode, 'mask')
 
-            featpreproc.connect(motion_correct, 'out_file', maskfunc2, 'in_file')
-            featpreproc.connect(dilatemask, 'out_file', maskfunc2, 'in_file2')
-    
+        featpreproc.connect(motion_correct, 'out_file', maskfunc2, 'in_file')
+        featpreproc.connect(dilatemask, 'out_file', maskfunc2, 'in_file2')
+
     else:
 
         """
