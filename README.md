@@ -9,7 +9,7 @@ FCONN is a multi processing FMRI toolkit for functional connectivity analysis. I
 ## PRE-REQUISITES
 Before instaling this one must have the following softwares downloaded and configured on their PC :-
 * GCC Compiler 5.0
-* Automatically Tuned Linear Algebra Software (ATLAS) [It must be configured on the pc] *ATLAS can be downloaded from http://math-atlas.sourceforge.net/*
+* [Automatically Tuned Linear Algebra Software (ATLAS)](http://math-atlas.sourceforge.net/) [It must be configured on the pc]
 * QTCreator v5.7
 * FSL Software
 
