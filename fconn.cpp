@@ -171,7 +171,7 @@ void correl()
 		  for (int t = 0; t < g[3]; ++t)
 		  {
 			temp += (double)image_data[((t*g[2] + z)*g[1]+y)*g[0]+x]/g[3] ;
-			temp2 += (double)image_data[((t*g[2] + z)*g[1]+y)*g[0]+x]*image_data[((t*g[2] + z)*g[1]+y)*g[0]+x]/g[3];
+			temp2 += temp*temp*g[3];
 		  }
 		  // std::cout<<temp<<std::endl;
 		  if(temp > max(20,thresh)){
@@ -215,11 +215,16 @@ void correl()
   {
 	for (int t = 0; t < g[3]; ++t){
 		double currentdev = EX_sq[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z];
-		if (currentdev < 0.005)
-			image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] = 0; 
+		double tempNormdata;
+		if (currentdev < 0.005){
+			tempNormdata = 0;
+			image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] = tempNormdata;
+			Valid_matrix[i*g[3]+t] = tempNormdata;
+		}
 		else{
-	  		image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] =(double)(image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] - EX[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z])/currentdev;
-	  		Valid_matrix[i*g[3]+t] = image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x];
+			tempNormdata = (double)(image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] - EX[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z])/currentdev;
+	  		image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] = tempNormdata;
+	  		Valid_matrix[i*g[3]+t] = tempNormdata;
 		}
 
 	}
