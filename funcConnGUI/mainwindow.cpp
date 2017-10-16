@@ -15,6 +15,11 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
 //    Environment.currentEnv():{
+    /*This is the main window which will appear as you run
+     * the GUI. Some of the boxes have been checked false and some have
+     * hidden according to the requirements of the program.
+     *
+     */
     char* env = getenv("FSLDIR");
     ui->setupUi(this);
     ui->radioButton_Unprocessed->setChecked(true);
@@ -33,12 +38,16 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->radioButton_JointFDR->setChecked(true);
     ui->lineEdit_highpass->hide();
     ui->lineEdit_lowpass->hide();
+
+    //Here I set the default name for the Analysis. It can be changed accordingly.
     QString DefAnalysisName = "FConnectivityAnl";
 
+    //In case 'FSLDIR' path exists, the box will get flooded.
     if (QDir(env).exists()){
         ui->lineEdit_FSLDIR->setText(env);
     }
 
+    //OutDir stores the current directory we are in.
     ui->lineEdit_AnalysisName->setText(DefAnalysisName);
     ui->lineEdit_OutDir->setText(OutDir + DefAnalysisName);
 }
@@ -46,13 +55,24 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
+    // Deletes the ui when we exit the mainwindow.
     delete ui;
 }
 
 void MainWindow::on_pushButton_chooseData_clicked()
 {
-
+    /*
+     * Function to be performed when the 'Choose Data'
+     * button is clicked. If the preprocessing has already been
+     * done with FSL, then we just need to take the FEAT folders
+     * else we need to display a different window where both
+     * functional and structural files are to be given.
+     */
     if (ui->radioButton_PreprocwFSL->isChecked()){
+        // Preprocessing done with FSL
+        // Displays the 'editFeat' window and set number of
+        // groups equal to spinBoxvalue. At the end, we need to
+        // get the Feat File names.
         editFeat editfeat;
         editfeat.setGroups(spinBoxValue);
         editfeat.setModal(true);
@@ -60,6 +80,10 @@ void MainWindow::on_pushButton_chooseData_clicked()
         FeatFileNames= editfeat.get_FileNames();
     }
     else {
+        // No preprocessing done or done without FSL.
+        // Displays the 'editlist' window and set number of
+        // groups equal to spinBoxvalue. At the end, we need to get
+        // lists of Functional and Structural files.
         EditList editlist;
         editlist.setGroups(spinBoxValue);
         editlist.setModal(true);
@@ -72,6 +96,7 @@ void MainWindow::on_pushButton_chooseData_clicked()
 
 void MainWindow::on_pushButton_7_clicked()
 {
+    // Displays the help information
     QMessageBox::information(this,"Help", "Put the reference MNI structural file here.");
 }
 
@@ -98,13 +123,19 @@ void MainWindow::on_pushButton_18_clicked()
 
 void MainWindow::on_commandLinkButton_Reference_clicked()
 {
+    /*
+     * Sets the Reference MNI space File in the lineEdit box.
+     */
     QString new_input;
+
+    // Get the input already present in the cell.
     QString already_input = ui->lineEdit_Reference->text();
     QFile Fout(already_input) ;
 
     if (Fout.exists())
     {
-            new_input=QFileDialog::getOpenFileName(
+        // If such file exists, then opne the Directory chooser from that path.
+        new_input=QFileDialog::getOpenFileName(
                                                     this,
                                                     tr("Open File"),
                                                     already_input,
@@ -113,6 +144,7 @@ void MainWindow::on_commandLinkButton_Reference_clicked()
     }
     else
     {
+        // else open it from the default path.
         new_input=QFileDialog::getOpenFileName(
                                                 this,
                                                 tr("Open File"),
@@ -121,8 +153,9 @@ void MainWindow::on_commandLinkButton_Reference_clicked()
                                                    );
     }
     if (new_input!=NULL){
+        // It is used for handling the CANCEL button. In case the cancel is clicked in
+        // directory chooser, then we need to set it to previous input else the new input.
     ui->lineEdit_Reference->setText(new_input);
-
     }
     else {
         ui->lineEdit_Reference->setText(already_input);
@@ -131,6 +164,11 @@ void MainWindow::on_commandLinkButton_Reference_clicked()
 
 void MainWindow::on_commandLinkButton_OutDir_clicked()
 {
+    /*
+     * The function is same as that of Reference File Command button.
+     * There's a difference just in populating the box. We need to add the Analysis Name
+     * at the end. This function is used for giving the Output Directory.
+     */
     QString new_Dir;
 
     if (QDir(OutDir).exists())
@@ -157,6 +195,10 @@ void MainWindow::on_commandLinkButton_OutDir_clicked()
 
 void MainWindow::on_commandLinkButton_ROIFile_clicked()
 {
+    /*
+     * This function is also same as that of Reference File command button.
+     * It is used for selecting the ROI file input.
+     */
     QString new_input;
     QString already_input = ui->lineEdit_ROIFile->text();
     QFile Fout(already_input) ;
@@ -190,6 +232,9 @@ void MainWindow::on_commandLinkButton_ROIFile_clicked()
 
 void MainWindow::on_commandLinkButton_FSLDIR_clicked()
 {
+    /*
+     * TO BE REVIEWED. THE FN IS NOT YET COMPLETE.
+     */
 
     QString filename=QFileDialog::getExistingDirectory(
                                                 this,
@@ -202,6 +247,7 @@ void MainWindow::on_commandLinkButton_FSLDIR_clicked()
 
 void MainWindow::on_commandLinkButton_CorrFile_clicked()
 {
+
     QString new_input;
     QString already_input = ui->lineEdit_CorrFile->text();
     QFile Fout(already_input) ;
