@@ -5,21 +5,7 @@ import Preprocess_network as parallelPreproc
 import timeit
 import os
 import shutil
-start = timeit.default_timer()
-# JSONFile = sys.argv[1]
-JSONFile = '/home/deepak/Desktop/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
-with open(JSONFile) as JSON:
-    try :
-        
-        data = json.load(JSON)
-        AnalysisName = data['Analysis Name']
-    #     print(AnalysisName)
-        WorkingDir = data['WorkingDir']
-        AnalysisParams = data['AnalysisParams']
-        
-    except :
-        print('Unexpected error:', sys.exc_info()[0])
-        raise
+import subprocess
 
 def get_TR(in_file):
     import nibabel
@@ -59,6 +45,7 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
                                     MotionCorrection = MotionCorrection, 
                                     SliceTimeCorrect = SliceTimeCorrect,
                                     time_repeat = TR)
+
         preproc.inputs.inputspec.highpass = (HPsigma,LPsigma)
         preproc.inputs.inputspec.func = FunctionalFiles
         preproc.inputs.inputspec.fwhm = FWHM
@@ -131,20 +118,63 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
         shutil.copy(datasinkouts[j],ProcessedFiles_Address)
     return ProcessedFilesDIRADDRESSES
 
-ReferenceFile = AnalysisParams['ReferSummary']['ReferImgPath']
-ProcessingWay = AnalysisParams['ProcessingType']['ProcessingWay']
-Ngroups = AnalysisParams['No of Groups']
-if (ProcessingWay==0):
-    FunctionaltxtFiles = AnalysisParams['FilesInfo']['FunctionalFilePaths']
-    StructuraltxtFiles = AnalysisParams['FilesInfo']['StructuralFilePaths']
+if __name__ == '__main__':
+    start = timeit.default_timer()
+    # JSONFile = sys.argv[1]
+    JSONFile = '/home/deepak/Desktop/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
+    with open(JSONFile) as JSON:
+        try :
+            
+            data = json.load(JSON)
+            AnalysisName = data['Analysis Name']
+        #     print(AnalysisName)
+            WorkingDir = data['WorkingDir']
+            AnalysisParams = data['AnalysisParams']
+            
+        except :
+            print('Unexpected error:', sys.exc_info()[0])
+            raise
+    ROIFile = AnalysisParams['ROIFilePath']
+    ReferenceFile = AnalysisParams['ReferSummary']['ReferImgPath']
+    ProcessingWay = AnalysisParams['ProcessingType']['ProcessingWay']
+    Ngroups = AnalysisParams['No of Groups']
+    OUTPUT_DIR = AnalysisParams['OutputInfo']['OutDirectory']
+    TEMP_DIR_FOR_STORAGE = OUTPUT_DIR + '/tmp'
+    if (ProcessingWay==0):
+        FunctionaltxtFiles = AnalysisParams['FilesInfo']['FunctionalFilePaths']
+        StructuraltxtFiles = AnalysisParams['FilesInfo']['StructuralFilePaths']
 
-    for i in range(0,Ngroups):
-        with open(FunctionaltxtFiles[i]) as file:
-            FunctionalFiles_in_this_group = [line.strip('\n') for line in file]
-        with open(StructuraltxtFiles[i]) as file:
-            StructuralFiles_in_this_group = [line.strip('\n') for line in file]
-        Preprocessed_Files = run_Preprocessing(AnalysisParams, FunctionalFiles_in_this_group, StructuralFiles_in_this_group,Group= i)
-        print(Preprocessed_Files)
+        for i in range(Ngroups):
+            with open(FunctionaltxtFiles[i]) as file:
+                FunctionalFiles_in_this_group = [line.strip('\n') for line in file]
+            with open(StructuraltxtFiles[i]) as file:
+                StructuralFiles_in_this_group = [line.strip('\n') for line in file]
+            Preprocessed_Files = run_Preprocessing(AnalysisParams, FunctionalFiles_in_this_group, StructuralFiles_in_this_group,Group= i)
+            print(Preprocessed_Files)
+            dst = OUTPUT_DIR + '/CorrCalc_group%s/'%i
+            if not (os.path.exists(dst)):
+                os.mkdir(dst)
+            else:
+                shutil.rmtree(dst)
+                os.mkdir(dst)
+            for j in range(len(Preprocessed_Files)):
+                args = ("../../fconn.o", "-i", ProcessedFileName, "-o", dst + 'sub%d'%j, "-r", ROIFile)
+                popen = subprocess.Popen(args, stdout=subprocess.PIPE)
+                popen.wait()
+                output = popen.stdout.read()
+                print(output)
 
-stop = timeit.default_timer()
-print("Total time taken for running the program: ", stop - start)
+    elif (ProcessingWay == 1):
+        '''
+        Already Preprocessed without the use of FSL. We are supplied the list of 
+        Functional and Structural Files.
+        '''
+        FunctionaltxtFiles = AnalysisParams['FilesInfo']['FunctionalFilePaths']
+        StructuraltxtFiles = AnalysisParams['FilesInfo']['StructuralFilePaths']
+        for i in range(Ngroups):
+            with open(FunctionaltxtFiles[i]) as file:
+                FunctionalFiles_in_this_group = [line.strip('\n') for line in file]
+            with open(StructuraltxtFiles[i]) as file:
+                StructuralFiles_in_this_group = [line.strip('\n') for line in file]        
+    stop = timeit.default_timer()
+    print("Total time taken for running the program: ", stop - start)

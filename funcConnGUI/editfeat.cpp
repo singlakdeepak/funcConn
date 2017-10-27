@@ -1,6 +1,7 @@
 /* Author: Deepak Singla (singlakdeepak5@gmail.com)
  * Window for selecting FeatDirectories.
  *
+ * REGEX YET TO BE ADDED. NOT COMPLETE YET.
  */
 
 #include "editfeat.h"
