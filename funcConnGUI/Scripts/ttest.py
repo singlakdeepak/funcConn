@@ -32,8 +32,12 @@ def calc_mean_and_std(ROICorrMaps, n_subjects, mask, applyFisher = False):
     print(ROICorrMaps)
     Sample_mean_Array = np.zeros(dimensions)
     Sample_std_Array = np.zeros(dimensions)
-    Sample_mean_Array = ma.masked_array(Sample_mean_Array, mask = mask, fill_value = 0)
-    Sample_std_Array = ma.masked_array(Sample_std_Array, mask = mask , fill_value = 0)
+    Sample_mean_Array = ma.masked_array(Sample_mean_Array, 
+                                        mask = mask, 
+                                        fill_value = 0)
+    Sample_std_Array = ma.masked_array(Sample_std_Array, 
+                                       mask = mask , 
+                                       fill_value = 0)
     for count, subject in enumerate(ROICorrMaps):
 
         Corr_data = nib.load(subject).get_data()
@@ -48,7 +52,10 @@ def calc_mean_and_std(ROICorrMaps, n_subjects, mask, applyFisher = False):
     Sample_std_Array = np.sqrt(Sample_std_Array/n_subjects - np.square(Sample_mean_Array))
     return Sample_mean_Array,Sample_std_Array
 
-def ttest_1samp_for_all_ROIs(ROICorrMaps, ROIAtlas, PopMean = 0.0, applyFisher = False):
+def ttest_1samp_for_all_ROIs(ROICorrMaps, 
+                                ROIAtlas, 
+                                PopMean = 0.0, 
+                                applyFisher = False):
     '''
     This is the 1 sample t-test for ROI correlation maps.
     df = no of subjects - 1
@@ -75,9 +82,9 @@ def ttest_1samp_for_all_ROIs(ROICorrMaps, ROIAtlas, PopMean = 0.0, applyFisher =
     mask = nib.load(ROIAtlas).get_data()
     totalROIs = np.amax(mask)
     mask = ma.masked_object(mask,0).mask
-    totalROIs = 246
+    # totalROIs = 246
     mask = np.repeat(mask[:, :, :, np.newaxis], totalROIs, axis=3)
-    print(mask.shape)
+
     n_subjects = len(ROICorrMaps)
     Sample_mean_Array, Sample_std_Array = calc_mean_and_std(ROICorrMaps, 
     	                                                    n_subjects,
@@ -88,13 +95,7 @@ def ttest_1samp_for_all_ROIs(ROICorrMaps, ROIAtlas, PopMean = 0.0, applyFisher =
     # pval = stats.t.sf(np.abs(ttest_1samp_for_all), df)*2
     pval = special.betainc(0.5*df, 0.5, df/(df + ttest_1samp_for_all*ttest_1samp_for_all)).reshape(ttest_1samp_for_all.shape)
     ttest_1samp_for_all, pval = ma.filled(ttest_1samp_for_all), ma.filled(pval)
-    
-    header, affine = nib.load(ROICorrMaps[0]).header, nib.load(ROICorrMaps[0]).affine
-    header['dim'][4] = 246
-    File1 = nib.Nifti1Image(ttest_1samp_for_all, affine,header)
-    File2 = nib.Nifti1Image(pval, affine,header)
-    nib.save(File1, 'ttest_file.nii.gz')
-    nib.save(File2, 'pval.nii.gz')
+
     return ttest_1samp_for_all, pval
 
 
@@ -137,8 +138,7 @@ def ttest_ind_samples(ROICorrMapsA, ROICorrMapsB, ROIAtlas, equal_var = True, ap
     else:
         vn1 = Sample_var_ArrayA/n_subjectsA
         vn2 = Sample_var_ArrayB/n_subjectsB
-        with np.errstate(divide='ignore', invalid='ignore'):
-            df = (vn1 + vn2)**2 / (vn1**2 / (n_subjectsA - 1) + vn2**2 / (n_subjectsB - 1))
+        df = (vn1 + vn2)**2 / (vn1**2 / (n_subjectsA - 1) + vn2**2 / (n_subjectsB - 1))
 
         # If df is undefined, variances are zero.
         # It doesn't matter what df is as long as it is not NaN.
@@ -147,7 +147,11 @@ def ttest_ind_samples(ROICorrMapsA, ROICorrMapsB, ROIAtlas, equal_var = True, ap
 
     with np.errstate(divide='ignore', invalid='ignore'):
         ttest_ind = (Sample_mean_ArrayA - Sample_mean_ArrayB) / denom
-    pvalues = stats.t.sf(np.abs(ttest_ind), df)*2
+    pvalues = special.betainc(0.5*df, 0.5, df/(df + ttest_ind*ttest_ind)).reshape(ttest_ind.shape)
+    ttest_ind, pvalues = ma.filled(ttest_ind), ma.filled(pvalues)
+    
+
+    # pvalues = stats.t.sf(np.abs(ttest_ind), df)*2
     return ttest_ind , pvalues
 
 
