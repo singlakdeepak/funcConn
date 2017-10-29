@@ -3,7 +3,7 @@ import numpy as np
 import os
 from scipy import stats
 from numpy import ma
-# from numpy import special
+import scipy.special as special
 
 def div0( a, b ):
     '''
@@ -12,7 +12,7 @@ def div0( a, b ):
 	'''
     """ ignore / 0, div0( [-1, 0, 1], 0 ) -> [0, 0, 0] """
     with np.errstate(divide='ignore', invalid='ignore'):
-        c = np.true_divide( a, b )
+        c = np.divide( a, b )
         # c[ ~ np.isfinite( c )] = 0  # -inf inf NaN
     return c
 
@@ -86,7 +86,8 @@ def ttest_1samp_for_all_ROIs(ROICorrMaps, ROIAtlas, PopMean = 0.0, applyFisher =
     ttest_1samp_for_all = div0((Sample_mean_Array - PopMean) * np.sqrt(n_subjects), Sample_std_Array)
     
     df = n_subjects - 1
-    pval = stats.t.sf(np.abs(ttest_1samp_for_all), df)*2
+    # pval = stats.t.sf(np.abs(ttest_1samp_for_all), df)*2
+    pval = special.betainc(0.5*df, 0.5, df/(df + ttest_1samp_for_all*ttest_1samp_for_all)).reshape(ttest_1samp_for_all.shape)
     return ttest_1samp_for_all, pval
 
 
