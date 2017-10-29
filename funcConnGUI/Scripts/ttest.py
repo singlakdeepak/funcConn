@@ -84,12 +84,17 @@ def ttest_1samp_for_all_ROIs(ROICorrMaps, ROIAtlas, PopMean = 0.0, applyFisher =
                                                             mask, 
     	                                                    applyFisher = applyFisher)
     ttest_1samp_for_all = div0((Sample_mean_Array - PopMean) * np.sqrt(n_subjects), Sample_std_Array)
-    
     df = n_subjects - 1
     # pval = stats.t.sf(np.abs(ttest_1samp_for_all), df)*2
     pval = special.betainc(0.5*df, 0.5, df/(df + ttest_1samp_for_all*ttest_1samp_for_all)).reshape(ttest_1samp_for_all.shape)
-    ttest_1samp_for_all, pval = ma.getdata(ttest_1samp_for_all), ma.getdata(pval)
-
+    ttest_1samp_for_all, pval = ma.filled(ttest_1samp_for_all), ma.filled(pval)
+    
+    header, affine = nib.load(ROICorrMaps[0]).header, nib.load(ROICorrMaps[0]).affine
+    header['dim'][4] = 246
+    File1 = nib.Nifti1Image(ttest_1samp_for_all, affine,header)
+    File2 = nib.Nifti1Image(pval, affine,header)
+    nib.save(File1, 'ttest_file.nii.gz')
+    nib.save(File2, 'pval.nii.gz')
     return ttest_1samp_for_all, pval
 
 

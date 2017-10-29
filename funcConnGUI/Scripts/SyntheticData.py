@@ -16,7 +16,7 @@ start_name_for_file = int(sys.argv[1])
 end_name_for_file = int(sys.argv[2])
 for i in range(start_name_for_file,end_name_for_file+1):
 	Subject = np.random.randn(91,109,91,246)
-	Refer = nib.load('abc.nii.gz')
+	Refer = nib.load('MNI152_T1_2mm_brain_mask.nii.gz')
 	header = Refer.header
 	header['dim'][4] = 246
 	affine = Refer.affine

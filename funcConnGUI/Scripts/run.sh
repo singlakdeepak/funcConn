@@ -1,4 +1,4 @@
-START=3
+START=1
 END=12
 
 for i in `seq $START  $END`;
