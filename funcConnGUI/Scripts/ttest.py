@@ -32,8 +32,8 @@ def calc_mean_and_std(ROICorrMaps, n_subjects, mask, applyFisher = False):
     print(ROICorrMaps)
     Sample_mean_Array = np.zeros(dimensions)
     Sample_std_Array = np.zeros(dimensions)
-    Sample_mean_Array = ma.masked_array(Sample_mean_Array, mask = mask)
-    Sample_std_Array = ma.masked_array(Sample_std_Array, mask = mask)
+    Sample_mean_Array = ma.masked_array(Sample_mean_Array, mask = mask, fill_value = 0)
+    Sample_std_Array = ma.masked_array(Sample_std_Array, mask = mask , fill_value = 0)
     for count, subject in enumerate(ROICorrMaps):
 
         Corr_data = nib.load(subject).get_data()
@@ -88,6 +88,8 @@ def ttest_1samp_for_all_ROIs(ROICorrMaps, ROIAtlas, PopMean = 0.0, applyFisher =
     df = n_subjects - 1
     # pval = stats.t.sf(np.abs(ttest_1samp_for_all), df)*2
     pval = special.betainc(0.5*df, 0.5, df/(df + ttest_1samp_for_all*ttest_1samp_for_all)).reshape(ttest_1samp_for_all.shape)
+    ttest_1samp_for_all, pval = ma.getdata(ttest_1samp_for_all), ma.getdata(pval)
+
     return ttest_1samp_for_all, pval
 
 
