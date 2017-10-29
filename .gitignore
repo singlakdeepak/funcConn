@@ -19,6 +19,10 @@ bin-release/
 
 funcConnGUI/Scripts/data
 funcConnGUI/Scripts/data/tmp
+funcConnGUI/Scripts/Group1
+funcConnGUI/Scripts/Group2
+funcConnGUI/Scripts/*.nii.gz
+
 *.o
 *.nii.gz
 build*
