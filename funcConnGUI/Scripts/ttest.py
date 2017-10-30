@@ -4,6 +4,7 @@ import os
 from scipy import stats
 from numpy import ma
 import scipy.special as special
+from nipype.interfaces import fsl
 
 def div0( a, b ):
     '''
@@ -16,19 +17,24 @@ def div0( a, b ):
         # c[ ~ np.isfinite( c )] = 0  # -inf inf NaN
     return c
 
-def calc_mean_and_std(ROICorrMaps, n_subjects, mask, applyFisher = False):
+def calc_mean_and_std(ROICorrMaps, n_subjects, ROIAtlasmask, applyFisher = False):
     '''
 	Function for calculating the mean and standard 
 	deviation of the data. At a time, only one of the nii
 	file is loaded and the elements keep on adding as we 
 	enumerate over the subjects.
 	'''
+    # mask = nib.load(ROIAtlas).get_data()
+
+    mask = nib.load(ROIAtlasmask).get_data()
+    mask = ma.masked_object(mask,0).mask
     if (n_subjects != 0):
         f = nib.load(ROICorrMaps[0])
         dimensions = f.get_header().get_data_shape()
         print(dimensions)
     else:
         exit
+    mask = np.repeat(mask[:, :, :, np.newaxis], dimensions[3], axis=3)
     print(ROICorrMaps)
     Sample_mean_Array = np.zeros(dimensions)
     Sample_std_Array = np.zeros(dimensions)
@@ -53,7 +59,7 @@ def calc_mean_and_std(ROICorrMaps, n_subjects, mask, applyFisher = False):
     return Sample_mean_Array,Sample_std_Array
 
 def ttest_1samp_for_all_ROIs(ROICorrMaps, 
-                                ROIAtlas, 
+                                ROIAtlasmask, 
                                 PopMean = 0.0, 
                                 applyFisher = False):
     '''
@@ -79,16 +85,12 @@ def ttest_1samp_for_all_ROIs(ROICorrMaps,
     # The ttest will return t value Inf or NaN where the denom is
     # zero. See what to return in these places. Ask tomorrow.
     '''
-    mask = nib.load(ROIAtlas).get_data()
-    totalROIs = np.amax(mask)
-    mask = ma.masked_object(mask,0).mask
-    # totalROIs = 246
-    mask = np.repeat(mask[:, :, :, np.newaxis], totalROIs, axis=3)
+
 
     n_subjects = len(ROICorrMaps)
     Sample_mean_Array, Sample_std_Array = calc_mean_and_std(ROICorrMaps, 
     	                                                    n_subjects,
-                                                            mask, 
+                                                            ROIAtlasmask, 
     	                                                    applyFisher = applyFisher)
     ttest_1samp_for_all = div0((Sample_mean_Array - PopMean) * np.sqrt(n_subjects), Sample_std_Array)
     df = n_subjects - 1
@@ -101,7 +103,7 @@ def ttest_1samp_for_all_ROIs(ROICorrMaps,
 
 
 
-def ttest_ind_samples(ROICorrMapsA, ROICorrMapsB, ROIAtlas, equal_var = True, applyFisher = False):
+def ttest_ind_samples(ROICorrMapsA, ROICorrMapsB, ROIAtlasmask, equal_var = True, applyFisher = False):
     '''
     Modified from https://docs.scipy.org/doc/scipy-0.19.1/reference/generated/scipy.stats.ttest_ind.html ,
     https://github.com/scipy/scipy/blob/v0.19.1/scipy/stats/stats.py#L3950-L4072
@@ -109,15 +111,11 @@ def ttest_ind_samples(ROICorrMapsA, ROICorrMapsB, ROIAtlas, equal_var = True, ap
     Since it didn't support if the data is large and everything can't be loaded at once. So,
     such modification has been made.
     '''
-    mask = nib.load(ROIAtlas).get_data()
-    totalROIs = np.amax(mask)
-    mask = ma.masked_object(mask,0).mask
-    mask = np.repeat(mask[:, :, :, np.newaxis], totalROIs, axis=3)
 
     n_subjectsA = len(ROICorrMapsA)
     Sample_mean_ArrayA, Sample_std_ArrayA = calc_mean_and_std(ROICorrMapsA, 
     	                                                      n_subjectsA,
-                                                              mask, 
+                                                              ROIAtlasmask, 
     	                                                      applyFisher = applyFisher)
     Sample_var_ArrayA = np.square(Sample_std_ArrayA)
     del(Sample_std_ArrayA)
@@ -125,7 +123,7 @@ def ttest_ind_samples(ROICorrMapsA, ROICorrMapsB, ROIAtlas, equal_var = True, ap
     n_subjectsB = len(ROICorrMapsB)
     Sample_mean_ArrayB, Sample_std_ArrayB = calc_mean_and_std(ROICorrMapsB, 
     	                                                      n_subjectsB,
-                                                              mask, 
+                                                              ROIAtlasmask, 
     	                                                      applyFisher = applyFisher)
     Sample_var_ArrayB = np.square(Sample_std_ArrayB)
     del(Sample_std_ArrayB)
@@ -149,12 +147,9 @@ def ttest_ind_samples(ROICorrMapsA, ROICorrMapsB, ROIAtlas, equal_var = True, ap
         ttest_ind = (Sample_mean_ArrayA - Sample_mean_ArrayB) / denom
     pvalues = special.betainc(0.5*df, 0.5, df/(df + ttest_ind*ttest_ind)).reshape(ttest_ind.shape)
     ttest_ind, pvalues = ma.filled(ttest_ind), ma.filled(pvalues)
-    
 
     # pvalues = stats.t.sf(np.abs(ttest_ind), df)*2
     return ttest_ind , pvalues
-
-
 
 
 # def ttest_1samp_for_one_ROI(ROICorrMaps, PopMean = 0.0, ROINo = 0):

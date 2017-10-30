@@ -119,6 +119,7 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
     return ProcessedFilesDIRADDRESSES
 
 if __name__ == '__main__':
+
     start = timeit.default_timer()
     # JSONFile = sys.argv[1]
     JSONFile = '/home/deepak/Desktop/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
@@ -140,24 +141,37 @@ if __name__ == '__main__':
     Ngroups = AnalysisParams['No of Groups']
     OUTPUT_DIR = AnalysisParams['OutputInfo']['OutDirectory']
     TEMP_DIR_FOR_STORAGE = OUTPUT_DIR + '/tmp'
+    CorrROImapFiles = {}
+
+    nonzeroportion_mask = fsl.BET(in_file = ROIFile,
+                                  mask_file = TEMP_DIR_FOR_STORAGE + '/mask_for_ttest.nii.gz', 
+                                  mask = True, 
+                                  no_output=True,
+                                  frac = 0.3)
+    nonzeroportion_mask.run()
+    print('Made mask for the ttest: %s/mask_for_ttest.nii.gz'%TEMP_DIR_FOR_STORAGE)
+    
     if (ProcessingWay==0):
         FunctionaltxtFiles = AnalysisParams['FilesInfo']['FunctionalFilePaths']
         StructuraltxtFiles = AnalysisParams['FilesInfo']['StructuralFilePaths']
 
         for i in range(Ngroups):
+            ProcName = 'CorrCalc_group%s'%i
+            CorrROImapFiles[ProcName] = []
             with open(FunctionaltxtFiles[i]) as file:
                 FunctionalFiles_in_this_group = [line.strip('\n') for line in file]
             with open(StructuraltxtFiles[i]) as file:
                 StructuralFiles_in_this_group = [line.strip('\n') for line in file]
             Preprocessed_Files = run_Preprocessing(AnalysisParams, FunctionalFiles_in_this_group, StructuralFiles_in_this_group,Group= i)
             print(Preprocessed_Files)
-            dst = OUTPUT_DIR + '/CorrCalc_group%s/'%i
+            dst = TEMP_DIR_FOR_STORAGE + '/CorrCalc_group%s/'%i
             if not (os.path.exists(dst)):
                 os.mkdir(dst)
             else:
                 shutil.rmtree(dst)
                 os.mkdir(dst)
             for j in range(len(Preprocessed_Files)):
+                CorrROImapFiles[ProcName] += [dst + 'sub%d'%j]
                 args = ("../../fconn.o", "-i", ProcessedFileName, "-o", dst + 'sub%d'%j, "-r", ROIFile)
                 popen = subprocess.Popen(args, stdout=subprocess.PIPE)
                 popen.wait()
