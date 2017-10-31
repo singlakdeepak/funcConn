@@ -4,7 +4,7 @@ import os
 from scipy import stats
 from numpy import ma
 import scipy.special as special
-from nipype.interfaces import fsl
+
 
 def div0( a, b ):
     '''
@@ -24,8 +24,6 @@ def calc_mean_and_std(ROICorrMaps, n_subjects, ROIAtlasmask, applyFisher = False
 	file is loaded and the elements keep on adding as we 
 	enumerate over the subjects.
 	'''
-    # mask = nib.load(ROIAtlas).get_data()
-
     mask = nib.load(ROIAtlasmask).get_data()
     mask = ma.masked_object(mask,0).mask
     if (n_subjects != 0):
@@ -36,20 +34,21 @@ def calc_mean_and_std(ROICorrMaps, n_subjects, ROIAtlasmask, applyFisher = False
         exit
     mask = np.repeat(mask[:, :, :, np.newaxis], dimensions[3], axis=3)
     print(ROICorrMaps)
+
     Sample_mean_Array = np.zeros(dimensions)
     Sample_std_Array = np.zeros(dimensions)
     Sample_mean_Array = ma.masked_array(Sample_mean_Array, 
-                                        mask = mask, 
+                                       mask = mask, 
                                         fill_value = 0)
     Sample_std_Array = ma.masked_array(Sample_std_Array, 
-                                       mask = mask , 
+                                      mask = mask , 
                                        fill_value = 0)
     for count, subject in enumerate(ROICorrMaps):
 
         Corr_data = nib.load(subject).get_data()
         Corr_data = ma.masked_array(Corr_data, mask = mask)
         if applyFisher:
-        	Corr_data = np.arctanh(Corr_data)
+            Corr_data = np.arctanh(Corr_data)
         
         Sample_mean_Array += Corr_data
         Sample_std_Array += np.square(Corr_data)
@@ -57,6 +56,47 @@ def calc_mean_and_std(ROICorrMaps, n_subjects, ROIAtlasmask, applyFisher = False
     Sample_mean_Array /= n_subjects
     Sample_std_Array = np.sqrt(Sample_std_Array/n_subjects - np.square(Sample_mean_Array))
     return Sample_mean_Array,Sample_std_Array
+
+def calc_mean_and_std_if_npy(ROICorrMaps, n_subjects, applyFisher = False):
+    '''
+    Function to be used if the file is given in the format 
+    No of ROIs versus All brain voxels in the ROI mapped.
+    '''
+    print(ROICorrMaps)
+    initialize = np.load(ROICorrMaps[0])
+    initialize = ma.masked_array(initialize)
+    if applyFisher:
+        initialize = np.arctanh(initialize)
+    Sample_mean_Array = ma.masked_array(initialize, 
+                                        fill_value = 0)
+    Sample_std_Array = ma.masked_array(np.square(initialize), 
+                                       fill_value = 0)
+    del initialize
+    print('Done subject ', 0)
+    for count, subject in enumerate(ROICorrMaps[1:]):
+
+        Corr_data = np.load(subject)
+        Corr_data = ma.masked_array(Corr_data) 
+        if applyFisher:
+            Corr_data = np.arctanh(Corr_data)
+        Sample_mean_Array += Corr_data
+        Sample_std_Array += np.square(Corr_data)
+        print('Done subject ', count)                                                                                                                                                                                               
+    Sample_mean_Array /= n_subjects
+    Sample_std_Array = np.sqrt(Sample_std_Array/n_subjects - np.square(Sample_mean_Array))
+    return Sample_mean_Array,Sample_std_Array
+
+def _ttest_1samp(Sample_mean_Array, Sample_std_Array, n_subjects, PopMean = 0.0):
+    ttest_1samp_for_all = div0((Sample_mean_Array - PopMean) \
+                            * np.sqrt(n_subjects), Sample_std_Array)
+    df = n_subjects - 1
+    # pval = stats.t.sf(np.abs(ttest_1samp_for_all), df)*2
+    pval = special.betainc(0.5*df, 0.5, df/ \
+            (df + ttest_1samp_for_all*ttest_1samp_for_all)).reshape(ttest_1samp_for_all.shape)
+    ttest_1samp_for_all, pval = ma.filled(ttest_1samp_for_all), ma.filled(pval)
+
+    return ttest_1samp_for_all, pval
+
 
 def ttest_1samp_for_all_ROIs(ROICorrMaps, 
                                 ROIAtlasmask, 
@@ -88,46 +128,36 @@ def ttest_1samp_for_all_ROIs(ROICorrMaps,
 
 
     n_subjects = len(ROICorrMaps)
+    assert (n_subjects>0)
     Sample_mean_Array, Sample_std_Array = calc_mean_and_std(ROICorrMaps, 
-    	                                                    n_subjects,
+                                                            n_subjects,
                                                             ROIAtlasmask, 
-    	                                                    applyFisher = applyFisher)
-    ttest_1samp_for_all = div0((Sample_mean_Array - PopMean) * np.sqrt(n_subjects), Sample_std_Array)
-    df = n_subjects - 1
-    # pval = stats.t.sf(np.abs(ttest_1samp_for_all), df)*2
-    pval = special.betainc(0.5*df, 0.5, df/(df + ttest_1samp_for_all*ttest_1samp_for_all)).reshape(ttest_1samp_for_all.shape)
-    ttest_1samp_for_all, pval = ma.filled(ttest_1samp_for_all), ma.filled(pval)
-
+                                                            applyFisher = applyFisher)
+    ttest_1samp_for_all, pval = _ttest_1samp(Sample_mean_Array, 
+                                             Sample_std_Array,
+                                             n_subjects,
+                                             PopMean = PopMean)
     return ttest_1samp_for_all, pval
 
 
+def ttest_1samp_ROIs_if_npy(ROICorrMaps,
+                            PopMean = 0.0,
+                            applyFisher = False):
+    n_subjects = len(ROICorrMaps)
+    assert (n_subjects>0)
+    Sample_mean_Array, Sample_std_Array = \
+                                calc_mean_and_std_if_npy( ROICorrMaps,
+                                                        n_subjects,
+                                                        applyFisher = applyFisher)
+    return _ttest_1samp(Sample_mean_Array,
+                        Sample_std_Array,
+                        n_subjects,
+                        PopMean = PopMean)
 
 
-def ttest_ind_samples(ROICorrMapsA, ROICorrMapsB, ROIAtlasmask, equal_var = True, applyFisher = False):
-    '''
-    Modified from https://docs.scipy.org/doc/scipy-0.19.1/reference/generated/scipy.stats.ttest_ind.html ,
-    https://github.com/scipy/scipy/blob/v0.19.1/scipy/stats/stats.py#L3950-L4072
-
-    Since it didn't support if the data is large and everything can't be loaded at once. So,
-    such modification has been made.
-    '''
-
-    n_subjectsA = len(ROICorrMapsA)
-    Sample_mean_ArrayA, Sample_std_ArrayA = calc_mean_and_std(ROICorrMapsA, 
-    	                                                      n_subjectsA,
-                                                              ROIAtlasmask, 
-    	                                                      applyFisher = applyFisher)
-    Sample_var_ArrayA = np.square(Sample_std_ArrayA)
-    del(Sample_std_ArrayA)
-
-    n_subjectsB = len(ROICorrMapsB)
-    Sample_mean_ArrayB, Sample_std_ArrayB = calc_mean_and_std(ROICorrMapsB, 
-    	                                                      n_subjectsB,
-                                                              ROIAtlasmask, 
-    	                                                      applyFisher = applyFisher)
-    Sample_var_ArrayB = np.square(Sample_std_ArrayB)
-    del(Sample_std_ArrayB)
-    
+def _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
+                Sample_mean_ArrayB,Sample_var_ArrayB, n_subjectsB,
+                equal_var = True):
     if equal_var:
         # force df to be an array for masked division not to throw a warning
         df = ma.asanyarray(n_subjectsA + n_subjectsB - 2.0)
@@ -147,9 +177,70 @@ def ttest_ind_samples(ROICorrMapsA, ROICorrMapsB, ROIAtlasmask, equal_var = True
         ttest_ind = (Sample_mean_ArrayA - Sample_mean_ArrayB) / denom
     pvalues = special.betainc(0.5*df, 0.5, df/(df + ttest_ind*ttest_ind)).reshape(ttest_ind.shape)
     ttest_ind, pvalues = ma.filled(ttest_ind), ma.filled(pvalues)
+    return ttest_ind, pvalues
+
+def ttest_ind_samples(ROICorrMapsA, ROICorrMapsB, ROIAtlasmask, 
+                    equal_var = True, applyFisher = False):
+    '''
+    Modified from https://docs.scipy.org/doc/scipy-0.19.1/reference/generated/scipy.stats.ttest_ind.html ,
+    https://github.com/scipy/scipy/blob/v0.19.1/scipy/stats/stats.py#L3950-L4072
+
+    Since it didn't support if the data is large and everything can't be loaded at once. So,
+    such modification has been made.
+    '''
+
+    n_subjectsA = len(ROICorrMapsA)
+    n_subjectsB = len(ROICorrMapsB)
+    assert (n_subjectsA > 0)
+    assert (n_subjectsB > 0)
+    Sample_mean_ArrayA, Sample_std_ArrayA = calc_mean_and_std(ROICorrMapsA, 
+                                                              n_subjectsA,
+                                                              ROIAtlasmask, 
+                                                              applyFisher = applyFisher)
+    Sample_var_ArrayA = np.square(Sample_std_ArrayA)
+    del(Sample_std_ArrayA)
+
+    # n_subjectsB = len(ROICorrMapsB)
+    Sample_mean_ArrayB, Sample_std_ArrayB = calc_mean_and_std(ROICorrMapsB, 
+                                                              n_subjectsB,
+                                                              ROIAtlasmask, 
+                                                              applyFisher = applyFisher)
+    Sample_var_ArrayB = np.square(Sample_std_ArrayB)
+    del(Sample_std_ArrayB)
 
     # pvalues = stats.t.sf(np.abs(ttest_ind), df)*2
-    return ttest_ind , pvalues
+    return _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
+                Sample_mean_ArrayB, Sample_var_ArrayB, n_subjectsB,
+                equal_var = equal_var)
+
+def ttest_ind_samples_if_npy(ROICorrMapsA, ROICorrMapsB, equal_var = True, applyFisher = False):
+    '''
+    Modified from https://docs.scipy.org/doc/scipy-0.19.1/reference/generated/scipy.stats.ttest_ind.html ,
+    https://github.com/scipy/scipy/blob/v0.19.1/scipy/stats/stats.py#L3950-L4072
+
+    Since it didn't support if the data is large and everything can't be loaded at once. So,
+    such modification has been made.
+    '''
+
+    n_subjectsA = len(ROICorrMapsA)
+    n_subjectsB = len(ROICorrMapsB)
+    assert (n_subjectsA > 0)
+    assert (n_subjectsB > 0)
+    Sample_mean_ArrayA, Sample_std_ArrayA = calc_mean_and_std_if_npy(ROICorrMapsA, 
+                                                              n_subjectsA, 
+                                                              applyFisher = applyFisher)
+    Sample_var_ArrayA = np.square(Sample_std_ArrayA)
+    del(Sample_std_ArrayA)
+    Sample_mean_ArrayB, Sample_std_ArrayB = calc_mean_and_std_if_npy(ROICorrMapsB, 
+                                                              n_subjectsB,
+                                                              ROIAtlasmask, 
+                                                              applyFisher = applyFisher)
+    Sample_var_ArrayB = np.square(Sample_std_ArrayB)
+    del(Sample_std_ArrayB)
+    # pvalues = stats.t.sf(np.abs(ttest_ind), df)*2
+    return _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
+                Sample_mean_ArrayB, Sample_var_ArrayB, n_subjectsB,
+                equal_var = equal_var)
 
 
 # def ttest_1samp_for_one_ROI(ROICorrMaps, PopMean = 0.0, ROINo = 0):

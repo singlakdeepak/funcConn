@@ -22,7 +22,7 @@ funcConnGUI/Scripts/data/tmp
 funcConnGUI/Scripts/Group1
 funcConnGUI/Scripts/Group2
 funcConnGUI/Scripts/*.nii.gz
-
+funcConnGUI/Scripts/*.npy
 *.o
 *.nii.gz
 build*
