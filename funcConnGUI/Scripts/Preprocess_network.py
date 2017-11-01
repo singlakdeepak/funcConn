@@ -158,14 +158,14 @@ def give_Slice_Timer_Node(SliceTimeCorrect,time_repeat):
     slicetimer: Slice Timer Node
     '''
     if (SliceTimeCorrect ==1):
-        slicetimer = MapNode(fsl.SliceTimer(index_dir=True,
+        slicetimer = MapNode(fsl.SliceTimer(index_dir=False,
                                      interleaved=False,
                                      output_type='NIFTI_GZ',
                                      time_repetition=time_repeat),
                              iterfield=['in_file'],
                           name="slicetimer")
     elif (SliceTimeCorrect == 2):
-        slicetimer = MapNode(fsl.SliceTimer(index_dir=False,
+        slicetimer = MapNode(fsl.SliceTimer(index_dir=True,
                                      interleaved=False,
                                      output_type='NIFTI_GZ',
                                      time_repetition=time_repeat),
@@ -436,20 +436,32 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
     meanscale = MapNode(interface=fsl.ImageMaths(suffix='_gms'),
                           iterfield=['in_file','op_string'],
                           name='meanscale')
-    
+    Intensity_Normalize = MapNode(interface=fsl.ImageMaths(op_string='-inm 10000',
+                                                    suffix='_mean'),
+                           iterfield=['in_file'],
+                          name='intensity_norm')    
+
     """
     Perform temporal highpass filtering on the data
     """
     highpassfilt = MapNode(interface=fsl.ImageMaths(suffix='_tempfilt'),
                       iterfield=['in_file'],
                       name='highpassfilt')
-#     """
-#     Generate a mean functional image from the first run
-#     """
-#     meanfunc3 = MapNode(interface=fsl.ImageMaths(op_string='-Tmean',
-#                                                     suffix='_mean'),
-#                            iterfield=['in_file'],
-#                           name='meanfunc3') 
+    """
+    Generate a mean functional image from the first run
+    """
+    meanfunc3 = MapNode(interface=fsl.ImageMaths(op_string='-Tmean',
+                                                    suffix='_mean'),
+                           iterfield=['in_file'],
+                          name='meanfunc3')
+
+
+
+    add_node = MapNode(interface = fsl.ImageMaths(op_string = '-add',
+                                                    suffix = 'highpassfilt_correct'),
+                            iterfield = ['in_file', 'in_file2'],
+                            name = 'highpassfilt_correct')
+
     def whether_BETextract_or_not(featpreproc,MotionCorrection = 0, SliceTimeCorrect =0, BETextract = True):
         '''
         It selects whether BET is to be done or not and in according to that attaches the nodes. 
@@ -616,33 +628,48 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
     datasink = Node(interface=DataSink(), name="datasink")
 
     if Intensity_Norm:
-        featpreproc.connect(selectnode, 'out', meanscale, 'in_file')
+        featpreproc.connect(selectnode,'out', Intensity_Normalize, 'in_file')
+        # To change Normalization : featpreproc.connect( inputnode, 
+        #                           ('intensity_norm',operand), Intensity_Normalize,'op_string')
         """
         Define a function to get the scaling factor for intensity normalization
         """
-        featpreproc.connect(medianval, ('out_stat', getmeanscale), meanscale, 'op_string')
-        featpreproc.connect(meanscale, 'out_file', outputnode, 'normalized_files')
-        
+        featpreproc.connect(Intensity_Normalize, 'out_file', outputnode, 'normalized_files')
+
         if highpass:
 
             featpreproc.connect(inputnode, ('highpass', highpass_lowpass_operand), highpassfilt, 'op_string')
-            featpreproc.connect(meanscale, 'out_file', highpassfilt, 'in_file')
-            featpreproc.connect(highpassfilt, 'out_file', outputnode, 'highpassed_files')
+            featpreproc.connect(Intensity_Normalize, 'out_file', highpassfilt, 'in_file')
+            featpreproc.connect(Intensity_Normalize, 'out_file', meanfunc3, 'in_file')
+
+            featpreproc.connect(highpassfilt, 'out_file', add_node, 'in_file')
+            featpreproc.connect(meanfunc3, 'out_file', add_node, 'in_file2')
+
+            featpreproc.connect(add_node, 'out_file', outputnode, 'highpassed_files')
             featpreproc.connect(outputnode, 'highpassed_files',
                       datasink, 'out_file')
         else:
             featpreproc.connect(outputnode, 'normalized_files', datasink, 'out_file')
 
     else :
+
+        featpreproc.connect(selectnode, 'out', meanscale, 'in_file')
+
+        featpreproc.connect(medianval, ('out_stat', getmeanscale), meanscale, 'op_string')
+        featpreproc.connect(meanscale, 'out_file', outputnode, 'normalized_files')
+        
         if highpass:
+            featpreproc.connect(meanscale, 'out_file', meanfunc3, 'in_file')
             featpreproc.connect(inputnode, ('highpass', highpass_lowpass_operand), highpassfilt, 'op_string')
-            featpreproc.connect(selectnode, 'out', highpassfilt, 'in_file')
-            featpreproc.connect(highpassfilt, 'out_file', outputnode, 'highpassed_files')
+            featpreproc.connect(meanscale, 'out_file', highpassfilt, 'in_file')
+            featpreproc.connect(highpassfilt, 'out_file', add_node, 'in_file')
+            featpreproc.connect(meanfunc3, 'out_file', add_node, 'in_file2')
+
+            featpreproc.connect(add_node, 'out_file', outputnode, 'highpassed_files')
             featpreproc.connect(outputnode, 'highpassed_files',
                       datasink, 'out_file')
         else:
-          featpreproc.connect(outputnode, 'smoothed_files', datasink, 'out_file')
-
+            featpreproc.connect(outputnode, 'normalized_files', datasink, 'out_file')
 #     if highpass:
 #         featpreproc.connect(highpass, 'out_file', meanfunc3, 'in_file')
 #     else:
