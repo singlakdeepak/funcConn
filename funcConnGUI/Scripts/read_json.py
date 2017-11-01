@@ -34,7 +34,7 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
     FeatProcessName = 'featpreproc_group%s'%Group
     RegistrationName = 'registration_group%s'%Group
     RESULTS_FEAT_DATASINK = OUTPUT_DIR + '/tmp/%s/datasink/'%FeatProcessName
-    TR = get_TR(FunctionalFiles[0])
+    TR = AnalysisParams['Repetition Time']
     print('Using Repetition time: %s'%TR)
 
 
@@ -53,7 +53,7 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
         preproc.base_dir = TEMP_DIR_FOR_STORAGE
         preproc.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
         preproc.write_graph(graph2use='colored', format='png', simple_form=True)
-        preproc.run('MultiProc', plugin_args={'n_procs': 4})
+        preproc.run('MultiProc', plugin_args={'n_procs': 8})
     else:
         preproc = parallelPreproc.create_parallelfeat_preproc(name = FeatProcessName,
                                     highpass= TemporalFilt, 
@@ -66,7 +66,7 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
         preproc.inputs.inputspec.fwhm = FWHM
         preproc.base_dir = TEMP_DIR_FOR_STORAGE
         preproc.write_graph(graph2use='colored', format='png', simple_form=True)
-        preproc.run('MultiProc', plugin_args={'n_procs': 4})
+        preproc.run('MultiProc', plugin_args={'n_procs': 8})
 
     datasink_results=[]
     datasink_results += [each for each in os.listdir(RESULTS_FEAT_DATASINK) if each.endswith('.json')]
@@ -98,7 +98,7 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
         Reg_WorkFlow.inputs.inputspec.target_image = ReferenceFile
         Reg_WorkFlow.base_dir = TEMP_DIR_FOR_STORAGE
         Reg_WorkFlow.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
-        regoutputs = Reg_WorkFlow.run('MultiProc', plugin_args={'n_procs': 4})
+        regoutputs = Reg_WorkFlow.run('MultiProc', plugin_args={'n_procs': 8})
         datasink_results=[]
         datasink_results += [each for each in os.listdir(RESULTS_REG_DATASINK) if each.endswith('.json')]
         with open(RESULTS_REG_DATASINK + datasink_results[0]) as JSON:
@@ -123,7 +123,7 @@ if __name__ == '__main__':
 
     start = timeit.default_timer()
     # JSONFile = sys.argv[1]
-    JSONFile = '/home/deepak/Desktop/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
+    JSONFile = '/home1/ee3140506/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
     with open(JSONFile) as JSON:
         try :
             
@@ -143,7 +143,8 @@ if __name__ == '__main__':
     OUTPUT_DIR = AnalysisParams['OutputInfo']['OutDirectory']
     TEMP_DIR_FOR_STORAGE = OUTPUT_DIR + '/tmp'
     CorrROImapFiles = {}
-
+    if not (os.path.exists(TEMP_DIR_FOR_STORAGE)):
+        os.mkdir(TEMP_DIR_FOR_STORAGE)
     nonzeroportion_mask = fsl.BET(in_file = ReferenceFile,
                                   out_file = TEMP_DIR_FOR_STORAGE + '/mask_for_ttest.nii.gz', 
                                   mask = True, 
