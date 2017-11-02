@@ -855,7 +855,7 @@ def reg_workflow(no_subjects, name = 'registration'):
                                                                   'transformed_files'
                                                                   ]),
                          name='outputspec')
-    # if (no_subjects ==1):
+
     '''
     Different case defined in case the number of subjects are 1. Otherwise fsl.FAST() node was 
     giving the error. 
@@ -876,27 +876,6 @@ def reg_workflow(no_subjects, name = 'registration'):
 
     '''
 
-    #     meanfunc = Node(fsl.ImageMaths(op_string='-Tmean',suffix='_mean'), name = 'meanfunc')
-    #     stripper = Node(fsl.BET(), name='stripper')
-    #     fast = Node(fsl.FAST(), name = 'fast')
-    #     binarize = Node(fsl.ImageMaths(op_string='-nan -thr 0.5 -bin'),
-    #                                          name='binarize')
-    #     mean2anat = Node(fsl.FLIRT(), name='mean2anat')
-    #     mean2anatbbr = Node(fsl.FLIRT(),  name='mean2anatbbr')
-    #     anat2target_affine = Node(fsl.FLIRT(), name='anat2target_linear')
-    #     anat2targetmask = Node(interface=fsl.BET(mask = True,
-    #                                          no_output=True,
-    #                                          frac = 0.3),
-    #                           name = 'anat2targetmask')
-    #     warpfile = Node(fsl.ApplyXFM(interp='spline'), name='txm_registered')
-    #     """
-    #     Mask the functional runs with the extracted mask
-    #     """
-    #     maskWarpFile = Node(interface=fsl.ImageMaths(suffix='_masked',
-    #                                                op_string='-mas'),
-    #                       name = 'maskfunc')
-
-    # else:
     meanfunc = MapNode(fsl.ImageMaths(op_string='-Tmean',suffix='_mean'), iterfield = ['in_file'],name = 'meanfunc')
     stripper = MapNode(fsl.BET(), 
       iterfield = ['in_file'], name='stripper')
@@ -909,14 +888,19 @@ def reg_workflow(no_subjects, name = 'registration'):
     binarize = MapNode(fsl.ImageMaths(op_string='-nan -thr 0.5 -bin'),
                    iterfield = ['in_file'],
                    name='binarize')
-    mean2anat = MapNode(fsl.FLIRT(), iterfield = ['in_file','reference'], name='mean2anat')
-    mean2anatbbr = MapNode(fsl.FLIRT(), iterfield = ['in_file','wm_seg','reference','in_matrix_file'], name='mean2anatbbr')
+    mean2anat = MapNode(fsl.FLIRT(interp = 'trilinear'), iterfield = ['in_file','reference'], name='mean2anat')
+    mean2anatbbr = MapNode(fsl.FLIRT(interp = 'trilinear'), iterfield = ['in_file','wm_seg','reference','in_matrix_file'], name='mean2anatbbr')
     anat2target_affine = MapNode(fsl.FLIRT(), iterfield = ['in_file'], name='anat2target_linear')
-    anat2targetmask = MapNode(interface=fsl.BET(mask = True,
-                                         no_output=True,
-                                         frac = 0.3),
-                          iterfield=['in_file'],
-                          name = 'anat2targetmask') 
+    concat_mat = MapNode(fsl.ConvertXFM(concat_xfm = True), iterfield=['in_file','in_file2'], name='concat_mat')
+    # anat2targetmask = MapNode(interface=fsl.BET(mask = True,
+    #                                      no_output=True,
+    #                                      frac = 0.3),
+    #                       iterfield=['in_file'],
+    #                       name = 'anat2targetmask')
+    anat2targetmask = Node(interface=fsl.BET(mask = True,
+                                     no_output=True,
+                                     frac = 0.3),
+                      name = 'anat2targetmask') 
     warpfile = MapNode(fsl.ApplyXFM(interp='spline'), iterfield = ['in_file', 'in_matrix_file'],name='txm_registered')
     """
     Mask the functional runs with the extracted mask
@@ -950,6 +934,9 @@ def reg_workflow(no_subjects, name = 'registration'):
     Calculate rigid transform from mean image to anatomical image
     """
     mean2anat.inputs.dof = 12
+    mean2anat.inputs.searchr_x = [-180, 180]
+    mean2anat.inputs.searchr_y = [-180, 180]
+    mean2anat.inputs.searchr_z = [-180, 180]
     register.connect(meanfunc,'out_file', mean2anat, 'in_file')
     register.connect(stripper, 'out_file', mean2anat, 'reference')
 
@@ -958,6 +945,9 @@ def reg_workflow(no_subjects, name = 'registration'):
     """
 
     mean2anatbbr.inputs.dof = 12
+    mean2anatbbr.inputs.searchr_x = [-180, 180]
+    mean2anatbbr.inputs.searchr_y = [-180, 180]
+    mean2anatbbr.inputs.searchr_z = [-180, 180]
     mean2anatbbr.inputs.cost = 'bbr'
     mean2anatbbr.inputs.schedule = os.path.join(os.getenv('FSLDIR'),
                                                 'etc/flirtsch/bbr.sch')
@@ -973,15 +963,19 @@ def reg_workflow(no_subjects, name = 'registration'):
     anat2target_affine.inputs.searchr_x = [-180, 180]
     anat2target_affine.inputs.searchr_y = [-180, 180]
     anat2target_affine.inputs.searchr_z = [-180, 180]
+    anat2target_affine.inputs.cost = 'corratio'
     register.connect(stripper, 'out_file', anat2target_affine, 'in_file')
     register.connect(inputnode, 'target_image',
                      anat2target_affine, 'reference')
-    register.connect(anat2target_affine,'out_file', anat2targetmask, 'in_file')
+    # register.connect(anat2target_affine,'out_file', anat2targetmask, 'in_file')
+    register.connect(inputnode,'target_image', anat2targetmask, 'in_file')
 
+    register.connect(anat2target_affine, 'out_matrix_file', concat_mat,'in_file')
+    register.connect(mean2anatbbr, 'out_matrix_file', concat_mat, 'in_file2')
     warpfile.inputs.padding_size = 0
 
     register.connect(inputnode, 'source_files', warpfile, 'in_file')
-    register.connect(mean2anatbbr, 'out_matrix_file', warpfile, 'in_matrix_file')
+    register.connect(concat_mat, 'out_file', warpfile, 'in_matrix_file')
     register.connect(inputnode, 'target_image', warpfile, 'reference')
 
     register.connect(warpfile,'out_file', maskWarpFile, 'in_file')
