@@ -89,12 +89,12 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
         datasinkouts_afterreg = []
         RESULTS_REG_DATASINK = OUTPUT_DIR + '/tmp/%s/datasink/'%RegistrationName
         Reg_WorkFlow = parallelPreproc.reg_workflow(no_subjects,name = RegistrationName)
-        if (no_subjects ==1):
-            Reg_WorkFlow.inputs.inputspec.source_files = datasinkouts[0]
-            Reg_WorkFlow.inputs.inputspec.anatomical_images = StructuralFiles[0]
-        else:        
-            Reg_WorkFlow.inputs.inputspec.source_files = datasinkouts
-            Reg_WorkFlow.inputs.inputspec.anatomical_images = StructuralFiles
+        # if (no_subjects ==1):
+        #     Reg_WorkFlow.inputs.inputspec.source_files = datasinkouts[0]
+        #     Reg_WorkFlow.inputs.inputspec.anatomical_images = StructuralFiles[0]
+        # else:        
+        Reg_WorkFlow.inputs.inputspec.source_files = datasinkouts
+        Reg_WorkFlow.inputs.inputspec.anatomical_images = StructuralFiles
         Reg_WorkFlow.inputs.inputspec.target_image = ReferenceFile
         Reg_WorkFlow.base_dir = TEMP_DIR_FOR_STORAGE
         Reg_WorkFlow.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
@@ -107,10 +107,10 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
             datafile = datafile[0][1][0][1]
 
         datasinkouts=[]
-        if (no_subjects==1):
-            datasinkouts +=[datafile[0]]
-        else:
-            datasinkouts += [datafile[i][0] for i in range(no_subjects)]
+        # if (no_subjects==1):
+        #     datasinkouts +=[datafile[0]]
+        # else:
+        datasinkouts += [datafile[i][0] for i in range(no_subjects)]
         print(datafile)
 
     for j in range(no_subjects):
@@ -123,7 +123,7 @@ if __name__ == '__main__':
 
     start = timeit.default_timer()
     # JSONFile = sys.argv[1]
-    JSONFile = '/home1/ee3140506/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
+    JSONFile = '/home/deepak/Desktop/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
     with open(JSONFile) as JSON:
         try :
             

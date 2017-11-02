@@ -855,70 +855,76 @@ def reg_workflow(no_subjects, name = 'registration'):
                                                                   'transformed_files'
                                                                   ]),
                          name='outputspec')
-    if (no_subjects ==1):
-        '''
-        Different case defined in case the number of subjects are 1. Otherwise fsl.FAST() node was 
-        giving the error. 
-        Pipeline:
-        #1 : Calculate the mean image from the functional run.
-        #2 : Do BET on the mean image.
-        #3 : FAST is done for segmenting the White matter.
-        #4 : Binarize is done for making the mask out of the file generated after the
-             FAST segmentation.
-        #5 : Now calculate the mean 2 anamtomical co-registration matrix. 
-        #6 : BBR is done for refining the matrix generated from mean2anatomical co-reg.
-        #7 : Now, calculate the transformation from anatomical to reference file. 
-        #8 : Calculate the mask from the transformed anat2target file.
-        #9 : Now , apply transformation using the target_image as reference and 
-             mean2anat matrix as transformation matrix. Keep Spline interpolation.
-        #10 : Now mask the output with the anat2targetmask so that the values outside 
-              the brain go zero. 
+    # if (no_subjects ==1):
+    '''
+    Different case defined in case the number of subjects are 1. Otherwise fsl.FAST() node was 
+    giving the error. 
+    Pipeline:
+    #1 : Calculate the mean image from the functional run.
+    #2 : Do BET on the mean image.
+    #3 : FAST is done for segmenting the White matter.
+    #4 : Binarize is done for making the mask out of the file generated after the
+         FAST segmentation.
+    #5 : Now calculate the mean 2 anamtomical co-registration matrix. 
+    #6 : BBR is done for refining the matrix generated from mean2anatomical co-reg.
+    #7 : Now, calculate the transformation from anatomical to reference file. 
+    #8 : Calculate the mask from the transformed anat2target file.
+    #9 : Now , apply transformation using the target_image as reference and 
+         mean2anat matrix as transformation matrix. Keep Spline interpolation.
+    #10 : Now mask the output with the anat2targetmask so that the values outside 
+          the brain go zero. 
 
-        '''
+    '''
 
-        meanfunc = Node(fsl.ImageMaths(op_string='-Tmean',suffix='_mean'), name = 'meanfunc')
-        stripper = Node(fsl.BET(), name='stripper')
-        fast = Node(fsl.FAST(), name = 'fast')
-        binarize = Node(fsl.ImageMaths(op_string='-nan -thr 0.5 -bin'),
-                                             name='binarize')
-        mean2anat = Node(fsl.FLIRT(), name='mean2anat')
-        mean2anatbbr = Node(fsl.FLIRT(),  name='mean2anatbbr')
-        anat2target_affine = Node(fsl.FLIRT(), name='anat2target_linear')
-        anat2targetmask = Node(interface=fsl.BET(mask = True,
-                                             no_output=True,
-                                             frac = 0.3),
-                              name = 'anat2targetmask')
-        warpfile = Node(fsl.ApplyXFM(interp='spline'), name='txm_registered')
-        """
-        Mask the functional runs with the extracted mask
-        """
-        maskWarpFile = Node(interface=fsl.ImageMaths(suffix='_masked',
-                                                   op_string='-mas'),
-                          name = 'maskfunc')
+    #     meanfunc = Node(fsl.ImageMaths(op_string='-Tmean',suffix='_mean'), name = 'meanfunc')
+    #     stripper = Node(fsl.BET(), name='stripper')
+    #     fast = Node(fsl.FAST(), name = 'fast')
+    #     binarize = Node(fsl.ImageMaths(op_string='-nan -thr 0.5 -bin'),
+    #                                          name='binarize')
+    #     mean2anat = Node(fsl.FLIRT(), name='mean2anat')
+    #     mean2anatbbr = Node(fsl.FLIRT(),  name='mean2anatbbr')
+    #     anat2target_affine = Node(fsl.FLIRT(), name='anat2target_linear')
+    #     anat2targetmask = Node(interface=fsl.BET(mask = True,
+    #                                          no_output=True,
+    #                                          frac = 0.3),
+    #                           name = 'anat2targetmask')
+    #     warpfile = Node(fsl.ApplyXFM(interp='spline'), name='txm_registered')
+    #     """
+    #     Mask the functional runs with the extracted mask
+    #     """
+    #     maskWarpFile = Node(interface=fsl.ImageMaths(suffix='_masked',
+    #                                                op_string='-mas'),
+    #                       name = 'maskfunc')
 
-    else:
-        meanfunc = MapNode(fsl.ImageMaths(op_string='-Tmean',suffix='_mean'), iterfield = ['in_file'],name = 'meanfunc')
-        stripper = MapNode(fsl.BET(), iterfield = ['in_file'], name='stripper')
-        fast = MapNode(fsl.FAST(), iterfield =['in_files'], name='fast')
-        binarize = MapNode(fsl.ImageMaths(op_string='-nan -thr 0.5 -bin'),
-                       iterfield = ['in_file'],
-                       name='binarize')
-        mean2anat = MapNode(fsl.FLIRT(), iterfield = ['in_file','reference'], name='mean2anat')
-        mean2anatbbr = MapNode(fsl.FLIRT(), iterfield = ['in_file','wm_seg','reference','in_matrix_file'], name='mean2anatbbr')
-        anat2target_affine = MapNode(fsl.FLIRT(), iterfield = ['in_file'], name='anat2target_linear')
-        anat2targetmask = MapNode(interface=fsl.BET(mask = True,
-                                             no_output=True,
-                                             frac = 0.3),
-                              iterfield=['in_file'],
-                              name = 'anat2targetmask') 
-        warpfile = MapNode(fsl.ApplyXFM(interp='spline'), iterfield = ['in_file', 'in_matrix_file'],name='txm_registered')
-        """
-        Mask the functional runs with the extracted mask
-        """
-        maskWarpFile = MapNode(interface=fsl.ImageMaths(suffix='_masked',
-                                                   op_string='-mas'),
-                          iterfield=['in_file', 'in_file2'],
-                          name = 'maskfunc')
+    # else:
+    meanfunc = MapNode(fsl.ImageMaths(op_string='-Tmean',suffix='_mean'), iterfield = ['in_file'],name = 'meanfunc')
+    stripper = MapNode(fsl.BET(), 
+      iterfield = ['in_file'], name='stripper')
+    fast = MapNode(fsl.FAST(), 
+          iterfield =['in_files'], 
+          name='fast')
+    selectfile = MapNode(interface=util.Select(index=[2]), iterfield = ['inlist'],name='select')
+
+    
+    binarize = MapNode(fsl.ImageMaths(op_string='-nan -thr 0.5 -bin'),
+                   iterfield = ['in_file'],
+                   name='binarize')
+    mean2anat = MapNode(fsl.FLIRT(), iterfield = ['in_file','reference'], name='mean2anat')
+    mean2anatbbr = MapNode(fsl.FLIRT(), iterfield = ['in_file','wm_seg','reference','in_matrix_file'], name='mean2anatbbr')
+    anat2target_affine = MapNode(fsl.FLIRT(), iterfield = ['in_file'], name='anat2target_linear')
+    anat2targetmask = MapNode(interface=fsl.BET(mask = True,
+                                         no_output=True,
+                                         frac = 0.3),
+                          iterfield=['in_file'],
+                          name = 'anat2targetmask') 
+    warpfile = MapNode(fsl.ApplyXFM(interp='spline'), iterfield = ['in_file', 'in_matrix_file'],name='txm_registered')
+    """
+    Mask the functional runs with the extracted mask
+    """
+    maskWarpFile = MapNode(interface=fsl.ImageMaths(suffix='_masked',
+                                               op_string='-mas'),
+                      iterfield=['in_file', 'in_file2'],
+                      name = 'maskfunc')
 
     register.connect(inputnode, 'source_files', meanfunc, 'in_file')
     """
@@ -934,8 +940,11 @@ def reg_workflow(no_subjects, name = 'registration'):
     Binarize the segmentation
     """
     pickindex = lambda x, i: x[i]
-    register.connect(fast, ('partial_volume_files', pickindex, 2),
-                     binarize, 'in_file')
+    register.connect(fast, 'partial_volume_files', selectfile, 'inlist')
+
+    register.connect(selectfile, 'out', binarize, 'in_file')
+    # register.connect(fast, ('partial_volume_files', pickindex, 2),
+                     # binarize, 'in_file')
 
     """
     Calculate rigid transform from mean image to anatomical image
