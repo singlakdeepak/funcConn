@@ -875,8 +875,11 @@ def reg_workflow(no_subjects, name = 'registration'):
 
     '''
 
-    meanfunc = MapNode(fsl.ImageMaths(op_string='-Tmean',suffix='_mean'), iterfield = ['in_file'],name = 'meanfunc')
-    stripper = MapNode(fsl.BET(), 
+    # meanfunc = MapNode(fsl.ImageMaths(op_string='-Tmean',suffix='_mean'), iterfield = ['in_file'],name = 'meanfunc')
+    meanfunc = MapNode(interface=fsl.ExtractROI(t_size=1),
+                             iterfield=['in_file', 't_min'],
+                             name = 'meanfunc')
+    stripper = MapNode(fsl.BET(frac = 0.3), 
       iterfield = ['in_file'], name='stripper')
     fast = MapNode(fsl.FAST(), 
           iterfield =['in_files'], 
@@ -910,6 +913,7 @@ def reg_workflow(no_subjects, name = 'registration'):
                       name = 'maskWapFile')
 
     register.connect(inputnode, 'source_files', meanfunc, 'in_file')
+    register.connect(inputnode, ('source_files', pickmiddle), meanfunc, 't_min')
     """
     Estimate the tissue classes from the anatomical image. But use spm's segment
     as FSL appears to be breaking.
@@ -918,7 +922,6 @@ def reg_workflow(no_subjects, name = 'registration'):
     register.connect(inputnode, 'anatomical_images', stripper, 'in_file')
 
     register.connect(stripper, 'out_file', fast, 'in_files')
-
     """
     Binarize the segmentation
     """
@@ -936,7 +939,7 @@ def reg_workflow(no_subjects, name = 'registration'):
     mean2anat.inputs.searchr_x = [-180, 180]
     mean2anat.inputs.searchr_y = [-180, 180]
     mean2anat.inputs.searchr_z = [-180, 180]
-    register.connect(meanfunc,'out_file', mean2anat, 'in_file')
+    register.connect(meanfunc,'roi_file', mean2anat, 'in_file')
     register.connect(stripper, 'out_file', mean2anat, 'reference')
 
     """
@@ -950,9 +953,10 @@ def reg_workflow(no_subjects, name = 'registration'):
     mean2anatbbr.inputs.cost = 'bbr'
     mean2anatbbr.inputs.schedule = os.path.join(os.getenv('FSLDIR'),
                                                 'etc/flirtsch/bbr.sch')
-    register.connect(meanfunc,'out_file', mean2anatbbr, 'in_file')
+    register.connect(meanfunc,'roi_file', mean2anatbbr, 'in_file')
     register.connect(binarize, 'out_file', mean2anatbbr, 'wm_seg')
-    register.connect(inputnode, 'anatomical_images', mean2anatbbr, 'reference')
+    # register.connect(inputnode, 'anatomical_images', mean2anatbbr, 'reference')
+    register.connect(stripper, 'out_file', mean2anatbbr, 'reference')
     register.connect(mean2anat, 'out_matrix_file',
                      mean2anatbbr, 'in_matrix_file')
     """
@@ -969,8 +973,8 @@ def reg_workflow(no_subjects, name = 'registration'):
     # register.connect(anat2target_affine,'out_file', anat2targetmask, 'in_file')
     register.connect(inputnode,'target_image', anat2targetmask, 'in_file')
 
-    register.connect(anat2target_affine, 'out_matrix_file', concat_mat,'in_file')
-    register.connect(mean2anatbbr, 'out_matrix_file', concat_mat, 'in_file2')
+    register.connect(mean2anatbbr, 'out_matrix_file', concat_mat, 'in_file')
+    register.connect(anat2target_affine, 'out_matrix_file', concat_mat,'in_file2')
     warpfile.inputs.padding_size = 0
 
     register.connect(inputnode, 'source_files', warpfile, 'in_file')
@@ -988,7 +992,7 @@ def reg_workflow(no_subjects, name = 'registration'):
     register.connect(maskWarpFile, 'out_file', outputnode, 'transformed_files')
     register.connect(mean2anatbbr, 'out_matrix_file',
                      outputnode, 'func2anat_transform')
-    register.connect(concat_mat, 'out_matrix_file', 
+    register.connect(concat_mat, 'out_file', 
                       outputnode, 'func2std_transform')
     register.connect(maskWarpFile, 'out_file', datasink,'out_file')
 
