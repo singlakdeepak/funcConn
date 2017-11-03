@@ -852,13 +852,12 @@ def reg_workflow(no_subjects, name = 'registration'):
                                                                  'target_image']),
                         name='inputspec')
     outputnode = Node(interface=util.IdentityInterface(fields=['func2anat_transform',
+                                                                'func2std_transform',
                                                                   'transformed_files'
                                                                   ]),
                          name='outputspec')
 
-    '''
-    Different case defined in case the number of subjects are 1. Otherwise fsl.FAST() node was 
-    giving the error. 
+    ''' 
     Pipeline:
     #1 : Calculate the mean image from the functional run.
     #2 : Do BET on the mean image.
@@ -907,8 +906,8 @@ def reg_workflow(no_subjects, name = 'registration'):
     """
     maskWarpFile = MapNode(interface=fsl.ImageMaths(suffix='_masked',
                                                op_string='-mas'),
-                      iterfield=['in_file', 'in_file2'],
-                      name = 'maskfunc')
+                      iterfield=['in_file'],
+                      name = 'maskWapFile')
 
     register.connect(inputnode, 'source_files', meanfunc, 'in_file')
     """
@@ -989,6 +988,8 @@ def reg_workflow(no_subjects, name = 'registration'):
     register.connect(maskWarpFile, 'out_file', outputnode, 'transformed_files')
     register.connect(mean2anatbbr, 'out_matrix_file',
                      outputnode, 'func2anat_transform')
+    register.connect(concat_mat, 'out_matrix_file', 
+                      outputnode, 'func2std_transform')
     register.connect(maskWarpFile, 'out_file', datasink,'out_file')
 
     return register
