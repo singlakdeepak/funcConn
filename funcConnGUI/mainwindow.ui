@@ -30,7 +30,7 @@
      </size>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
@@ -201,6 +201,16 @@
            <string>Save 4-D ROI-wise correlations</string>
           </property>
          </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_13">
+          <property name="text">
+           <string>Repetition Time (TR)</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="lineEdit_TR"/>
         </item>
        </layout>
       </item>
@@ -511,7 +521,7 @@
         <item row="1" column="1">
          <widget class="QCheckBox" name="checkBox_HighPass">
           <property name="text">
-           <string>High Pass</string>
+           <string>High Pass (in s)</string>
           </property>
          </widget>
         </item>
@@ -528,7 +538,7 @@
         <item row="5" column="1">
          <widget class="QCheckBox" name="checkBox_LowPass">
           <property name="text">
-           <string>Low Pass</string>
+           <string>Low Pass (in s)</string>
           </property>
          </widget>
         </item>

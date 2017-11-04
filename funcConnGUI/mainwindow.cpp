@@ -415,7 +415,7 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
     ProcessingType["ProcessingWay"] = ProcessingWay;
     json["ProcessingType"] = ProcessingType;
     json["No of Groups"] = spinBoxValue;
-
+    json["Repetition Time"] = ui->lineEdit_TR->text().toFloat();
     if (ProcessingWay ==2){
         QJsonObject FeatList;
         FeatList["Info"] = QString("This is for case 2. We shall require the list of only the feat directories.");
@@ -489,9 +489,9 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
         json["Intensity Normalization"] = ui->checkBox_IntensityNorm->isChecked();
         json["Temporal Filtering"] = (ui->checkBox_HighPass->isChecked())||(ui->checkBox_LowPass->isChecked());
 
-        json["High Pass Value (in sigma)"] = ui->checkBox_HighPass->isChecked() ? ui->lineEdit_highpass->text().toFloat() : float(-1);
+        json["High Pass Value (in sigma)"] = ui->checkBox_HighPass->isChecked() ? ui->lineEdit_highpass->text().toFloat()/(2*ui->lineEdit_TR->text().toFloat()) : float(-1);
 
-        json["Low Pass Value (in sigma)"] = ui->checkBox_LowPass->isChecked() ? ui->lineEdit_lowpass->text().toFloat() : float(-1);
+        json["Low Pass Value (in sigma)"] = ui->checkBox_LowPass->isChecked() ? ui->lineEdit_lowpass->text().toFloat()/(2*ui->lineEdit_TR->text().toFloat()) : float(-1);
 
 
         json["Melodic ICA"] = ui->checkBox_MelodicICA->isChecked();

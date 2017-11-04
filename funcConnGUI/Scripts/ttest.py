@@ -242,6 +242,8 @@ def ttest_ind_samples_if_npy(ROICorrMapsA, ROICorrMapsB, equal_var = True, apply
                 Sample_mean_ArrayB, Sample_var_ArrayB, n_subjectsB,
                 equal_var = equal_var)
 
+def convert_ma_to_np(MaskedArrayObj):
+    return ma.filled(MaskedArrayObj)
 
 def fdr_correction(pvalues , type = 'ind_ROIs'):
     '''
