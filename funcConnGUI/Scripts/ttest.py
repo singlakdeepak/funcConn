@@ -8,22 +8,27 @@ from statsmodels.stats import multitest
 
 def div0( a, b ):
     '''
-	It is meant for ignoring the places where standard deviation 
-	is zero.
-	'''
+    It is meant for ignoring the places where standard deviation 
+    is zero.
+    '''
     """ ignore / 0, div0( [-1, 0, 1], 0 ) -> [0, 0, 0] """
     with np.errstate(divide='ignore', invalid='ignore'):
         c = np.divide( a, b )
         # c[ ~ np.isfinite( c )] = 0  # -inf inf NaN
     return c
 
+def convert_pvals_to_log_fmt(pvalues,Sample_mean_ArrayA = None, Sample_mean_ArrayB = None):
+    if (Sample_mean_ArrayA and Sample_mean_ArrayB) is not None:
+        return (-1*np.log10(pvalues)*np.sign(Sample_mean_ArrayA - Sample_mean_ArrayB))
+    return (-1*np.log10(pvalues))
+
 def calc_mean_and_std(ROICorrMaps, n_subjects, ROIAtlasmask, ddof =1, applyFisher = False):
     '''
-	Function for calculating the mean and standard 
-	deviation of the data. At a time, only one of the nii
-	file is loaded and the elements keep on adding as we 
-	enumerate over the subjects.
-	'''
+    Function for calculating the mean and standard 
+    deviation of the data. At a time, only one of the nii
+    file is loaded and the elements keep on adding as we 
+    enumerate over the subjects.
+    '''
     mask = nib.load(ROIAtlasmask).get_data()
     mask = ma.masked_object(mask,0).mask
     if (n_subjects != 0):
@@ -133,15 +138,22 @@ def ttest_1samp_for_all_ROIs(ROICorrMaps,
                                                             n_subjects,
                                                             ROIAtlasmask, ddof =1,
                                                             applyFisher = applyFisher)
-    ttest_1samp_for_all, pval = _ttest_1samp(Sample_mean_Array, 
-                                             Sample_std_Array,
-                                             n_subjects,
-                                             PopMean = PopMean)
-    return ttest_1samp_for_all, pval
+    if save_pval_in_log_fmt:
+        ttest, pvals = _ttest_1samp(Sample_mean_Array,
+                        Sample_std_Array,
+                        n_subjects,
+                        PopMean = PopMean)
+        return ttest, convert_pvals_to_log_fmt(pvals)
+
+    return _ttest_1samp(Sample_mean_Array,
+                        Sample_std_Array,
+                        n_subjects,
+                        PopMean = PopMean)
 
 
 def ttest_1samp_ROIs_if_npy(ROICorrMaps,
                             PopMean = 0.0,
+                            save_pval_in_log_fmt = True,
                             applyFisher = False):
     n_subjects = len(ROICorrMaps)
     assert (n_subjects>0)
@@ -149,6 +161,13 @@ def ttest_1samp_ROIs_if_npy(ROICorrMaps,
                                 calc_mean_and_std_if_npy( ROICorrMaps,
                                                         n_subjects, ddof =1,
                                                         applyFisher = applyFisher)
+    if save_pval_in_log_fmt:
+        ttest, pvals = _ttest_1samp(Sample_mean_Array,
+                        Sample_std_Array,
+                        n_subjects,
+                        PopMean = PopMean)
+        return ttest, convert_pvals_to_log_fmt(pvals)
+
     return _ttest_1samp(Sample_mean_Array,
                         Sample_std_Array,
                         n_subjects,
@@ -181,6 +200,7 @@ def _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
     return ttest_ind, pvalues
 
 def ttest_ind_samples(ROICorrMapsA, ROICorrMapsB, ROIAtlasmask, 
+                        save_pval_in_log_fmt = True,
                     equal_var = True, applyFisher = False):
     '''
     Modified from https://docs.scipy.org/doc/scipy-0.19.1/reference/generated/scipy.stats.ttest_ind.html ,
@@ -208,13 +228,21 @@ def ttest_ind_samples(ROICorrMapsA, ROICorrMapsB, ROIAtlasmask,
                                                               applyFisher = applyFisher)
     Sample_var_ArrayB = np.square(Sample_std_ArrayB)
     del(Sample_std_ArrayB)
-
+    if save_pval_in_log_fmt:
+        ttest, pvals = _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
+                Sample_mean_ArrayB, Sample_var_ArrayB, n_subjectsB,
+                equal_var = equal_var)
+        return ttest, convert_pvals_to_log_fmt(pvals, 
+                                            Sample_mean_ArrayA = Sample_mean_ArrayA,
+                                            Sample_mean_ArrayB = Sample_mean_ArrayB)
     # pvalues = stats.t.sf(np.abs(ttest_ind), df)*2
     return _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
                 Sample_mean_ArrayB, Sample_var_ArrayB, n_subjectsB,
                 equal_var = equal_var)
 
-def ttest_ind_samples_if_npy(ROICorrMapsA, ROICorrMapsB, equal_var = True, applyFisher = False):
+def ttest_ind_samples_if_npy(ROICorrMapsA, ROICorrMapsB, 
+                            save_pval_in_log_fmt = True,
+                            equal_var = True, applyFisher = False):
     '''
     Modified from https://docs.scipy.org/doc/scipy-0.19.1/reference/generated/scipy.stats.ttest_ind.html ,
     https://github.com/scipy/scipy/blob/v0.19.1/scipy/stats/stats.py#L3950-L4072
@@ -238,12 +266,20 @@ def ttest_ind_samples_if_npy(ROICorrMapsA, ROICorrMapsB, equal_var = True, apply
     Sample_var_ArrayB = np.square(Sample_std_ArrayB)
     del(Sample_std_ArrayB)
     # pvalues = stats.t.sf(np.abs(ttest_ind), df)*2
-    return _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
+    if save_pval_in_log_fmt:
+        ttest_vals, pvals = _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
+                Sample_mean_ArrayB, Sample_var_ArrayB, n_subjectsB,
+                equal_var = equal_var)
+        return ttest, convert_pvals_to_log_fmt(pvals,
+                                            Sample_mean_ArrayA = Sample_mean_ArrayA,
+                                            Sample_mean_ArrayB = Sample_mean_ArrayB)
+    return  _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
                 Sample_mean_ArrayB, Sample_var_ArrayB, n_subjectsB,
                 equal_var = equal_var)
 
 def convert_ma_to_np(MaskedArrayObj):
     return ma.filled(MaskedArrayObj)
+
 
 def fdr_correction(pvalues , type = 'ind_ROIs'):
     '''

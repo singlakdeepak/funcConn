@@ -23,6 +23,7 @@ funcConnGUI/Scripts/Group1
 funcConnGUI/Scripts/Group2
 funcConnGUI/Scripts/*.nii.gz
 funcConnGUI/Scripts/*.npy
+funcConnGUI/Scripts/__pycache__
 *.o
 *.nii.gz
 build*
