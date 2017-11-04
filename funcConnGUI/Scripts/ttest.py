@@ -4,7 +4,7 @@ import os
 from scipy import stats
 from numpy import ma
 import scipy.special as special
-
+from statsmodels.stats import multitest
 
 def div0( a, b ):
     '''
@@ -17,7 +17,7 @@ def div0( a, b ):
         # c[ ~ np.isfinite( c )] = 0  # -inf inf NaN
     return c
 
-def calc_mean_and_std(ROICorrMaps, n_subjects, ROIAtlasmask, applyFisher = False):
+def calc_mean_and_std(ROICorrMaps, n_subjects, ROIAtlasmask, ddof =1, applyFisher = False):
     '''
 	Function for calculating the mean and standard 
 	deviation of the data. At a time, only one of the nii
@@ -54,10 +54,10 @@ def calc_mean_and_std(ROICorrMaps, n_subjects, ROIAtlasmask, applyFisher = False
         Sample_std_Array += np.square(Corr_data)
         print('Done subject ', count)                                                                                                                                                                                                       
     Sample_mean_Array /= n_subjects
-    Sample_std_Array = np.sqrt(Sample_std_Array/n_subjects - np.square(Sample_mean_Array))
+    Sample_std_Array = np.sqrt((Sample_std_Array - n_subjects*np.square(Sample_mean_Array))/(n_subjects - ddof))
     return Sample_mean_Array,Sample_std_Array
 
-def calc_mean_and_std_if_npy(ROICorrMaps, n_subjects, applyFisher = False):
+def calc_mean_and_std_if_npy(ROICorrMaps, n_subjects, ddof =1, applyFisher = False):
     '''
     Function to be used if the file is given in the format 
     No of ROIs versus All brain voxels in the ROI mapped.
@@ -83,7 +83,7 @@ def calc_mean_and_std_if_npy(ROICorrMaps, n_subjects, applyFisher = False):
         Sample_std_Array += np.square(Corr_data)
         print('Done subject ', count)                                                                                                                                                                                               
     Sample_mean_Array /= n_subjects
-    Sample_std_Array = np.sqrt(Sample_std_Array/n_subjects - np.square(Sample_mean_Array))
+    Sample_std_Array = np.sqrt((Sample_std_Array - n_subjects*np.square(Sample_mean_Array))/(n_subjects - ddof))
     return Sample_mean_Array,Sample_std_Array
 
 def _ttest_1samp(Sample_mean_Array, Sample_std_Array, n_subjects, PopMean = 0.0):
@@ -93,7 +93,7 @@ def _ttest_1samp(Sample_mean_Array, Sample_std_Array, n_subjects, PopMean = 0.0)
     # pval = stats.t.sf(np.abs(ttest_1samp_for_all), df)*2
     pval = special.betainc(0.5*df, 0.5, df/ \
             (df + ttest_1samp_for_all*ttest_1samp_for_all)).reshape(ttest_1samp_for_all.shape)
-    ttest_1samp_for_all, pval = ma.filled(ttest_1samp_for_all), ma.filled(pval)
+    # ttest_1samp_for_all, pval = ma.filled(ttest_1samp_for_all), ma.filled(pval)
 
     return ttest_1samp_for_all, pval
 
@@ -131,7 +131,7 @@ def ttest_1samp_for_all_ROIs(ROICorrMaps,
     assert (n_subjects>0)
     Sample_mean_Array, Sample_std_Array = calc_mean_and_std(ROICorrMaps, 
                                                             n_subjects,
-                                                            ROIAtlasmask, 
+                                                            ROIAtlasmask, ddof =1,
                                                             applyFisher = applyFisher)
     ttest_1samp_for_all, pval = _ttest_1samp(Sample_mean_Array, 
                                              Sample_std_Array,
@@ -147,7 +147,7 @@ def ttest_1samp_ROIs_if_npy(ROICorrMaps,
     assert (n_subjects>0)
     Sample_mean_Array, Sample_std_Array = \
                                 calc_mean_and_std_if_npy( ROICorrMaps,
-                                                        n_subjects,
+                                                        n_subjects, ddof =1,
                                                         applyFisher = applyFisher)
     return _ttest_1samp(Sample_mean_Array,
                         Sample_std_Array,
@@ -161,7 +161,7 @@ def _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
     if equal_var:
         # force df to be an array for masked division not to throw a warning
         df = ma.asanyarray(n_subjectsA + n_subjectsB - 2.0)
-        svar = ((n_subjectsA-1)*Sample_var_ArrayA+(n_subjectsB-1)*Sample_var_ArrayB) / df
+        svar = ((n_subjectsA-1)*Sample_var_ArrayA+(n_subjectsB-1)*Sample_var_ArrayB)/ df
         denom = ma.sqrt(svar*(1.0/n_subjectsA + 1.0/n_subjectsB))  # n-D computation here!
     else:
         vn1 = Sample_var_ArrayA/n_subjectsA
@@ -176,7 +176,8 @@ def _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
     with np.errstate(divide='ignore', invalid='ignore'):
         ttest_ind = (Sample_mean_ArrayA - Sample_mean_ArrayB) / denom
     pvalues = special.betainc(0.5*df, 0.5, df/(df + ttest_ind*ttest_ind)).reshape(ttest_ind.shape)
-    ttest_ind, pvalues = ma.filled(ttest_ind), ma.filled(pvalues)
+    
+    # ttest_ind, pvalues = ma.filled(ttest_ind), ma.filled(pvalues)
     return ttest_ind, pvalues
 
 def ttest_ind_samples(ROICorrMapsA, ROICorrMapsB, ROIAtlasmask, 
@@ -195,7 +196,7 @@ def ttest_ind_samples(ROICorrMapsA, ROICorrMapsB, ROIAtlasmask,
     assert (n_subjectsB > 0)
     Sample_mean_ArrayA, Sample_std_ArrayA = calc_mean_and_std(ROICorrMapsA, 
                                                               n_subjectsA,
-                                                              ROIAtlasmask, 
+                                                              ROIAtlasmask, ddof =1,
                                                               applyFisher = applyFisher)
     Sample_var_ArrayA = np.square(Sample_std_ArrayA)
     del(Sample_std_ArrayA)
@@ -203,7 +204,7 @@ def ttest_ind_samples(ROICorrMapsA, ROICorrMapsB, ROIAtlasmask,
     # n_subjectsB = len(ROICorrMapsB)
     Sample_mean_ArrayB, Sample_std_ArrayB = calc_mean_and_std(ROICorrMapsB, 
                                                               n_subjectsB,
-                                                              ROIAtlasmask, 
+                                                              ROIAtlasmask, ddof =1,
                                                               applyFisher = applyFisher)
     Sample_var_ArrayB = np.square(Sample_std_ArrayB)
     del(Sample_std_ArrayB)
@@ -227,13 +228,12 @@ def ttest_ind_samples_if_npy(ROICorrMapsA, ROICorrMapsB, equal_var = True, apply
     assert (n_subjectsA > 0)
     assert (n_subjectsB > 0)
     Sample_mean_ArrayA, Sample_std_ArrayA = calc_mean_and_std_if_npy(ROICorrMapsA, 
-                                                              n_subjectsA, 
+                                                              n_subjectsA, ddof = 1,
                                                               applyFisher = applyFisher)
     Sample_var_ArrayA = np.square(Sample_std_ArrayA)
     del(Sample_std_ArrayA)
     Sample_mean_ArrayB, Sample_std_ArrayB = calc_mean_and_std_if_npy(ROICorrMapsB, 
-                                                              n_subjectsB,
-                                                              ROIAtlasmask, 
+                                                              n_subjectsB, ddof =1,
                                                               applyFisher = applyFisher)
     Sample_var_ArrayB = np.square(Sample_std_ArrayB)
     del(Sample_std_ArrayB)
@@ -242,6 +242,14 @@ def ttest_ind_samples_if_npy(ROICorrMapsA, ROICorrMapsB, equal_var = True, apply
                 Sample_mean_ArrayB, Sample_var_ArrayB, n_subjectsB,
                 equal_var = equal_var)
 
+
+def fdr_correction(pvalues , type = 'ind_ROIs'):
+    '''
+    Two types:
+    ind_ROIs: When the ROIs are taken independently and the FDR is done considering the 
+           the tests only in that ROI. 
+    all: When all the tests are treated as one.  
+    '''
 
 # def ttest_1samp_for_one_ROI(ROICorrMaps, PopMean = 0.0, ROINo = 0):
     
