@@ -5,6 +5,8 @@ from scipy import stats
 from numpy import ma
 import scipy.special as special
 from statsmodels.stats import multitest
+from multiprocessing import Pool
+from functools import partial
 
 def div0( a, b ):
     '''
@@ -57,7 +59,7 @@ def calc_mean_and_std(ROICorrMaps, n_subjects, ROIAtlasmask, ddof =1, applyFishe
         
         Sample_mean_Array += Corr_data
         Sample_std_Array += np.square(Corr_data)
-        print('Done subject ', count)                                                                                                                                                                                                       
+        print('Done subject ', count +1)                                                                                                                                                                                                       
     Sample_mean_Array /= n_subjects
     Sample_std_Array = np.sqrt((Sample_std_Array - n_subjects*np.square(Sample_mean_Array))/(n_subjects - ddof))
     return Sample_mean_Array,Sample_std_Array
@@ -86,7 +88,7 @@ def calc_mean_and_std_if_npy(ROICorrMaps, n_subjects, ddof =1, applyFisher = Fal
             Corr_data = np.arctanh(Corr_data)
         Sample_mean_Array += Corr_data
         Sample_std_Array += np.square(Corr_data)
-        print('Done subject ', count)                                                                                                                                                                                               
+        print('Done subject ', count + 1)                                                                                                                                                                                               
     Sample_mean_Array /= n_subjects
     Sample_std_Array = np.sqrt((Sample_std_Array - n_subjects*np.square(Sample_mean_Array))/(n_subjects - ddof))
     return Sample_mean_Array,Sample_std_Array
@@ -267,7 +269,7 @@ def ttest_ind_samples_if_npy(ROICorrMapsA, ROICorrMapsB,
     del(Sample_std_ArrayB)
     # pvalues = stats.t.sf(np.abs(ttest_ind), df)*2
     if save_pval_in_log_fmt:
-        ttest_vals, pvals = _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
+        ttest, pvals = _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
                 Sample_mean_ArrayB, Sample_var_ArrayB, n_subjectsB,
                 equal_var = equal_var)
         return ttest, convert_pvals_to_log_fmt(pvals,
@@ -283,11 +285,36 @@ def convert_ma_to_np(MaskedArrayObj):
 
 def fdr_correction(pvalues , type = 'ind_ROIs'):
     '''
+    pvalues :: Pvalue maps for all ROIs
     Two types:
     ind_ROIs: When the ROIs are taken independently and the FDR is done considering the 
            the tests only in that ROI. 
     all: When all the tests are treated as one.  
     '''
+    FDR_types = ['ind_ROIs', 'all']
 
-# def ttest_1samp_for_one_ROI(ROICorrMaps, PopMean = 0.0, ROINo = 0):
-    
+    pool_inputs = [] #np.arange(number_of_ROIs)
+    if (type == 'ind_ROIs'):
+        # no_rois : Total ROIS in the P-value file
+        no_rois = pvalues.shape[3]
+        for roi_number in range(no_rois):
+            pool_inputs.append(pvalues[:,])
+            m = MyManager()
+            m.start()
+            fdrcorrected_brain_4Dtensor = m.np_zeros((brain_data.header.get_data_shape()))
+            fdrcorrected_brain_4Dtensor_mask = m.np_zeros((brain_data.header.get_data_shape()))
+            fdr_brain_voxel_list = m.np_zeros((X.shape[0],X.shape[1]-1))
+
+            func = partial(do_fdr, fdrcorrected_brain_4Dtensor,fdrcorrected_brain_4Dtensor_mask)
+
+            pool = Pool(8)
+
+            data_outputs = pool.map(func, pool_inputs)
+
+
+        
+
+    # print (brain_data.header)
+
+
+        

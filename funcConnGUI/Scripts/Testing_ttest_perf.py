@@ -2,7 +2,7 @@ import os
 import numpy as np
 import timeit
 import ttest
-from numpy import ma
+
 start = timeit.default_timer()
 #list1 = os.listdir('Group1/')
 #list1 = [os.path.join(os.getcwd(), 'Group1/' + file) for file in list1]
