@@ -585,7 +585,7 @@ void getattributes(int argc,char *argv[])
 {
   char tmp;
 
-  while((tmp=getopt(argc,argv,"h:i:r:o:t:s:x:y:z:a:"))!=-1)
+  while((tmp=getopt(argc,argv,"h:i:r:o:t:s:x:y:z:a:m:"))!=-1)
   {
 	switch(tmp)
 	{

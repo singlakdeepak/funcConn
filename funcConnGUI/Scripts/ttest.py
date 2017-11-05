@@ -7,6 +7,10 @@ import scipy.special as special
 from statsmodels.stats import multitest
 from multiprocessing import Pool
 from functools import partial
+import multiprocessing.managers
+class MyManager(multiprocessing.managers.BaseManager):
+    pass
+MyManager.register('ma_empty_like', ma.empty_like, multiprocessing.managers.ArrayProxy)
 
 def div0( a, b ):
     '''
@@ -282,39 +286,121 @@ def ttest_ind_samples_if_npy(ROICorrMapsA, ROICorrMapsB,
 def convert_ma_to_np(MaskedArrayObj):
     return ma.filled(MaskedArrayObj)
 
+def fdrcorrect_worker(fdrcorrected_brain, rejected_pvals, roi_number, pvals, is_npy, alpha=0.05, method='indep'):
+    '''pvalue correction for false discovery rate
+    This covers Benjamini/Hochberg for independent or positively correlated and
+    Benjamini/Yekutieli for general or negatively correlated tests. Both are
+    available in the function multipletests, as method=`fdr_bh`, resp. `fdr_by`.
+    Parameters
+    ----------
+    pvals : array_like
+        set of p-values of the individual tests.
+    alpha : float
+        error rate
+    method : {'indep', 'negcorr')
+    Returns
+    -------
+    rejected : array, bool
+        True if a hypothesis is rejected, False if not
+    pvalue-corrected : array
+        pvalues adjusted for multiple hypothesis testing to limit FDR
+    Notes
+    -----
+    If there is prior information on the fraction of true hypothesis, then alpha
+    should be set to alpha * m/m_0 where m is the number of tests,
+    given by the p-values, and m_0 is an estimate of the true hypothesis.
+    (see Benjamini, Krieger and Yekuteli)
+    The two-step method of Benjamini, Krieger and Yekutiel that estimates the number
+    of false hypotheses will be available (soon).
+    Method names can be abbreviated to first letter, 'i' or 'p' for fdr_bh and 'n' for
+    fdr_by.
+    '''
 
-def fdr_correction(pvalues , type = 'ind_ROIs'):
+    def _ecdf(x):
+        '''no frills empirical cdf used in fdrcorrection
+        '''
+        nobs = len(x)
+        return np.arange(1,nobs+1)/float(nobs)
+
+    indices = np.where(mask_pvals ==False)
+    Truepvals = ma.compressed(pvals)
+
+    pvals_sortind = np.argsort(Truepvals)
+    pvals_sorted = np.take(Truepvals, pvals_sortind)
+
+    if method in ['i', 'indep', 'p', 'poscorr']:
+        ecdffactor = _ecdf(pvals_sorted)
+    elif method in ['n', 'negcorr']:
+        cm = np.sum(1./np.arange(1, len(pvals_sorted)+1))   #corrected this
+        ecdffactor = _ecdf(pvals_sorted) / cm
+##    elif method in ['n', 'negcorr']:
+##        cm = np.sum(np.arange(len(pvals)))
+##        ecdffactor = ecdf(pvals_sorted)/cm
+    else:
+        raise ValueError('only indep and negcorr implemented')
+    reject = pvals_sorted <= ecdffactor*alpha
+    if reject.any():
+        rejectmax = max(np.nonzero(reject)[0])
+        reject[:rejectmax] = True
+
+    pvals_corrected_raw = pvals_sorted / ecdffactor
+    pvals_corrected = np.minimum.accumulate(pvals_corrected_raw[::-1])[::-1]
+    del pvals_corrected_raw
+    pvals_corrected[pvals_corrected>1] = 1
+    pvals_corrected_ = np.empty_like(pvals_corrected)
+    pvals_corrected_[pvals_sortind] = pvals_corrected
+    del pvals_corrected
+    reject_ = np.empty_like(reject)
+    reject_[pvals_sortind] = reject
+    if not is_npy:
+        rejected_pvalBrain = ma.masked_all_like(pvals)
+        rejected_pvalBrain[indices] = reject_
+        rejected_pvals[:,:,:,indices] = rejected_pvalBrain
+
+        pvals_correctedBrain = ma.masked_all_like(pvals)
+        pvals_correctedBrain[indices] = pvals_corrected_
+        fdrcorrected_brain[:,:,:,roi_number] = pvals_correctedBrain
+        print("Done for ", roi_number)
+    else:
+        rejected_pvals[roi_number,indices] = reject_
+        fdrcorrected_brain[roi_number,indices] = pvals_corrected_
+        print("Done for ", roi_number)
+
+def fdr_correction(pvalues , type = 'indep', is_npy = False):
     '''
     pvalues :: Pvalue maps for all ROIs
     Two types:
-    ind_ROIs: When the ROIs are taken independently and the FDR is done considering the 
+    indep: When the ROIs are taken independently and the FDR is done considering the 
            the tests only in that ROI. 
     all: When all the tests are treated as one.  
     '''
-    FDR_types = ['ind_ROIs', 'all']
+    FDR_types = ['indep', 'all']
 
     pool_inputs = [] #np.arange(number_of_ROIs)
-    if (type == 'ind_ROIs'):
+    if (type == 'indep'):
         # no_rois : Total ROIS in the P-value file
-        no_rois = pvalues.shape[3]
+        if not is_npy:
+            no_rois = pvalues.shape[3]
+        else:
+            no_rois = pvalues.shape[0]
         for roi_number in range(no_rois):
-            pool_inputs.append(pvalues[:,])
+            if not is_npy:
+                pool_inputs.append((roi_number, pvalues[:,:,:,roi_number], is_npy))
+            else:
+                pool_inputs.append((roi_number,pvalues[roi_number,:],is_npy))
             m = MyManager()
             m.start()
-            fdrcorrected_brain_4Dtensor = m.np_zeros((brain_data.header.get_data_shape()))
-            fdrcorrected_brain_4Dtensor_mask = m.np_zeros((brain_data.header.get_data_shape()))
-            fdr_brain_voxel_list = m.np_zeros((X.shape[0],X.shape[1]-1))
+            fdrcorrected_brain = m.ma_empty_like(pvalues)
+            rejected_pvals = m.ma_empty_like(pvalues)
+            # fdr_brain_voxel_list = m.ma_empty_like((X.shape[0],X.shape[1]-1))
 
-            func = partial(do_fdr, fdrcorrected_brain_4Dtensor,fdrcorrected_brain_4Dtensor_mask)
+            func = partial(fdrcorrect_worker, fdrcorrected_brain, rejected_pvals)
 
             pool = Pool(8)
 
             data_outputs = pool.map(func, pool_inputs)
-
-
-        
-
-    # print (brain_data.header)
-
+        return rejected_pvals, fdrcorrected_brain
 
         
+
+    
