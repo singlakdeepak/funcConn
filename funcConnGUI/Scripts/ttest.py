@@ -289,8 +289,17 @@ def convert_ma_to_np(MaskedArrayObj):
 def fdrcorrect_worker2(A,B,args):
     return fdrcorrect_worker(A,B,*args)
 
-def fdrcorrect_worker(fdrcorrected_brain, rejected_pvals, roi_number, pvals, is_npy, alpha=0.05, method='indep'):
-    '''pvalue correction for false discovery rate
+def fdrcorrect_worker(fdrcorrected_brain, 
+                    rejected_pvals, 
+                    roi_number, pvals, 
+                    is_npy, 
+                    alpha=0.05, type = 'indep_samps',
+                    method='indep'):
+    '''
+    Taken andd modified from : https://github.com/statsmodels/statsmodels/blob/master/statsmodels/stats/multitest.py
+    http://www.statsmodels.org/dev/_modules/statsmodels/stats/multitest.html
+
+    pvalue correction for false discovery rate
     This covers Benjamini/Hochberg for independent or positively correlated and
     Benjamini/Yekutieli for general or negatively correlated tests. Both are
     available in the function multipletests, as method=`fdr_bh`, resp. `fdr_by`.
@@ -358,35 +367,46 @@ def fdrcorrect_worker(fdrcorrected_brain, rejected_pvals, roi_number, pvals, is_
     if not is_npy:
         rejected_pvalBrain = ma.masked_all_like(pvals)
         rejected_pvalBrain[indices] = reject_
-        rejected_pvals[:,:,:,indices] = rejected_pvalBrain
+        if (type == 'indep_samps'):
+            rejected_pvals[:,:,:,roi_number] = rejected_pvalBrain
+        else:
+            rejected_pvals = rejected_pvalBrain
 
         pvals_correctedBrain = ma.masked_all_like(pvals)
         pvals_correctedBrain[indices] = pvals_corrected_
-        fdrcorrected_brain[:,:,:,roi_number] = pvals_correctedBrain
+        if (type =='indep_samps'):
+            fdrcorrected_brain[:,:,:,roi_number] = pvals_correctedBrain
+        else:
+            fdrcorrected_brain = pvals_correctedBrain
         print("Done for ", roi_number)
     else:
-        rejected_pvals[roi_number,indices] = reject_
-        fdrcorrected_brain[roi_number,indices] = pvals_corrected_
+        if (type == 'indep_samps'):
+            rejected_pvals[roi_number,indices] = reject_
+            fdrcorrected_brain[roi_number,indices] = pvals_corrected_
+        else:
+            rejected_pvals[indices] = reject_
+            fdrcorrected_brain[indices] = pvals_corrected_
         print("Done for ", roi_number)
 
-def fdr_correction(pvalues , type = 'indep', is_npy = False):
+def fdr_correction(pvalues , type = 'indep_samps', is_npy = False):
     '''
     pvalues :: Pvalue maps for all ROIs
     Two types:
-    indep: When the ROIs are taken independently and the FDR is done considering the 
+    indep_samps: When the ROIs are taken independently and the FDR is done considering the 
            the tests only in that ROI. 
     all: When all the tests are treated as one.  
     '''
-    FDR_types = ['indep', 'all']
-    procs = 8
-    pool = Pool(procs)
+    FDR_types = ['indep_samps', 'all']
 
-    m = MyManager()
-    m.start()
-    fdrcorrected_brain = m.ma_empty_like(pvalues)
-    rejected_pvals = m.ma_empty_like(pvalues)
-    func = partial(fdrcorrect_worker2, fdrcorrected_brain, rejected_pvals)
-    if (type == 'indep'):
+    if (type == 'indep_samps'):
+        procs = 8
+        pool = Pool(procs)
+
+        m = MyManager()
+        m.start()
+        fdrcorrected_brain = m.ma_empty_like(pvalues)
+        rejected_pvals = m.ma_empty_like(pvalues)
+        func = partial(fdrcorrect_worker2, fdrcorrected_brain, rejected_pvals)
         # no_rois : Total ROIS in the P-value file
         if not is_npy:
             no_rois = pvalues.shape[3]
@@ -443,20 +463,15 @@ def fdr_correction(pvalues , type = 'indep', is_npy = False):
 
         data_outputs = pool.map(func, pool_inputs)
 
-        # if (no_rois%procs!=0):
-        #     pool_inputs = [] #np.arange(number_of_ROIs)
-        #     for roi_number in range(MaxPools*procs,no_rois):
-        #         if not is_npy:
-        #             pool_inputs.append((roi_number, 
-        #                                 pvalues[:,:,:,roi_number], 
-        #                                 is_npy))
-        #         else:
-        #             pool_inputs.append((roi_number,
-        #                                 ma.masked_array(pvalues[roi_number,:],
-        #                                     fill_value = 0),
-        #                                 is_npy))
-
-        #     data_outputs = pool.map(func, pool_inputs)
-
         return rejected_pvals, fdrcorrected_brain
+    elif (type == 'all'):
+        fdrcorrected_brain = []
+        rejected_pvals = []
+        fdrcorrect_worker(fdrcorrected_brain, rejected_pvals, 
+                            None, pvalues,is_npy, 
+                            type = type)
+        return rejected_pvals, fdrcorrected_brain
+    else:
+        return 1
+
 
