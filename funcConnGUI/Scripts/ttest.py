@@ -380,6 +380,12 @@ def fdr_correction(pvalues , type = 'indep', is_npy = False):
     FDR_types = ['indep', 'all']
     procs = 8
     pool = Pool(procs)
+
+    m = MyManager()
+    m.start()
+    fdrcorrected_brain = m.ma_empty_like(pvalues)
+    rejected_pvals = m.ma_empty_like(pvalues)
+    func = partial(fdrcorrect_worker2, fdrcorrected_brain, rejected_pvals)
     if (type == 'indep'):
         # no_rois : Total ROIS in the P-value file
         if not is_npy:
@@ -398,13 +404,6 @@ def fdr_correction(pvalues , type = 'indep', is_npy = False):
 
                 select_roi+=1
 
-            m = MyManager()
-            m.start()
-            fdrcorrected_brain = m.ma_empty_like(pvalues)
-            rejected_pvals = m.ma_empty_like(pvalues)
-            # fdr_brain_voxel_list = m.ma_empty_like((X.shape[0],X.shape[1]-1))
-
-            func = partial(fdrcorrect_worker2, fdrcorrected_brain, rejected_pvals)
             data_outputs = pool.map(func, pool_inputs)
 
         if (no_rois%procs!=0):
@@ -415,15 +414,6 @@ def fdr_correction(pvalues , type = 'indep', is_npy = False):
                 else:
                     pool_inputs.append((roi_number,ma.masked_array(pvalues[roi_number,:]),is_npy))
 
-                    select_roi+=1
-
-            m = MyManager()
-            m.start()
-            fdrcorrected_brain = m.ma_empty_like(pvalues)
-            rejected_pvals = m.ma_empty_like(pvalues)
-            # fdr_brain_voxel_list = m.ma_empty_like((X.shape[0],X.shape[1]-1))
-
-            func = partial(fdrcorrect_worker2, fdrcorrected_brain, rejected_pvals)
             data_outputs = pool.map(func, pool_inputs)
 
         return rejected_pvals, fdrcorrected_brain
