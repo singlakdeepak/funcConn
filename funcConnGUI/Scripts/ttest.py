@@ -395,37 +395,68 @@ def fdr_correction(pvalues , type = 'indep', is_npy = False):
         print('Total no of ROIs ',no_rois)
         MaxPools = no_rois//procs
         print('MaxPools: ', MaxPools)
-        for roi_number in range(0,MaxPools*procs,procs):
-            pool_inputs = [] #np.arange(number_of_ROIs)
-            select_roi = 0
-            while (select_roi<procs):
-                print(roi_number +select_roi)
-                if not is_npy:
-                    pool_inputs.append((roi_number+select_roi, 
-                                    pvalues[:,:,:,roi_number+select_roi], is_npy))
-                else:
-                    pool_inputs.append((roi_number+select_roi,
-                                    ma.masked_array(pvalues[roi_number + select_roi,:],
-                                    fill_value = 0),
-                                    is_npy))
-                select_roi+=1
+        # for roi_number in range(0,MaxPools*procs,procs):
+        #     pool_inputs = [] #np.arange(number_of_ROIs)
+        #     select_roi = 0
+        #     while (select_roi<procs):
+        #         print(roi_number +select_roi)
+        #         if not is_npy:
+        #             pool_inputs.append((roi_number+select_roi, 
+        #                             pvalues[:,:,:,roi_number+select_roi], is_npy))
+        #         else:
+        #             pool_inputs.append((roi_number+select_roi,
+        #                             ma.masked_array(pvalues[roi_number + select_roi,:],
+        #                             fill_value = 0),
+        #                             is_npy))
+        #         select_roi+=1
 
-            data_outputs = pool.map(func, pool_inputs)
+        #     data_outputs = pool.map(func, pool_inputs)
 
-        if (no_rois%procs!=0):
-            pool_inputs = [] #np.arange(number_of_ROIs)
-            for roi_number in range(MaxPools*procs,no_rois):
-                if not is_npy:
-                    pool_inputs.append((roi_number, 
-                                        pvalues[:,:,:,roi_number], 
-                                        is_npy))
-                else:
-                    pool_inputs.append((roi_number,
-                                        ma.masked_array(pvalues[roi_number,:],
-                                            fill_value = 0),
-                                        is_npy))
+        # if (no_rois%procs!=0):
+        #     pool_inputs = [] #np.arange(number_of_ROIs)
+        #     for roi_number in range(MaxPools*procs,no_rois):
+        #         if not is_npy:
+        #             pool_inputs.append((roi_number, 
+        #                                 pvalues[:,:,:,roi_number], 
+        #                                 is_npy))
+        #         else:
+        #             pool_inputs.append((roi_number,
+        #                                 ma.masked_array(pvalues[roi_number,:],
+        #                                     fill_value = 0),
+        #                                 is_npy))
 
-            data_outputs = pool.map(func, pool_inputs)
+        #     data_outputs = pool.map(func, pool_inputs)
+
+        pool_inputs = [] #np.arange(number_of_ROIs)
+        for roi_number in range(no_rois):
+
+            print(roi_number)
+            if not is_npy:
+                pool_inputs.append((roi_number, 
+                                pvalues[:,:,:,roi_number], is_npy))
+            else:
+                pool_inputs.append((roi_number,
+                                ma.masked_array(pvalues[roi_number ,:],
+                                fill_value = 0),
+                                is_npy))
+
+
+        data_outputs = pool.map(func, pool_inputs)
+
+        # if (no_rois%procs!=0):
+        #     pool_inputs = [] #np.arange(number_of_ROIs)
+        #     for roi_number in range(MaxPools*procs,no_rois):
+        #         if not is_npy:
+        #             pool_inputs.append((roi_number, 
+        #                                 pvalues[:,:,:,roi_number], 
+        #                                 is_npy))
+        #         else:
+        #             pool_inputs.append((roi_number,
+        #                                 ma.masked_array(pvalues[roi_number,:],
+        #                                     fill_value = 0),
+        #                                 is_npy))
+
+        #     data_outputs = pool.map(func, pool_inputs)
 
         return rejected_pvals, fdrcorrected_brain
 
