@@ -286,6 +286,9 @@ def ttest_ind_samples_if_npy(ROICorrMapsA, ROICorrMapsB,
 def convert_ma_to_np(MaskedArrayObj):
     return ma.filled(MaskedArrayObj)
 
+def fdrcorrect_worker2(A,B,args):
+    return fdrcorrect_worker(A,B,*args)
+
 def fdrcorrect_worker(fdrcorrected_brain, rejected_pvals, roi_number, pvals, is_npy, alpha=0.05, method='indep'):
     '''pvalue correction for false discovery rate
     This covers Benjamini/Hochberg for independent or positively correlated and
@@ -321,7 +324,7 @@ def fdrcorrect_worker(fdrcorrected_brain, rejected_pvals, roi_number, pvals, is_
         '''
         nobs = len(x)
         return np.arange(1,nobs+1)/float(nobs)
-
+    mask_pvals = pvals.mask
     indices = np.where(mask_pvals ==False)
     Truepvals = ma.compressed(pvals)
 
@@ -387,20 +390,17 @@ def fdr_correction(pvalues , type = 'indep', is_npy = False):
             if not is_npy:
                 pool_inputs.append((roi_number, pvalues[:,:,:,roi_number], is_npy))
             else:
-                pool_inputs.append((roi_number,pvalues[roi_number,:],is_npy))
+                pool_inputs.append((roi_number,ma.masked_array(pvalues[roi_number,:]),is_npy))
             m = MyManager()
             m.start()
             fdrcorrected_brain = m.ma_empty_like(pvalues)
             rejected_pvals = m.ma_empty_like(pvalues)
             # fdr_brain_voxel_list = m.ma_empty_like((X.shape[0],X.shape[1]-1))
 
-            func = partial(fdrcorrect_worker, fdrcorrected_brain, rejected_pvals)
+            func = partial(fdrcorrect_worker2, fdrcorrected_brain, rejected_pvals)
 
             pool = Pool(8)
 
             data_outputs = pool.map(func, pool_inputs)
         return rejected_pvals, fdrcorrected_brain
 
-        
-
-    

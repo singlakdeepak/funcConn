@@ -123,7 +123,7 @@ if __name__ == '__main__':
 
     start = timeit.default_timer()
     # JSONFile = sys.argv[1]
-    JSONFile = '/home/deepak/Desktop/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
+    JSONFile = '/home1/ee3140506/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
     with open(JSONFile) as JSON:
         try :
             
