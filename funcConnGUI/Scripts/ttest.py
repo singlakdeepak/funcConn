@@ -392,18 +392,20 @@ def fdr_correction(pvalues , type = 'indep', is_npy = False):
             no_rois = pvalues.shape[3]
         else:
             no_rois = pvalues.shape[0]
+        print('Total no of ROIs ',no_rois)
         MaxPools = no_rois//procs
-        for roi_number in range(0,procs,MaxPools*procs):
+        print('MaxPools: ', MaxPools)
+        for roi_number in range(0,MaxPools*procs,procs):
             pool_inputs = [] #np.arange(number_of_ROIs)
             select_roi = 0
             while (select_roi<procs):
+                print(roi_number +select_roi)
                 if not is_npy:
-                    pool_inputs.append((roi_number, pvalues[:,:,:,roi_number+select_roi], is_npy))
+                    pool_inputs.append((roi_number+select_roi, pvalues[:,:,:,roi_number+select_roi], is_npy))
                 else:
-                    pool_inputs.append((roi_number,ma.masked_array(pvalues[roi_number + select_roi,:]),is_npy))
-
+                    pool_inputs.append((roi_number+select_roi,ma.masked_array(pvalues[roi_number + select_roi,:]),is_npy))
                 select_roi+=1
-
+            print('Reached here')
             data_outputs = pool.map(func, pool_inputs)
 
         if (no_rois%procs!=0):
