@@ -378,19 +378,26 @@ def fdr_correction(pvalues , type = 'indep', is_npy = False):
     all: When all the tests are treated as one.  
     '''
     FDR_types = ['indep', 'all']
-
-    pool_inputs = [] #np.arange(number_of_ROIs)
+    procs = 8
+    pool = Pool(procs)
     if (type == 'indep'):
         # no_rois : Total ROIS in the P-value file
         if not is_npy:
             no_rois = pvalues.shape[3]
         else:
             no_rois = pvalues.shape[0]
-        for roi_number in range(no_rois):
-            if not is_npy:
-                pool_inputs.append((roi_number, pvalues[:,:,:,roi_number], is_npy))
-            else:
-                pool_inputs.append((roi_number,ma.masked_array(pvalues[roi_number,:]),is_npy))
+        MaxPools = no_rois//procs
+        for roi_number in range(0,procs,MaxPools*procs):
+            pool_inputs = [] #np.arange(number_of_ROIs)
+            select_roi = 0
+            while (select_roi<procs):
+                if not is_npy:
+                    pool_inputs.append((roi_number, pvalues[:,:,:,roi_number+select_roi], is_npy))
+                else:
+                    pool_inputs.append((roi_number,ma.masked_array(pvalues[roi_number + select_roi,:]),is_npy))
+
+                select_roi+=1
+
             m = MyManager()
             m.start()
             fdrcorrected_brain = m.ma_empty_like(pvalues)
@@ -398,9 +405,26 @@ def fdr_correction(pvalues , type = 'indep', is_npy = False):
             # fdr_brain_voxel_list = m.ma_empty_like((X.shape[0],X.shape[1]-1))
 
             func = partial(fdrcorrect_worker2, fdrcorrected_brain, rejected_pvals)
-
-            pool = Pool(8)
-
             data_outputs = pool.map(func, pool_inputs)
+
+        if (no_rois%procs!=0):
+            pool_inputs = [] #np.arange(number_of_ROIs)
+            for roi_number in range(MaxPools*procs,no_rois):
+                if not is_npy:
+                    pool_inputs.append((roi_number, pvalues[:,:,:,roi_number], is_npy))
+                else:
+                    pool_inputs.append((roi_number,ma.masked_array(pvalues[roi_number,:]),is_npy))
+
+                    select_roi+=1
+
+            m = MyManager()
+            m.start()
+            fdrcorrected_brain = m.ma_empty_like(pvalues)
+            rejected_pvals = m.ma_empty_like(pvalues)
+            # fdr_brain_voxel_list = m.ma_empty_like((X.shape[0],X.shape[1]-1))
+
+            func = partial(fdrcorrect_worker2, fdrcorrected_brain, rejected_pvals)
+            data_outputs = pool.map(func, pool_inputs)
+
         return rejected_pvals, fdrcorrected_brain
 
