@@ -122,8 +122,8 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
 if __name__ == '__main__':
 
     start = timeit.default_timer()
-    # JSONFile = sys.argv[1]
-    JSONFile = '/home1/ee3140506/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
+    JSONFile = sys.argv[1]
+#    JSONFile = '/home1/ee3140506/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
     with open(JSONFile) as JSON:
         try :
             
