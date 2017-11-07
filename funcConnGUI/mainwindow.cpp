@@ -545,10 +545,10 @@ void MainWindow::on_pushButton_Go_clicked()
         saveFile.write(saveDoc.toJson());
 
 
-//        QProcess p;
-//        p.start("python " + JSONFile);
-//        p.waitForFinished(-1);
-        //QString p_stdout = p.readAllStandardOutput();
+        QProcess p;
+        p.start("python read_json.py " + JSONFile);
+        p.waitForFinished(-1);
+        QString p_stdout = p.readAllStandardOutput();
 
     }
 }
