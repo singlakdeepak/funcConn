@@ -279,7 +279,9 @@ def ttest_ind_samples_if_npy(ROICorrMapsA, ROICorrMapsB,
         return ttest, convert_pvals_to_log_fmt(pvals,
                                             Sample_mean_ArrayA = Sample_mean_ArrayA,
                                             Sample_mean_ArrayB = Sample_mean_ArrayB)
-    return  _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
+    return  Sample_mean_ArrayA, \
+                Sample_mean_ArrayB, \
+                _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
                 Sample_mean_ArrayB, Sample_var_ArrayB, n_subjectsB,
                 equal_var = equal_var)
 
@@ -455,10 +457,10 @@ def fdr_correction(pvalues , type = 'indep_samps', is_npy = False):
                 pool_inputs.append((roi_number, 
                                 pvalues[:,:,:,roi_number], is_npy))
             else:
-                pool_inputs.append((roi_number,
-                                ma.masked_array(pvalues[roi_number ,:],
-                                fill_value = 0),
-                                is_npy))
+                pool_inputs.append((roi_number, pvalues[roi_number, :], is_npy))
+                                # ma.masked_array(pvalues[roi_number ,:],
+                                # fill_value = 0),
+                                # is_npy))
 
 
         data_outputs = pool.map(func, pool_inputs)

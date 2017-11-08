@@ -7,7 +7,9 @@ import os
 import shutil
 import subprocess
 from nipype.interfaces import fsl
-
+import corr
+import ttest
+threads = 8
 def get_TR(in_file):
     import nibabel
     f = nibabel.load(in_file)
@@ -66,7 +68,7 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
         preproc.inputs.inputspec.fwhm = FWHM
         preproc.base_dir = TEMP_DIR_FOR_STORAGE
         preproc.write_graph(graph2use='colored', format='png', simple_form=True)
-        preproc.run('MultiProc', plugin_args={'n_procs': 8})
+        preproc.run('MultiProc', plugin_args={'n_procs': threads})
 
     datasink_results=[]
     datasink_results += [each for each in os.listdir(RESULTS_FEAT_DATASINK) if each.endswith('.json')]
@@ -98,7 +100,7 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
         Reg_WorkFlow.inputs.inputspec.target_image = ReferenceFile
         Reg_WorkFlow.base_dir = TEMP_DIR_FOR_STORAGE
         Reg_WorkFlow.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
-        regoutputs = Reg_WorkFlow.run('MultiProc', plugin_args={'n_procs': 8})
+        regoutputs = Reg_WorkFlow.run('MultiProc', plugin_args={'n_procs': threads})
         datasink_results=[]
         datasink_results += [each for each in os.listdir(RESULTS_REG_DATASINK) if each.endswith('.json')]
         with open(RESULTS_REG_DATASINK + datasink_results[0]) as JSON:
@@ -111,7 +113,6 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
         #     datasinkouts +=[datafile[0]]
         # else:
         datasinkouts += [datafile[i][0] for i in range(no_subjects)]
-        print(datafile)
 
     for j in range(no_subjects):
         ProcessedFiles_Address = '%sProcessedFile_sub%s.nii.gz'%(dst,j)
@@ -119,11 +120,81 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
         shutil.copy(datasinkouts[j],ProcessedFiles_Address)
     return ProcessedFilesDIRADDRESSES
 
+def call_corr_wf(Files_for_corr_dict, atlas_file, TEMP_DIR_FOR_STORAGE):
+    Corr_calculated_Files = {}
+    for group, files in Files_for_corr_dict.items():
+        datasink_dest = TEMP_DIR_FOR_STORAGE + '/' + group + '/datasink/'
+
+        corr_wf = corr.build_correlation_wf(name = group)
+        corr_wf.inputs.inputspec.in_files = files
+        corr_wf.inputs.inputspec.atlas_file = atlas_file
+        corr_wf.inputs.inputspec.mask_file = TEMP_DIR_FOR_STORAGE + '/mask_for_ttest_mask.nii.gz'
+        corr_wf.base_dir = TEMP_DIR_FOR_STORAGE
+        corr_wf.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
+        corr_wf.run('MultiProc', plugin_args = {'n_procs': threads})
+        datasink_results=[]
+        datasink_results += [each for each in os.listdir(datasink_dest) if each.endswith('.json')]
+        with open(datasink_dest + datasink_results[0]) as JSON:
+            datafile = json.load(JSON)
+
+            datafile = datafile[0][1][0][1]
+
+        datasinkouts=[]
+        datasinkouts += [datafile[i][0] for i in range(len(files))]
+        print(datasinkouts)
+        Corr_calculated_Files[group] = datasinkouts
+    return Corr_calculated_Files
+
+def call_stat_Analysis(Files_for_stats_dict, combinations_reqd, destination, applyFDR = True):
+    tell_combs = len(combinations_reqd)
+    total_groups = len(Files_for_corr_dict)
+    previous = 0
+    next_start = 0
+    newCombs_to_take = total_groups-1
+    while (previous<total_groups - 1):
+        temp_combs = combinations_reqd[next_start:(next_start + newCombs_to_take)]
+        for i in range(previous, total_groups-1):
+            if (temp_combs[i] == 1):
+                ProcName1 = 'CorrCalc_group%s'%previous
+                ProcName2 = 'CorrCalc_group%s'%(previous + i + 1)
+                MeanGr1 , MeanGr2, Tvals, Pvals = ttest.ttest_ind_samples_if_npy(
+                                                                Files_for_stats_dict[ProcName1],
+                                                                Files_for_stats_dict[ProcName2],
+                                                                save_pval_in_log_fmt = False)
+                Tvals = ttest.convert_ma_to_np(Tvals)
+                np.save('{}/Tvals_group_{}_group_{}.npy'.format(
+                                            destination,previous,
+                                            previous + i + 1),
+                                             Tvals)
+                Pvalues_in_log = ttest.convert_pvals_to_log_fmt(Pvals,
+                                            Sample_mean_ArrayA = MeanGr1,
+                                            Sample_mean_ArrayB = MeanGr2)
+                np.save('{}/Pvals_group_{}_group_{}.npy'.format(
+                                            destination,previous,
+                                            previous + i + 1),
+                                             ttest.convert_ma_to_np(Pvals))                
+                if  applyFDR :
+                    rejected, FDRCorrected = ttest.fdr_correction(Pvals, is_npy = True)
+                    Qvals_in_log = ttest.convert_pvals_to_log_fmt(FDRCorrected,
+                                            Sample_mean_ArrayA = MeanGr1,
+                                            Sample_mean_ArrayB = MeanGr2)
+                    rejected, FDRCorrected = ttest.convert_ma_to_np(rejected),\
+                                                 ttest.convert_ma_to_np(Qvals_in_log)
+                    np.save('{}/Qvals_group_{}_group_{}.npy'.format(
+                                            destination,previous,
+                                            previous + i + 1),
+                                            Qvals_in_log)
+        next_start += total_groups - previous -1
+        newCombs_to_take = total_groups - previous - 2
+        previous += 1
+
+
 if __name__ == '__main__':
 
     start = timeit.default_timer()
-    JSONFile = sys.argv[1]
-#    JSONFile = '/home1/ee3140506/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
+    # JSONFile = sys.argv[1]
+    # JSONFile = '/home1/ee3140506/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
+    JSONFile = '/home/deepak/Desktop/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
     with open(JSONFile) as JSON:
         try :
             
@@ -146,7 +217,7 @@ if __name__ == '__main__':
     if not (os.path.exists(TEMP_DIR_FOR_STORAGE)):
         os.mkdir(TEMP_DIR_FOR_STORAGE)
     nonzeroportion_mask = fsl.BET(in_file = ReferenceFile,
-                                  out_file = TEMP_DIR_FOR_STORAGE + '/mask_for_ttest.nii.gz', 
+                                  out_file = TEMP_DIR_FOR_STORAGE + '/mask_for_ttest', 
                                   mask = True, 
                                   no_output=True,
                                   frac = 0.3)
@@ -164,16 +235,15 @@ if __name__ == '__main__':
                 FunctionalFiles_in_this_group = [line.strip('\n') for line in file]
             with open(StructuraltxtFiles[i]) as file:
                 StructuralFiles_in_this_group = [line.strip('\n') for line in file]
-            Preprocessed_Files = run_Preprocessing(AnalysisParams, FunctionalFiles_in_this_group, StructuralFiles_in_this_group,Group= i)
+            Preprocessed_Files = run_Preprocessing(AnalysisParams, 
+                                                    FunctionalFiles_in_this_group, 
+                                                    StructuralFiles_in_this_group,
+                                                    Group= i)
             print(Preprocessed_Files)
-            # dst = TEMP_DIR_FOR_STORAGE + '/CorrCalc_group%s/'%i
-            # if not (os.path.exists(dst)):
-            #     os.mkdir(dst)
-            # else:
-            #     shutil.rmtree(dst)
-            #     os.mkdir(dst)
+
+            CorrROImapFiles[ProcName] = Preprocessed_Files
+
             # for j in range(len(Preprocessed_Files)):
-            #     CorrROImapFiles[ProcName] += [dst + 'sub%d'%j]
             #     args = ("../../fconn.o", "-i", ProcessedFileName, "-o", dst + 'sub%d'%j, "-r", ROIFile)
             #     popen = subprocess.Popen(args, stdout=subprocess.PIPE)
             #     popen.wait()
@@ -192,5 +262,7 @@ if __name__ == '__main__':
                 FunctionalFiles_in_this_group = [line.strip('\n') for line in file]
             with open(StructuraltxtFiles[i]) as file:
                 StructuralFiles_in_this_group = [line.strip('\n') for line in file]        
+    Corr_calculated_Files = call_corr_wf(CorrROImapFiles, ROIFile, TEMP_DIR_FOR_STORAGE)
+
     stop = timeit.default_timer()
     print("Total time taken for running the program: ", stop - start)
