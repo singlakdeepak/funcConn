@@ -145,7 +145,11 @@ def call_corr_wf(Files_for_corr_dict, atlas_file, TEMP_DIR_FOR_STORAGE):
         Corr_calculated_Files[group] = datasinkouts
     return Corr_calculated_Files
 
-def call_stat_Analysis(Files_for_stats_dict, combinations_reqd, destination, applyFDR = True):
+
+
+
+
+def call_stat_Analysis(Files_for_stats_dict, combinations_reqd, destination, Atlas, applyFDR = True):
     tell_combs = len(combinations_reqd)
     total_groups = len(Files_for_corr_dict)
     previous = 0
@@ -155,6 +159,8 @@ def call_stat_Analysis(Files_for_stats_dict, combinations_reqd, destination, app
         temp_combs = combinations_reqd[next_start:(next_start + newCombs_to_take)]
         for i in range(previous, total_groups-1):
             if (temp_combs[i] == 1):
+                NumpyFileList = []
+                FileNamesForSaving = []
                 ProcName1 = 'CorrCalc_group%s'%previous
                 ProcName2 = 'CorrCalc_group%s'%(previous + i + 1)
                 MeanGr1 , MeanGr2, Tvals, Pvals = ttest.ttest_ind_samples_if_npy(
@@ -166,24 +172,38 @@ def call_stat_Analysis(Files_for_stats_dict, combinations_reqd, destination, app
                                             destination,previous,
                                             previous + i + 1),
                                              Tvals)
+                NumpyFileList.append(Tvals)
+                FileNamesForSaving.append('{}/Tvals_group_{}_group_{}.nii.gz'.format(
+                                            destination,previous,
+                                            previous + i + 1))
                 Pvalues_in_log = ttest.convert_pvals_to_log_fmt(Pvals,
                                             Sample_mean_ArrayA = MeanGr1,
                                             Sample_mean_ArrayB = MeanGr2)
                 np.save('{}/Pvals_group_{}_group_{}.npy'.format(
                                             destination,previous,
                                             previous + i + 1),
-                                             ttest.convert_ma_to_np(Pvals))                
+                                             ttest.convert_ma_to_np(Pvalues_in_log))
+                NumpyFileList.append(Pvalues_in_log)
+                FileNamesForSaving.append('{}/Pvals_group_{}_group_{}.nii.gz'.format(
+                                            destination,previous,
+                                            previous + i + 1))
                 if  applyFDR :
                     rejected, FDRCorrected = ttest.fdr_correction(Pvals, is_npy = True)
                     Qvals_in_log = ttest.convert_pvals_to_log_fmt(FDRCorrected,
                                             Sample_mean_ArrayA = MeanGr1,
                                             Sample_mean_ArrayB = MeanGr2)
-                    rejected, FDRCorrected = ttest.convert_ma_to_np(rejected),\
+                    rejected, Qvals_in_log = ttest.convert_ma_to_np(rejected),\
                                                  ttest.convert_ma_to_np(Qvals_in_log)
                     np.save('{}/Qvals_group_{}_group_{}.npy'.format(
                                             destination,previous,
                                             previous + i + 1),
                                             Qvals_in_log)
+                    NumpyFileList.append(Qvals_in_log)
+                    FileNamesForSaving.append('{}/Qvals_group_{}_group_{}.nii.gz'.format(
+                                            destination,previous,
+                                            previous + i + 1))
+                ttest.make_brain_back_from_npy(NumpyFileList,FileNamesForSaving, Atlas)
+
         next_start += total_groups - previous -1
         newCombs_to_take = total_groups - previous - 2
         previous += 1

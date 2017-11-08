@@ -6,6 +6,7 @@ from nipype.interfaces.io import SelectFiles, DataSink
 from nipype.pipeline.engine import Workflow, Node, MapNode
 import os
 
+
 def pearsonr_with_roi_mean(in_file, atlas_file, mask_file):
     import nibabel as nib
     import numpy as np
@@ -13,7 +14,6 @@ def pearsonr_with_roi_mean(in_file, atlas_file, mask_file):
     import os
     atlasObject = nib.load(atlas_file)
     atlas = atlasObject.get_data()
-
     num_ROIs = int(np.max(atlas) - np.min(atlas)) 
 
     print('Min Index:', np.min(atlas),'Max Index', np.max(atlas))
@@ -27,7 +27,10 @@ def pearsonr_with_roi_mean(in_file, atlas_file, mask_file):
 
     ROI_matrix = np.zeros((num_ROIs, num_volumes))
     labels = atlas.astype(int) - 1
-    brain_voxels,_,_ = np.where(labels>-1)
+
+    mask_Obj = nib.load(mask_file)
+    mask_data = mask_Obj.get_data()
+    brain_voxels,_,_ = np.where(mask_data==1)
     num_brain_voxels = len(brain_voxels)
 
     voxel_matrix = np.zeros((num_brain_voxels, num_volumes))

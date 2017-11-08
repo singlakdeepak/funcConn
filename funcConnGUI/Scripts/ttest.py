@@ -12,6 +12,32 @@ class MyManager(multiprocessing.managers.BaseManager):
     pass
 MyManager.register('ma_empty_like', ma.empty_like, multiprocessing.managers.ArrayProxy)
 
+def make_brain_back_from_npy(NumpyfileList,FileListNames,mask_file):
+    maskObj = nib.load(mask_file)
+    maskhd = maskObj.get_header()
+    maskAffine = maskObj.affine
+    maskhd['data_type'] = 'FLOAT32'
+    maskData = maskObj.get_data()
+    maskData = maskData.astype(int)
+    brain_indices = np.where(maskData==1)
+    x_dim, y_dim, z_dim = maskData.shape
+    print(x_dim)
+    print(y_dim)
+    print(z_dim)
+    ROIs = NumpyfileList[0].shape[0]
+    Brainimg = np.zeros((x_dim,y_dim,z_dim,ROIs))
+    print(maskData.shape)
+    for i in range(len(NumpyfileList)):
+        Map = NumpyfileList[i]
+        for j in range(ROIs):
+            ThisImg = Brainimg[:,:,:,j]
+            ThisImg[brain_indices] = Map[j]
+            Brainimg[:,:,:,j] = ThisImg
+        Brain = nib.Nifti1Image(Brainimg, affine = maskAffine, 
+                                header = maskhd)
+        nib.save(Brain, FileListNames[i])
+
+
 def div0( a, b ):
     '''
     It is meant for ignoring the places where standard deviation 
