@@ -9,6 +9,7 @@ import subprocess
 from nipype.interfaces import fsl
 import corr
 import ttest
+from os.path import join as opj
 threads = 8
 def get_TR(in_file):
     import nibabel
@@ -45,17 +46,17 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
                                     highpass= TemporalFilt, 
                                     Intensity_Norm = Intensity_Norm,
                                     BETextract = BETextract,
-                                    MotionCorrection = MotionCorrection, 
+                                    MotionCorrection = MotionCorrection,                                                
                                     SliceTimeCorrect = SliceTimeCorrect,
                                     time_repeat = TR)
 
-        preproc.inputs.inputspec.highpass = (HPsigma,LPsigma)
+        preproc.inputs.inputspec.highpass = (HPsigma,LPsigma)                                                                                                                                                                                                                                                                                                                                                       
         preproc.inputs.inputspec.func = FunctionalFiles
         preproc.inputs.inputspec.fwhm = FWHM
         preproc.base_dir = TEMP_DIR_FOR_STORAGE
         preproc.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
         preproc.write_graph(graph2use='colored', format='png', simple_form=True)
-        preproc.run('MultiProc', plugin_args={'n_procs': 8})
+        preproc.run('MultiProc', plugin_args={'n_procs': 8})          
     else:
         preproc = parallelPreproc.create_parallelfeat_preproc(name = FeatProcessName,
                                     highpass= TemporalFilt, 
@@ -149,9 +150,9 @@ def call_corr_wf(Files_for_corr_dict, atlas_file, TEMP_DIR_FOR_STORAGE):
 
 
 
-def call_stat_Analysis(Files_for_stats_dict, combinations_reqd, destination, Atlas, applyFDR = True):
+def call_stat_Analysis(Files_for_stats_dict, combinations_reqd, destination, mask_file, applyFDR = True):
     tell_combs = len(combinations_reqd)
-    total_groups = len(Files_for_corr_dict)
+    total_groups = len(Files_for_stats_dict)
     previous = 0
     next_start = 0
     newCombs_to_take = total_groups-1
@@ -163,30 +164,30 @@ def call_stat_Analysis(Files_for_stats_dict, combinations_reqd, destination, Atl
                 FileNamesForSaving = []
                 ProcName1 = 'CorrCalc_group%s'%previous
                 ProcName2 = 'CorrCalc_group%s'%(previous + i + 1)
-                MeanGr1 , MeanGr2, Tvals, Pvals = ttest.ttest_ind_samples_if_npy(
+                MeanGr1 , MeanGr2, (Tvals, Pvals) = ttest.ttest_ind_samples_if_npy(
                                                                 Files_for_stats_dict[ProcName1],
                                                                 Files_for_stats_dict[ProcName2],
                                                                 save_pval_in_log_fmt = False)
                 Tvals = ttest.convert_ma_to_np(Tvals)
-                np.save('{}/Tvals_group_{}_group_{}.npy'.format(
-                                            destination,previous,
-                                            previous + i + 1),
+                np.save(opj(destination,'Tvals_group_{}_group_{}.npy'.format(
+                                            previous,
+                                            previous + i + 1)),
                                              Tvals)
                 NumpyFileList.append(Tvals)
-                FileNamesForSaving.append('{}/Tvals_group_{}_group_{}.nii.gz'.format(
-                                            destination,previous,
-                                            previous + i + 1))
+                FileNamesForSaving.append(opj(destination,'Tvals_group_{}_group_{}.nii.gz'.format(
+                                            previous,
+                                            previous + i + 1)))
                 Pvalues_in_log = ttest.convert_pvals_to_log_fmt(Pvals,
                                             Sample_mean_ArrayA = MeanGr1,
                                             Sample_mean_ArrayB = MeanGr2)
-                np.save('{}/Pvals_group_{}_group_{}.npy'.format(
-                                            destination,previous,
-                                            previous + i + 1),
+                np.save(opj(destination,'Pvals_group_{}_group_{}.npy'.format(
+                                            previous,
+                                            previous + i + 1)),
                                              ttest.convert_ma_to_np(Pvalues_in_log))
                 NumpyFileList.append(Pvalues_in_log)
-                FileNamesForSaving.append('{}/Pvals_group_{}_group_{}.nii.gz'.format(
-                                            destination,previous,
-                                            previous + i + 1))
+                FileNamesForSaving.append(opj(destination,'Pvals_group_{}_group_{}.nii.gz'.format(
+                                            previous,
+                                            previous + i + 1)))
                 if  applyFDR :
                     rejected, FDRCorrected = ttest.fdr_correction(Pvals, is_npy = True)
                     Qvals_in_log = ttest.convert_pvals_to_log_fmt(FDRCorrected,
@@ -194,19 +195,20 @@ def call_stat_Analysis(Files_for_stats_dict, combinations_reqd, destination, Atl
                                             Sample_mean_ArrayB = MeanGr2)
                     rejected, Qvals_in_log = ttest.convert_ma_to_np(rejected),\
                                                  ttest.convert_ma_to_np(Qvals_in_log)
-                    np.save('{}/Qvals_group_{}_group_{}.npy'.format(
-                                            destination,previous,
-                                            previous + i + 1),
+                    np.save(opj(destination,'Qvals_group_{}_group_{}.npy'.format(
+                                            previous,
+                                            previous + i + 1)),
                                             Qvals_in_log)
                     NumpyFileList.append(Qvals_in_log)
-                    FileNamesForSaving.append('{}/Qvals_group_{}_group_{}.nii.gz'.format(
-                                            destination,previous,
-                                            previous + i + 1))
-                ttest.make_brain_back_from_npy(NumpyFileList,FileNamesForSaving, Atlas)
+                    FileNamesForSaving.append(opj(destination,'Qvals_group_{}_group_{}.nii.gz'.format(
+                                            previous,
+                                            previous + i + 1)))
+                ttest.make_brain_back_from_npy(NumpyFileList,FileNamesForSaving, mask_file)
 
         next_start += total_groups - previous -1
         newCombs_to_take = total_groups - previous - 2
         previous += 1
+        print('Analysis Over.')
 
 
 if __name__ == '__main__':
@@ -242,6 +244,7 @@ if __name__ == '__main__':
                                   no_output=True,
                                   frac = 0.3)
     nonzeroportion_mask.run()
+    mask_file = opj(TEMP_DIR_FOR_STORAGE,'mask_for_ttest_mask.nii.gz')
     print('Made mask for the ttest: %s/mask_for_ttest.nii.gz'%TEMP_DIR_FOR_STORAGE)
     
     if (ProcessingWay==0):
@@ -263,12 +266,12 @@ if __name__ == '__main__':
 
             CorrROImapFiles[ProcName] = Preprocessed_Files
 
-            # for j in range(len(Preprocessed_Files)):
-            #     args = ("../../fconn.o", "-i", ProcessedFileName, "-o", dst + 'sub%d'%j, "-r", ROIFile)
-            #     popen = subprocess.Popen(args, stdout=subprocess.PIPE)
-            #     popen.wait()
-            #     output = popen.stdout.read()
-            #     print(output)
+        # for j in range(len(Preprocessed_Files)):
+        #     args = ("../../fconn.o", "-i", ProcessedFileName, "-o", dst + 'sub%d'%j, "-r", ROIFile)
+        #     popen = subprocess.Popen(args, stdout=subprocess.PIPE)
+        #     popen.wait()
+        #     output = popen.stdout.read()
+        #     print(output)
 
     elif (ProcessingWay == 1):
         '''
@@ -283,6 +286,8 @@ if __name__ == '__main__':
             with open(StructuraltxtFiles[i]) as file:
                 StructuralFiles_in_this_group = [line.strip('\n') for line in file]        
     Corr_calculated_Files = call_corr_wf(CorrROImapFiles, ROIFile, TEMP_DIR_FOR_STORAGE)
-
+    # Corr_calculated_Files = {'CorrCalc_group0':['/home/deepak/Desktop/FConnectivityAnalysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix0/ProcessedFile_sub0_fc_map.npy', '/home/deepak/Desktop/FConnectivityAnalysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix1/ProcessedFile_sub1_fc_map.npy', '/home/deepak/Desktop/FConnectivityAnalysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix2/ProcessedFile_sub2_fc_map.npy'],
+    #                         'CorrCalc_group1':['/home/deepak/Desktop/FConnectivityAnalysis/tmp/CorrCalc_group1/coff_matrix/mapflow/_coff_matrix0/ProcessedFile_sub0_fc_map.npy', '/home/deepak/Desktop/FConnectivityAnalysis/tmp/CorrCalc_group1/coff_matrix/mapflow/_coff_matrix1/ProcessedFile_sub1_fc_map.npy']}
+    call_stat_Analysis(Corr_calculated_Files,[1],OUTPUT_DIR, mask_file)
     stop = timeit.default_timer()
     print("Total time taken for running the program: ", stop - start)

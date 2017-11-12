@@ -50,7 +50,7 @@ def div0( a, b ):
     return c
 
 def convert_pvals_to_log_fmt(pvalues,Sample_mean_ArrayA = None, Sample_mean_ArrayB = None):
-    if (Sample_mean_ArrayA and Sample_mean_ArrayB) is not None:
+    if (Sample_mean_ArrayA is not None) and (Sample_mean_ArrayB is not None):
         return (-1*np.log10(pvalues)*np.sign(Sample_mean_ArrayA - Sample_mean_ArrayB))
     return (-1*np.log10(pvalues))
 
@@ -120,7 +120,7 @@ def calc_mean_and_std_if_npy(ROICorrMaps, n_subjects, ddof =1, applyFisher = Fal
         Sample_std_Array += np.square(Corr_data)
         print('Done subject ', count + 1)                                                                                                                                                                                               
     Sample_mean_Array /= n_subjects
-    Sample_std_Array = np.sqrt((Sample_std_Array - n_subjects*np.square(Sample_mean_Array))/(n_subjects - ddof))
+    Sample_std_Array = np.sqrt((np.abs(Sample_std_Array - n_subjects*np.square(Sample_mean_Array)))/(n_subjects - ddof))
     return Sample_mean_Array,Sample_std_Array
 
 def _ttest_1samp(Sample_mean_Array, Sample_std_Array, n_subjects, PopMean = 0.0):

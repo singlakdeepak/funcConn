@@ -12,6 +12,14 @@ def pearsonr_with_roi_mean(in_file, atlas_file, mask_file):
     import numpy as np
     from os.path import join as opj
     import os
+
+    sub_id = in_file.split('/')[-1].split('.')[0]
+    fc_file_name = sub_id + '_fc_map.npy'
+    coff_matrix_file = opj(os.getcwd(),fc_file_name)
+    if os.path.exists(coff_matrix_file):
+        print('Saved file in : %s'%coff_matrix_file)
+        return
+
     atlasObject = nib.load(atlas_file)
     atlas = atlasObject.get_data()
     num_ROIs = int(np.max(atlas) - np.min(atlas)) 
@@ -41,12 +49,14 @@ def pearsonr_with_roi_mean(in_file, atlas_file, mask_file):
     for i in range(x_dim):
         for j in range(y_dim):
             for k in range(z_dim):
+                if mask_data[i,j,k] ==1:
+                    voxel_matrix[voxel_counter] = brain[i,j,k] 
+                    voxel_counter += 1
+
                 currentLabel = labels[i,j,k]              
                 if currentLabel >-1:
                     # print(currentLabel)
-                    voxel_matrix[voxel_counter] = brain[i,j,k] 
                     # print(voxel_counter)
-                    voxel_counter += 1
                     ROI_matrix[currentLabel,:] +=  brain[i,j,k]
                     num_voxels_in_ROI[currentLabel,0] += 1
 
@@ -64,11 +74,10 @@ def pearsonr_with_roi_mean(in_file, atlas_file, mask_file):
     mult1 = np.divide(Xm, Xstd)
     mult2 = np.divide(Ym , Ystd)
     coff_matrix = np.dot(mult1, mult2.T)/num_volumes
-    sub_id = in_file.split('/')[-1].split('.')[0]
-    fc_file_name = sub_id + '_fc_map.npy'
+
     np.save(fc_file_name, coff_matrix)
     
-    coff_matrix_file = opj(os.getcwd(),fc_file_name)
+
     print('Saved file in : %s'%coff_matrix_file)
     return coff_matrix_file
 
