@@ -14,11 +14,6 @@ start = timeit.default_timer()
 
 
 
-
-
-
-
-
 # list1 = np.load('Grp1.npy')
 # list2 = np.load('Grp2.npy')
 # Tvals, Pvals = ttest.ttest_ind_samples_if_npy(list1,list2)

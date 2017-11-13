@@ -56,7 +56,7 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
         preproc.base_dir = TEMP_DIR_FOR_STORAGE
         preproc.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
         preproc.write_graph(graph2use='colored', format='png', simple_form=True)
-        preproc.run('MultiProc', plugin_args={'n_procs': 8})          
+        preproc.run('MultiProc', plugin_args={'n_procs': threads})          
     else:
         preproc = parallelPreproc.create_parallelfeat_preproc(name = FeatProcessName,
                                     highpass= TemporalFilt, 
@@ -150,7 +150,11 @@ def call_corr_wf(Files_for_corr_dict, atlas_file, TEMP_DIR_FOR_STORAGE):
 
 
 
-def call_stat_Analysis(Files_for_stats_dict, combinations_reqd, destination, mask_file, applyFDR = True):
+def call_stat_Analysis(Files_for_stats_dict, 
+                        combinations_reqd, 
+                        destination, 
+                        mask_file, 
+                        applyFDR = True):
     tell_combs = len(combinations_reqd)
     total_groups = len(Files_for_stats_dict)
     previous = 0
@@ -222,6 +226,7 @@ if __name__ == '__main__':
             
             data = json.load(JSON)
             AnalysisName = data['Analysis Name']
+            threads = data['No of threads']
         #     print(AnalysisName)
             WorkingDir = data['WorkingDir']
             AnalysisParams = data['AnalysisParams']
@@ -234,7 +239,9 @@ if __name__ == '__main__':
     ProcessingWay = AnalysisParams['ProcessingType']['ProcessingWay']
     Ngroups = AnalysisParams['No of Groups']
     OUTPUT_DIR = AnalysisParams['OutputInfo']['OutDirectory']
-    TEMP_DIR_FOR_STORAGE = OUTPUT_DIR + '/tmp'
+    TEMP_DIR_FOR_STORAGE = opj(OUTPUT_DIR, 'tmp')
+
+
     CorrROImapFiles = {}
     if not (os.path.exists(TEMP_DIR_FOR_STORAGE)):
         os.mkdir(TEMP_DIR_FOR_STORAGE)
@@ -263,7 +270,6 @@ if __name__ == '__main__':
                                                     StructuralFiles_in_this_group,
                                                     Group= i)
             print(Preprocessed_Files)
-
             CorrROImapFiles[ProcName] = Preprocessed_Files
 
         # for j in range(len(Preprocessed_Files)):
@@ -281,13 +287,67 @@ if __name__ == '__main__':
         FunctionaltxtFiles = AnalysisParams['FilesInfo']['FunctionalFilePaths']
         StructuraltxtFiles = AnalysisParams['FilesInfo']['StructuralFilePaths']
         for i in range(Ngroups):
+            ProcName = 'CorrCalc_group%s'%i
+            CorrROImapFiles[ProcName] = []
             with open(FunctionaltxtFiles[i]) as file:
                 FunctionalFiles_in_this_group = [line.strip('\n') for line in file]
             with open(StructuraltxtFiles[i]) as file:
                 StructuralFiles_in_this_group = [line.strip('\n') for line in file]        
-    Corr_calculated_Files = call_corr_wf(CorrROImapFiles, ROIFile, TEMP_DIR_FOR_STORAGE)
-    # Corr_calculated_Files = {'CorrCalc_group0':['/home/deepak/Desktop/FConnectivityAnalysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix0/ProcessedFile_sub0_fc_map.npy', '/home/deepak/Desktop/FConnectivityAnalysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix1/ProcessedFile_sub1_fc_map.npy', '/home/deepak/Desktop/FConnectivityAnalysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix2/ProcessedFile_sub2_fc_map.npy'],
-    #                         'CorrCalc_group1':['/home/deepak/Desktop/FConnectivityAnalysis/tmp/CorrCalc_group1/coff_matrix/mapflow/_coff_matrix0/ProcessedFile_sub0_fc_map.npy', '/home/deepak/Desktop/FConnectivityAnalysis/tmp/CorrCalc_group1/coff_matrix/mapflow/_coff_matrix1/ProcessedFile_sub1_fc_map.npy']}
-    call_stat_Analysis(Corr_calculated_Files,[1],OUTPUT_DIR, mask_file)
-    stop = timeit.default_timer()
-    print("Total time taken for running the program: ", stop - start)
+            print('Functional Files in this group: ',FunctionalFiles_in_this_group)
+            CorrROImapFiles[ProcName] = FunctionalFiles_in_this_group
+    Totaltime=0
+    file = open(opj(OUTPUT_DIR,'timesREADME.txt'),'w')
+    stop1 = timeit.default_timer()
+    file.write("Total time take for Preprocessing: %ss \n"%(stop1 - start))
+    Totaltime += stop1 - start
+    if (AnalysisParams['doStats']):
+
+        stop1 = timeit.default_timer()
+        Corr_calculated_Files = call_corr_wf(CorrROImapFiles, 
+                                                ROIFile, 
+                                                TEMP_DIR_FOR_STORAGE)
+        stop2 = timeit.default_timer()
+        file.write("Total time taken for Correlation calculation: %ss \n"%(stop2 - stop1))
+        Totaltime += stop2 - stop1
+
+        stop2 = timeit.default_timer()
+        # Corr_calculated_Files = {'CorrCalc_group0':[
+        # '/home/deepak/Desktop/FConnectivityAnalysis/tmp/CorrCalc_group0/'
+        # 'coff_matrix/mapflow/_coff_matrix0/ProcessedFile_sub0_fc_map.npy',
+        # '/home/deepak/Desktop/FConnectivityAnalysis/tmp/CorrCalc_group0/'
+        # 'coff_matrix/mapflow/_coff_matrix1/ProcessedFile_sub1_fc_map.npy', 
+        # '/home/deepak/Desktop/FConnectivityAnalysis/tmp/CorrCalc_group0/'
+        # 'coff_matrix/mapflow/_coff_matrix2/ProcessedFile_sub2_fc_map.npy'],
+        #                         'CorrCalc_group1':['/home/deepak/Desktop/'
+        # 'FConnectivityAnalysis/tmp/CorrCalc_group1/coff_matrix/mapflow/'
+        # '_coff_matrix0/ProcessedFile_sub0_fc_map.npy', 
+        # '/home/deepak/Desktop/FConnectivityAnalysis/tmp/CorrCalc_group1/'
+        # 'coff_matrix/mapflow/_coff_matrix1/ProcessedFile_sub1_fc_map.npy']}
+        
+
+        doAnalysiswtGrps = AnalysisParams['Stats']['Analysis within Groups']
+        doAnalysisbwGrps = AnalysisParams['Stats']['Analysis between Groups']
+        doNormalFisher = AnalysisParams['Stats']['doNormalFisher']
+        doSeparateFDR = AnalysisParams['Stats']['Separate FDR']
+        if doAnalysiswtGrps:
+            # Do Something. The Function is yet to be defined.
+
+        if ((Ngroups==2)and doAnalysisbwGrps):
+            GR1grGr2 = AnalysisParams['Stats']['Gr1>Gr2']
+            call_stat_Analysis(Corr_calculated_Files,[1],OUTPUT_DIR, mask_file)
+        elif ((Ngroups > 2) and doAnalysisbwGrps):
+            combinations = AnalysisParams['Stats']['Combinations']
+            call_stat_Analysis(Corr_calculated_Files, 
+                                combinations, 
+                                OUTPUT_DIR, 
+                                mask_file)
+
+
+        stop = timeit.default_timer()
+        file.write("Total time taken for calculating statistics: %ss \n" %(stop - stop2))
+        Totaltime += stop - stop2
+
+    print("Total time taken for running the program: ", Totaltime)
+    file.write("Total time taken for running the program: %ss \n" %(Totaltime))
+    file.close()
+
