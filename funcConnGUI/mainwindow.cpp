@@ -8,7 +8,7 @@
 #include<QFileDialog>
 #include<QJsonDocument>
 #include<QJsonObject>
-#include<QJsonArray>
+
 #include<QProcess>
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -35,7 +35,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->radioButton_G2_gr_G1->hide();
     ui->radioButton_NormFischer->setChecked(true);
     ui->radioButton_reg_y->setChecked(true);
-    ui->radioButton_JointFDR->setChecked(true);
+    ui->radioButton_SepFDRcorrect->setChecked(true);
     ui->lineEdit_highpass->hide();
     ui->lineEdit_lowpass->hide();
 
@@ -328,6 +328,7 @@ void MainWindow::on_chooseCombsButton_clicked()
     QList<int> list;
     list<<100<<500;
     */
+
     QString AB;
     chooseCombinations choosecombinations;
     choosecombinations.setCheckboxes(spinBoxValue);
@@ -337,6 +338,7 @@ void MainWindow::on_chooseCombsButton_clicked()
     int GroupB = 2;
     int lastOne =1;
     for (int i = 0; i < mirrored_checkStates.size(); ++i) {
+        combinations.append(mirrored_checkStates.at(i)/2);
         if (mirrored_checkStates.at(i) == 2){
 
             AB+= "Group_" + QString::number(lastOne) + "_vs_Group_" + QString::number(GroupB) +",";
@@ -399,6 +401,35 @@ void MainWindow::on_checkBox_AllCombs_clicked(bool checked)
     }
 }
 
+void MainWindow::writeStats(QJsonObject &json) const
+{
+    if (ui->radioButton_wt_Groups->isChecked()){
+        json["Analysis within Groups"] = true;
+        json["Analysis between Groups"] = false;
+    }
+    if (ui->radioButton_bw_Groups->isChecked()){
+        json["Analysis within Groups"] = false;
+        json["Analysis between Groups"] = true;
+        if (spinBoxValue ==2)
+            json["Gr1>Gr2"] = ui->radioButton_G1_gr_G2->isChecked();
+        else{
+            json["Combinations"] = combinations;
+        }
+    }
+    /*
+     * Fisher Types are :
+     * False: MaxMinFisher,
+     * True: Normal Fisher
+     *
+     * FDR Correction:
+     * False: Joint FDR
+     * True: Separate FDR for each ROI
+    */
+
+    json["doNormalFisher"] = ui->radioButton_NormFischer->isChecked();
+    json["Separate FDR"] = ui->radioButton_SepFDRcorrect->isChecked();
+
+}
 void MainWindow::writeReferImgpath(QJsonObject &json) const
 {
     QString FilePath;
@@ -497,6 +528,13 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
         json["Melodic ICA"] = ui->checkBox_MelodicICA->isChecked();
     }
 
+    bool doStats = true;
+    json["doStats"] = doStats;
+    if (doStats){
+        QJsonObject StatsObj;
+        writeStats(StatsObj);
+        json["Stats"] = StatsObj;
+    }
 }
 
 
@@ -510,6 +548,7 @@ void MainWindow::writeAnalysisName(QJsonObject &json) const
      *
      */
     json["Analysis Name"] = ui->lineEdit_AnalysisName->text();
+    json["No of threads"] = 8;
     json["WorkingDir"] = WorkingDir;
     QJsonObject ReferenceImgpath;
     writeReferImgpath(ReferenceImgpath);

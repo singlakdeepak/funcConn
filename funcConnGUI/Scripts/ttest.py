@@ -14,9 +14,11 @@ MyManager.register('ma_empty_like', ma.empty_like, multiprocessing.managers.Arra
 
 def make_brain_back_from_npy(NumpyfileList,FileListNames,mask_file):
     maskObj = nib.load(mask_file)
-    maskhd = maskObj.get_header()
+    # maskhd = maskObj.header
     maskAffine = maskObj.affine
-    maskhd['data_type'] = 'FLOAT32'
+    # maskhd['data_type'] = 'FLOAT32'
+    # maskhd['cal_min'] = -3
+    # maskhd['cal_max'] = 3
     maskData = maskObj.get_data()
     maskData = maskData.astype(int)
     brain_indices = np.where(maskData==1)
@@ -33,8 +35,8 @@ def make_brain_back_from_npy(NumpyfileList,FileListNames,mask_file):
             ThisImg = Brainimg[:,:,:,j]
             ThisImg[brain_indices] = Map[j]
             Brainimg[:,:,:,j] = ThisImg
-        Brain = nib.Nifti1Image(Brainimg, affine = maskAffine, 
-                                header = maskhd)
+        Brain = nib.Nifti1Image(Brainimg, affine = maskAffine) 
+                                # header = maskhd)
         nib.save(Brain, FileListNames[i])
 
 

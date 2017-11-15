@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QPushButton>
 #include <QDir>
+#include<QJsonArray>
 namespace Ui {
 class MainWindow;
 }
@@ -56,6 +57,8 @@ private slots:
 
     void on_checkBox_AllCombs_clicked(bool checked);
 
+    void writeStats(QJsonObject &json) const;
+
     void writeReferImgpath(QJsonObject &json) const;
 
 
@@ -74,6 +77,7 @@ private slots:
     void on_checkBox_LowPass_clicked(bool checked);
 
 private:
+    QJsonArray combinations;
     QString CommonDir ="/home/";
     QString OutDir = "/home/";
     QList<int> mirrored_checkStates;

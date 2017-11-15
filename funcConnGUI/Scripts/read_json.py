@@ -172,7 +172,8 @@ def call_stat_Analysis(Files_for_stats_dict,
                                                                 Files_for_stats_dict[ProcName1],
                                                                 Files_for_stats_dict[ProcName2],
                                                                 save_pval_in_log_fmt = False,
-								equla_var= False, applyFisher = True)
+								                                equla_var= False, 
+                                                                applyFisher = True)
                 Tvals = ttest.convert_ma_to_np(Tvals)
                 np.save(opj(destination,'Tvals_group_{}_group_{}.npy'.format(
                                             previous,
