@@ -1094,9 +1094,9 @@ void correl()
   if(seedcmp==true){
   		seed_correl();
   }else if(roi1==true){
-  		avg_corr_roi();
-  }else if(roi2){
   		avg_roi_time_corr();
+  }else if(roi2){
+  		avg_corr_roi();
   }else if(all==true){
   		all_pair_corr();
   }
@@ -1212,21 +1212,20 @@ void getattributes(int argc,char *argv[])
 	i++;
   }
   // return 0;
-
 }
 
 /*################################funcion that show the help information################################################################*/
 void showhelpinfo()
 {
- std::cout<<"Usage :\n fconn -i <fmri.nii/nii.gz>  \n";
+ std::cout<<"Usage :\n fconn -i <fmri.nii/nii.gz> -o <project name> \n";
   
   std::cout<<"Compulsory arguments(You have to specify the following)\n";
   std::cout<<"\t -i\t\t filename of the input volume \n";
   std::cout<<"\t -o \t\t project name  \n ";
   std::cout<<" one of the arguments must be present \n";
-  std::cout<<"\t -r \t\t filename of the volume containg the desired ROI \n";
+  std::cout<<"\t -r <roi_filename> <N>\t\t \n";
   std::cout<<"\t\t N \t\t x-coordinate for seed (compulosry in -s mode if -r options not there)\n";
-  std::cout<<"\t -R \t\t filename of the volume containg the desired ROI \n";
+  std::cout<<"\t -R <roi_filename> <N> \t\t filename of the volume containg the desired ROI \n";
   std::cout<<"\t -s x y z  \t\t for seed to all voxel mode(no argument) \n";
   std::cout<<"\t\t x \t\t x-coordinate for seed (compulosry in -s mode if -r options not there)\n";
   std::cout<<"\t\t y \t\t y-coordinate for seed (compulosry in -s mode if -r options not there)\n";
