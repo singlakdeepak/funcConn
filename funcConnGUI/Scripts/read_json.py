@@ -171,7 +171,8 @@ def call_stat_Analysis(Files_for_stats_dict,
                 MeanGr1 , MeanGr2, (Tvals, Pvals) = ttest.ttest_ind_samples_if_npy(
                                                                 Files_for_stats_dict[ProcName1],
                                                                 Files_for_stats_dict[ProcName2],
-                                                                save_pval_in_log_fmt = False)
+                                                                save_pval_in_log_fmt = False,
+								equla_var= False, applyFisher = True)
                 Tvals = ttest.convert_ma_to_np(Tvals)
                 np.save(opj(destination,'Tvals_group_{}_group_{}.npy'.format(
                                             previous,
@@ -219,8 +220,8 @@ if __name__ == '__main__':
 
     start = timeit.default_timer()
     # JSONFile = sys.argv[1]
-    # JSONFile = '/home1/ee3140506/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
-    JSONFile = '/home/deepak/Desktop/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
+    JSONFile = '/home1/ee3140506/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
+    # JSONFile = '/home/deepak/Desktop/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
     with open(JSONFile) as JSON:
         try :
             
@@ -329,7 +330,7 @@ if __name__ == '__main__':
         doAnalysisbwGrps = AnalysisParams['Stats']['Analysis between Groups']
         doNormalFisher = AnalysisParams['Stats']['doNormalFisher']
         doSeparateFDR = AnalysisParams['Stats']['Separate FDR']
-        if doAnalysiswtGrps:
+        # if doAnalysiswtGrps:
             # Do Something. The Function is yet to be defined.
 
         if ((Ngroups==2)and doAnalysisbwGrps):

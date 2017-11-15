@@ -25,7 +25,7 @@ def make_brain_back_from_npy(NumpyfileList,FileListNames,mask_file):
     print(y_dim)
     print(z_dim)
     ROIs = NumpyfileList[0].shape[0]
-    Brainimg = np.zeros((x_dim,y_dim,z_dim,ROIs))
+    Brainimg = np.zeros((x_dim,y_dim,z_dim,ROIs),dtype = np.float32)
     print(maskData.shape)
     for i in range(len(NumpyfileList)):
         Map = NumpyfileList[i]
