@@ -26,10 +26,11 @@ int x,y,z;
 std::string type(".csv"),ofname,ipfilename;
 bool input = false,roi1 = false,roi2 = false,output=false,gzip = false;
 bool mask = false;
-char roifname[400],maskfilename[400];
+std::string roifname,maskfilename;
 int thresh=0;
 bool seedcmp = false,all=false;
 int seedx ,seedy,seedz;
+int ROI_MAX;
 
 
 void showhelpinfo();
@@ -53,13 +54,13 @@ int main (int argc,char *argv[])
   
   getattributes(argc,argv);
   
-  if(input==false||output==false ||(roi == false&& all == false && seedcmp == false))
+  if(input==false||output==false ||(roi2 == false && roi1 == false && all == false && seedcmp == false))
   {
 	showhelpinfo();
 	exit(1);
   }
 
-  if( ( roi == true&& all == true ) || ( roi == true&& seedcmp == true ) || ( all == true && seedcmp == true ))
+  if( ( roi1 == true&&roi2 == true&& all == true ) || ( roi1 == true&&roi2 == true&& seedcmp == true ) || ( all == true && seedcmp == true ))
   {
 	showhelpinfo();
 	exit(1);
@@ -77,7 +78,7 @@ int main (int argc,char *argv[])
 	  std::cout<<"Problem in creating directory "<<std::endl;
 	  exit(0);
 	}
-  if(roi==false){
+  if(roi1==false||roi2==false){
 	std::string sPath = "/voxel";
 	sPath = ofname + sPath;
 	mode_t nMode = 0733; // UNIX style permissions
@@ -120,7 +121,7 @@ void seed_correl(){
   image::io::nifti nifti_parser,nifti_parser2;
   image::basic_image<double,4> image_data;
   image::basic_image<double,4> image_data_cpy;
-  image::basic_image<int,4> mask_image;
+  image::basic_image<int,3> mask_image;
   std::vector<Valid> valid;
 
   image_data_cpy = image_data;
@@ -252,7 +253,9 @@ void seed_correl(){
 	tv.x = seedx;
 	tv.y = seedy;
 	tv.z = seedz;
-	seeds.push_back(tv);		
+	seeds.push_back(tv);
+
+	int tempi = 0;		
 
 	for (int t = 0; t < g[3]; ++t){
 
@@ -308,7 +311,7 @@ void seed_correl(){
 
 	}
 
-	image::io::nifti nifti_parser2;
+	//image::io::nifti nifti_parser2;
 	nifti_parser2.load_from_image(image_data_cpy);
 	std::string filename("output.nii");
 	filename = ofname + filename;
@@ -322,7 +325,7 @@ void all_pair_corr(){
   image::io::nifti nifti_parser,nifti_parser2;
   image::basic_image<double,4> image_data;
   image::basic_image<double,4> image_data_cpy;
-  image::basic_image<int,4> mask_image;
+  image::basic_image<int,3> mask_image;
   std::vector<Valid> valid;
 
   image_data_cpy = image_data;
@@ -559,7 +562,7 @@ void avg_roi_time_corr(){
   image::io::nifti nifti_parser,nifti_parser2;
   image::basic_image<double,4> image_data;
   image::basic_image<double,4> image_data_cpy;
-  image::basic_image<int,4> roi_image;
+  image::basic_image<int,3> roi_image;
   std::vector<Valid> valid;
 
   image_data_cpy = image_data;
@@ -569,11 +572,11 @@ void avg_roi_time_corr(){
 	  nifti_parser >> image_data;
 
 	// LOADING THE ROI
-  if(nifti_parser2.load_from_file(roifilename))
+  if(nifti_parser2.load_from_file(roifname))
   	   nifti_parser2 >> roi_image;
   
   image::geometry<4> g = image_data.geometry();
-  image::geometry<4> g_copy;
+  //image::geometry<4> g_copy;
   image::geometry<3> g_roi;
 
 	//CHECK IF THE GEOMETRY OF THE MASK AND IMAGE IS SAME
@@ -632,7 +635,7 @@ void avg_roi_time_corr(){
 
 
 	//################## MAKING A MATRIX OF NORMALIZED DATA###########################################
-  int valid_size = valid.size()
+  int valid_size = valid.size();
   double * Valid_matrix = (double * )malloc( sizeof(double)*valid_size*g[3]);
   double * roi_result = (double * )malloc( sizeof(double)*ROI_MAX*valid_size);
   double * roi_avg = (double * )calloc(ROI_MAX*g[3], sizeof(double));
@@ -800,7 +803,7 @@ void avg_roi_time_corr(){
 
  	// save the result
 
-	image::io::nifti nifti_parser2;
+	//image::io::nifti nifti_parser2;
 	nifti_parser2.load_from_image(image_data_cpy);
 	std::string filename("avg_roi_time_series.nii");
 	filename = ofname + filename;
@@ -813,7 +816,7 @@ void avg_corr_roi(){
   image::io::nifti nifti_parser,nifti_parser2;
   image::basic_image<double,4> image_data;
   image::basic_image<double,4> image_data_cpy;
-  image::basic_image<int,4> roi_image;
+  image::basic_image<int,3> roi_image;
   std::vector<Valid> valid;
 
   image_data_cpy = image_data;
@@ -823,7 +826,7 @@ void avg_corr_roi(){
 	  nifti_parser >> image_data;
 
 	// LOADING THE ROI
-  if(nifti_parser2.load_from_file(roifilename))
+  if(nifti_parser2.load_from_file(roifname))
   	   nifti_parser2 >> roi_image;
   
   image::geometry<4> g = image_data.geometry();
@@ -886,7 +889,7 @@ void avg_corr_roi(){
 
 
 	//################## MAKING A MATRIX OF NORMALIZED DATA###########################################
-  int valid_size = valid.size()
+  int valid_size = valid.size();
   double * Valid_matrix = (double * )malloc( sizeof(double)*valid_size*g[3]);
   double * roi_result = (double * )malloc( sizeof(double)*ROI_MAX*valid_size);
   double * roi_coeff = (double * )calloc( ROI_MAX*valid_size, sizeof(double));
@@ -1058,7 +1061,7 @@ void avg_corr_roi(){
  	}
 
 	// make result 
-	image::geometry<4> g_copy;
+	//image::geometry<4> g_copy;
 	g_copy.dim[0] = g[0];
 	g_copy.dim[1] = g[1];
 	g_copy.dim[2] = g[2];
@@ -1079,7 +1082,7 @@ void avg_corr_roi(){
 
  	// save the result
 
-	image::io::nifti nifti_parser2;
+	//image::io::nifti nifti_parser2;
 	nifti_parser2.load_from_image(image_data_cpy);
 	std::string filename("avg_roi_avg_time_series.nii");
 	filename = ofname + filename;
@@ -1089,7 +1092,7 @@ void avg_corr_roi(){
 void correl()
 {
   if(seedcmp==true){
-  		seed_correl()
+  		seed_correl();
   }else if(roi1==true){
   		avg_corr_roi();
   }else if(roi2){
@@ -1104,10 +1107,10 @@ void correl()
 void getattributes(int argc,char *argv[])
 {
   char tmp;
-  string inp(argv);
-  istringstream iss(inp);
-  string s;
-  std::vector<string> inp_arg;
+  std::string inp(*argv);
+  std::istringstream iss(inp);
+  std::string s;
+  std::vector< std::string > inp_arg;
   while ( getline( iss, s, ' ' ) ) {
     inp_arg.push_back(s);
   }
@@ -1154,6 +1157,8 @@ void getattributes(int argc,char *argv[])
 			system(command.c_str());
 			roifname = roifname.substr(0,(roifname.length()-3));
 		}
+		i++;
+		ROI_MAX = std::stoi(inp_arg[i]);
 		
 		break;
 	  case 'R':
@@ -1167,6 +1172,8 @@ void getattributes(int argc,char *argv[])
 			system(command.c_str());
 			roifname = roifname.substr(0,(roifname.length()-3));
 		}
+		i++;
+		ROI_MAX = std::stoi(inp_arg[i]);
 		break;
 	  case 'o':
 		output = true;
@@ -1218,6 +1225,7 @@ void showhelpinfo()
   std::cout<<"\t -o \t\t project name  \n ";
   std::cout<<" one of the arguments must be present \n";
   std::cout<<"\t -r \t\t filename of the volume containg the desired ROI \n";
+  std::cout<<"\t\t N \t\t x-coordinate for seed (compulosry in -s mode if -r options not there)\n";
   std::cout<<"\t -R \t\t filename of the volume containg the desired ROI \n";
   std::cout<<"\t -s x y z  \t\t for seed to all voxel mode(no argument) \n";
   std::cout<<"\t\t x \t\t x-coordinate for seed (compulosry in -s mode if -r options not there)\n";
