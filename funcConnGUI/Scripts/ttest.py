@@ -10,7 +10,8 @@ from functools import partial
 import multiprocessing.managers
 class MyManager(multiprocessing.managers.BaseManager):
     pass
-MyManager.register('ma_empty_like', ma.empty_like, multiprocessing.managers.ArrayProxy)
+# MyManager.register('ma_empty_like', ma.empty_like, multiprocessing.managers.ArrayProxy)
+MyManager.register('np_empty_like',np.empty_like, multiprocessing.managers.ArrayProxy)
 
 def make_brain_back_from_npy(NumpyfileList,FileListNames,mask_file):
     maskObj = nib.load(mask_file)
@@ -53,8 +54,13 @@ def div0( a, b ):
 
 def convert_pvals_to_log_fmt(pvalues,Sample_mean_ArrayA = None, Sample_mean_ArrayB = None):
     if (Sample_mean_ArrayA is not None) and (Sample_mean_ArrayB is not None):
-        return (-1*np.log10(pvalues)*np.sign(Sample_mean_ArrayA - Sample_mean_ArrayB))
-    return (-1*np.log10(pvalues))
+        with np.errstate(divide='ignore', invalid='ignore'):
+            c = (-1*np.log10(pvalues)*np.sign(Sample_mean_ArrayA - Sample_mean_ArrayB)) 
+        return c
+    else: 
+        with np.errstate(divide='ignore', invalid='ignore'):
+            c = (-1*np.log10(pvalues))    
+        return c
 
 def calc_mean_and_std(ROICorrMaps, n_subjects, ROIAtlasmask, ddof =1, applyFisher = False):
     '''
@@ -363,8 +369,10 @@ def fdrcorrect_worker(fdrcorrected_brain,
         '''
         nobs = len(x)
         return np.arange(1,nobs+1)/float(nobs)
-    mask_pvals = pvals.mask
-    indices = np.where(mask_pvals ==False)
+#    mask_pvals = pvals.mask
+#    indices = np.where(mask_pvals ==False)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        indices = np.where(pvals>=0)
     Truepvals = ma.compressed(pvals)
 
     pvals_sortind = np.argsort(Truepvals)
@@ -395,14 +403,16 @@ def fdrcorrect_worker(fdrcorrected_brain,
     reject_ = np.empty_like(reject)
     reject_[pvals_sortind] = reject
     if not is_npy:
-        rejected_pvalBrain = ma.masked_all_like(pvals)
+#        rejected_pvalBrain = ma.masked_all_like(pvals)
+        rejected_pvalBrain = np.empty_like(pvals)
         rejected_pvalBrain[indices] = reject_
         if (type == 'indep_samps'):
             rejected_pvals[:,:,:,roi_number] = rejected_pvalBrain
         else:
             rejected_pvals = rejected_pvalBrain
 
-        pvals_correctedBrain = ma.masked_all_like(pvals)
+#        pvals_correctedBrain = ma.masked_all_like(pvals)
+        pvals_correctedBrain = np.empty_like(pvals)
         pvals_correctedBrain[indices] = pvals_corrected_
         if (type =='indep_samps'):
             fdrcorrected_brain[:,:,:,roi_number] = pvals_correctedBrain
@@ -434,8 +444,11 @@ def fdr_correction(pvalues , type = 'indep_samps', is_npy = False):
 
         m = MyManager()
         m.start()
-        fdrcorrected_brain = m.ma_empty_like(pvalues)
-        rejected_pvals = m.ma_empty_like(pvalues)
+#        fdrcorrected_brain = m.ma_empty_like(pvalues)
+#        rejected_pvals = m.ma_empty_like(pvalues)
+        fdrcorrected_brain = m.np_empty_like(pvalues)
+        rejected_pvals = m.np_empty_like(pvalues)
+
         func = partial(fdrcorrect_worker2, fdrcorrected_brain, rejected_pvals)
         # no_rois : Total ROIS in the P-value file
         if not is_npy:
@@ -445,37 +458,7 @@ def fdr_correction(pvalues , type = 'indep_samps', is_npy = False):
         print('Total no of ROIs ',no_rois)
         MaxPools = no_rois//procs
         print('MaxPools: ', MaxPools)
-        # for roi_number in range(0,MaxPools*procs,procs):
-        #     pool_inputs = [] #np.arange(number_of_ROIs)
-        #     select_roi = 0
-        #     while (select_roi<procs):
-        #         print(roi_number +select_roi)
-        #         if not is_npy:
-        #             pool_inputs.append((roi_number+select_roi, 
-        #                             pvalues[:,:,:,roi_number+select_roi], is_npy))
-        #         else:
-        #             pool_inputs.append((roi_number+select_roi,
-        #                             ma.masked_array(pvalues[roi_number + select_roi,:],
-        #                             fill_value = 0),
-        #                             is_npy))
-        #         select_roi+=1
 
-        #     data_outputs = pool.map(func, pool_inputs)
-
-        # if (no_rois%procs!=0):
-        #     pool_inputs = [] #np.arange(number_of_ROIs)
-        #     for roi_number in range(MaxPools*procs,no_rois):
-        #         if not is_npy:
-        #             pool_inputs.append((roi_number, 
-        #                                 pvalues[:,:,:,roi_number], 
-        #                                 is_npy))
-        #         else:
-        #             pool_inputs.append((roi_number,
-        #                                 ma.masked_array(pvalues[roi_number,:],
-        #                                     fill_value = 0),
-        #                                 is_npy))
-
-        #     data_outputs = pool.map(func, pool_inputs)
 
         pool_inputs = [] #np.arange(number_of_ROIs)
         for roi_number in range(no_rois):
