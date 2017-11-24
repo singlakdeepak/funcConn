@@ -17,7 +17,7 @@ def get_TR(in_file):
     return f.get_header()['dim'][0]
 
 
-def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles,Group = 0):
+def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles = None,Group = 0):
 
     ReferenceFile = AnalysisParams['ReferSummary']['ReferImgPath']
     B0unwarping = AnalysisParams['B0 Unwarping']
@@ -266,7 +266,7 @@ if __name__ == '__main__':
         os.mkdir(TEMP_DIR_FOR_STORAGE)
 
     mask_not_provided = False
-    if mask_not_provided:
+    if  mask_not_provided:
         nonzeroportion_mask = fsl.BET(in_file = ReferenceFile,
                                   out_file = TEMP_DIR_FOR_STORAGE + '/mask_for_ttest', 
                                   mask = True, 
@@ -287,11 +287,14 @@ if __name__ == '__main__':
             CorrROImapFiles[ProcName] = []
             with open(FunctionaltxtFiles[i]) as file:
                 FunctionalFiles_in_this_group = [line.strip('\n') for line in file]
-            with open(StructuraltxtFiles[i]) as file:
-                StructuralFiles_in_this_group = [line.strip('\n') for line in file]
+            Registration = AnalysisParams['Registration']
+            if Registration:
+                with open(StructuraltxtFiles[i]) as file:
+                    StructuralFiles_in_this_group = [line.strip('\n') for line in file]
+            else: StructuralFiles_in_this_group = None
             Preprocessed_Files = run_Preprocessing(AnalysisParams, 
                                                     FunctionalFiles_in_this_group, 
-                                                    StructuralFiles_in_this_group,
+                                                    StructuralFiles_in_this_group = StructuralFiles_in_this_group,
                                                     Group= i)
             print(Preprocessed_Files)
             CorrROImapFiles[ProcName] = Preprocessed_Files
@@ -315,8 +318,9 @@ if __name__ == '__main__':
             CorrROImapFiles[ProcName] = []
             with open(FunctionaltxtFiles[i]) as file:
                 FunctionalFiles_in_this_group = [line.strip('\n') for line in file]
-            with open(StructuraltxtFiles[i]) as file:
-                StructuralFiles_in_this_group = [line.strip('\n') for line in file]        
+            if (len(StructuralFiles)!=0):
+                with open(StructuraltxtFiles[i]) as file:
+                    StructuralFiles_in_this_group = [line.strip('\n') for line in file]        
             print('Functional Files in this group: ',FunctionalFiles_in_this_group)
             CorrROImapFiles[ProcName] = FunctionalFiles_in_this_group
     Totaltime=0
