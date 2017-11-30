@@ -31,7 +31,7 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles = None,Grou
     SliceTimeCorrect = AnalysisParams['Slice Time Correct']
     Intensity_Norm = AnalysisParams['Intensity Normalization']
     MelodicICA = AnalysisParams['Melodic ICA']
-    PerfusionSubtract = AnalysisParams['Perfusion Subtraction']
+    # PerfusionSubtract = AnalysisParams['Perfusion Subtraction']
     OUTPUT_DIR = AnalysisParams['OutputInfo']['OutDirectory']
     TEMP_DIR_FOR_STORAGE = OUTPUT_DIR + '/tmp'
     FeatProcessName = 'featpreproc_group%s'%Group
@@ -158,7 +158,7 @@ def call_stat_Analysis_wt_grps(Files_for_stats_dict,
         NumpyFileList = []
         FileNamesForSaving = []
         ProcName = 'CorrCalc_group%s'%i
-        Tvals, Pvals = ttest.ttest_1samp_ROIs_if_npy(
+        MeanGr1, (Tvals, Pvals) = ttest.ttest_1samp_ROIs_if_npy(
                                             Files_for_stats_dict[ProcName],
                                             save_pval_in_log_fmt = False,
                                             applyFisher = True)
@@ -172,7 +172,8 @@ def call_stat_Analysis_wt_grps(Files_for_stats_dict,
        
 
 
-        Pvalues_in_log = ttest.convert_pvals_to_log_fmt(Pvals)
+        Pvalues_in_log = ttest.convert_pvals_to_log_fmt(Pvals,
+                                                        Sample_mean_ArrayA = MeanGr1)
         np.save(opj(destination,'Pvals_group_%s.npy'%i),
                                      ttest.convert_ma_to_np(Pvalues_in_log))
         NumpyFileList.append(Pvalues_in_log)
@@ -182,14 +183,15 @@ def call_stat_Analysis_wt_grps(Files_for_stats_dict,
             np.save(opj(destination,'Qvals_Normal_group_%s.npy'%i),
                                     FDRCorrected)
 
-            Qvals_in_log = ttest.convert_pvals_to_log_fmt(FDRCorrected)
+            Qvals_in_log = ttest.convert_pvals_to_log_fmt(FDRCorrected,
+                                                            Sample_mean_ArrayA = MeanGr1)
             rejected, Qvals_in_log = ttest.convert_ma_to_np(rejected),\
                                          ttest.convert_ma_to_np(Qvals_in_log)
 
             np.save(opj(destination,'Qvals_group_%s.npy'%i),
                                     Qvals_in_log)
             NumpyFileList.append(Qvals_in_log)
-            FileNamesForSaving.append(opj(destination,'Qvals_group_%s'%i))
+            FileNamesForSaving.append(opj(destination,'Qvals_group_%s.nii.gz'%i))
         ttest.make_brain_back_from_npy(NumpyFileList,FileNamesForSaving, mask_file)
     print('Analysis Over.')
 
@@ -216,7 +218,7 @@ def call_stat_Analysis_bw_grps(Files_for_stats_dict,
                                                                 Files_for_stats_dict[ProcName1],
                                                                 Files_for_stats_dict[ProcName2],
                                                                 save_pval_in_log_fmt = False,
-								                                equal_var= False, 
+                                                                equal_var= False, 
                                                                 applyFisher = True)
                 Tvals = ttest.convert_ma_to_np(Tvals)
                 np.save(opj(destination,'Tvals_group_{}_group_{}.npy'.format(
@@ -281,8 +283,8 @@ def call_stat_Analysis_bw_grps(Files_for_stats_dict,
 if __name__ == '__main__':
 
     start = timeit.default_timer()
-    # JSONFile = sys.argv[1]
-    JSONFile = '/home1/ee3140506/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
+    JSONFile = sys.argv[1]
+    # JSONFile = '/home1/ee3140506/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
     # JSONFile = '/home/deepak/Desktop/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
     with open(JSONFile) as JSON:
         try :
@@ -309,7 +311,7 @@ if __name__ == '__main__':
     if not (os.path.exists(TEMP_DIR_FOR_STORAGE)):
         os.mkdir(TEMP_DIR_FOR_STORAGE)
 
-    mask_not_provided = False
+    mask_not_provided = AnalysisParams['MaskNotProvided']
     if  mask_not_provided:
         nonzeroportion_mask = fsl.BET(in_file = ReferenceFile,
                                   out_file = TEMP_DIR_FOR_STORAGE + '/mask_for_ttest', 
@@ -321,6 +323,7 @@ if __name__ == '__main__':
         print('Made mask for the ttest: %s/mask_for_ttest.nii.gz'%TEMP_DIR_FOR_STORAGE)
     else:
         mask_file = '/usr/local/fsl/data/standard/MNI152_T1_2mm_brain_mask.nii.gz'
+        mask_file = AnalysisParams['UseMaskFile']
     
     if (ProcessingWay==0):
         FunctionaltxtFiles = AnalysisParams['FilesInfo']['FunctionalFilePaths']
@@ -338,7 +341,7 @@ if __name__ == '__main__':
             else: StructuralFiles_in_this_group = None
             Preprocessed_Files = run_Preprocessing(AnalysisParams, 
                                                     FunctionalFiles_in_this_group, 
-                                                    StructuralFiles_in_this_group = StructuralFiles_in_this_group,
+                                                    StructuralFiles = StructuralFiles_in_this_group,
                                                     Group= i)
             print(Preprocessed_Files)
             CorrROImapFiles[ProcName] = Preprocessed_Files
@@ -396,7 +399,7 @@ if __name__ == '__main__':
         # '_coff_matrix0/ProcessedFile_sub0_fc_map.npy', 
         # '/home/deepak/Desktop/FConnectivityAnalysis/tmp/CorrCalc_group1/'
         # 'coff_matrix/mapflow/_coff_matrix1/ProcessedFile_sub1_fc_map.npy']}
-	        
+        # Corr_calculated_Files = {'CorrCalc_group0':['/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix0/ProcessedFile_sub0_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix1/ProcessedFile_sub1_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix2/ProcessedFile_sub2_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix3/ProcessedFile_sub3_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix4/ProcessedFile_sub4_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix5/ProcessedFile_sub5_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix6/ProcessedFile_sub6_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix7/ProcessedFile_sub7_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix8/ProcessedFile_sub8_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix9/ProcessedFile_sub9_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix10/ProcessedFile_sub10_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix11/ProcessedFile_sub11_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix12/ProcessedFile_sub12_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix13/ProcessedFile_sub13_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix14/ProcessedFile_sub14_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix15/ProcessedFile_sub15_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix16/ProcessedFile_sub16_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix17/ProcessedFile_sub17_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix18/ProcessedFile_sub18_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix19/ProcessedFile_sub19_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix20/ProcessedFile_sub20_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix21/ProcessedFile_sub21_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix22/ProcessedFile_sub22_fc_map.npy']}
 
         doAnalysiswtGrps = AnalysisParams['Stats']['Analysis within Groups']
         doAnalysisbwGrps = AnalysisParams['Stats']['Analysis between Groups']

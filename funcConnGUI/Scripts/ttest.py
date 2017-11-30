@@ -8,6 +8,7 @@ from statsmodels.stats import multitest
 from multiprocessing import Pool
 from functools import partial
 import multiprocessing.managers
+from os.path import join as opj
 class MyManager(multiprocessing.managers.BaseManager):
     pass
 # MyManager.register('ma_empty_like', ma.empty_like, multiprocessing.managers.ArrayProxy)
@@ -40,7 +41,8 @@ def make_brain_back_from_npy(NumpyfileList,FileListNames,mask_file):
                                 # header = maskhd)
         nib.save(Brain, FileListNames[i])
 
-
+def convert_ma_to_np(MaskedArrayObj):
+    return ma.filled(MaskedArrayObj)
 def div0( a, b ):
     '''
     It is meant for ignoring the places where standard deviation 
@@ -57,10 +59,14 @@ def convert_pvals_to_log_fmt(pvalues,Sample_mean_ArrayA = None, Sample_mean_Arra
         with np.errstate(divide='ignore', invalid='ignore'):
             c = (-1*np.log10(pvalues)*np.sign(Sample_mean_ArrayA - Sample_mean_ArrayB)) 
         return c
-    else: 
+    elif (Sample_mean_ArrayA is not None): 
+        with np.errstate(divide='ignore', invalid='ignore'):
+            c = (-1*np.log10(pvalues)*np.sign(Sample_mean_ArrayA))    
+        return c
+    else:
         with np.errstate(divide='ignore', invalid='ignore'):
             c = (-1*np.log10(pvalues))    
-        return c
+        return c        
 
 def calc_mean_and_std(ROICorrMaps, n_subjects, ROIAtlasmask, ddof =1, applyFisher = False):
     '''
@@ -201,14 +207,17 @@ def ttest_1samp_ROIs_if_npy(ROICorrMaps,
                                 calc_mean_and_std_if_npy( ROICorrMaps,
                                                         n_subjects, ddof =1,
                                                         applyFisher = applyFisher)
+    np.save(opj(os.getcwd(),'Sample_mean_array.npy'),convert_ma_to_np(Sample_mean_Array))
+    np.save(opj(os.getcwd(),'Sample_std_array.npy'),convert_ma_to_np( Sample_std_Array))
+    
     if save_pval_in_log_fmt:
         ttest, pvals = _ttest_1samp(Sample_mean_Array,
                         Sample_std_Array,
                         n_subjects,
                         PopMean = PopMean)
-        return ttest, convert_pvals_to_log_fmt(pvals)
+        return Sample_mean_Array, (ttest, convert_pvals_to_log_fmt(pvals))
 
-    return _ttest_1samp(Sample_mean_Array,
+    return Sample_mean_Array, _ttest_1samp(Sample_mean_Array,
                         Sample_std_Array,
                         n_subjects,
                         PopMean = PopMean)
@@ -319,8 +328,7 @@ def ttest_ind_samples_if_npy(ROICorrMapsA, ROICorrMapsB,
                 Sample_mean_ArrayB, Sample_var_ArrayB, n_subjectsB,
                 equal_var = equal_var)
 
-def convert_ma_to_np(MaskedArrayObj):
-    return ma.filled(MaskedArrayObj)
+
 
 def fdrcorrect_worker2(A,B,args):
     return fdrcorrect_worker(A,B,*args)
