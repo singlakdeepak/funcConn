@@ -4,7 +4,91 @@ import numpy as np
 import nipype.interfaces.utility as util
 from nipype.interfaces.io import SelectFiles, DataSink
 from nipype.pipeline.engine import Workflow, Node, MapNode
+
+from nipype.interfaces import fsl
 import os
+
+def pearsonr_with_roi_mean_w_reg(in_file, atlas_file):
+    import nibabel as nib
+    import numpy as np
+    from os.path import join as opj
+    import os
+
+    sub_id = in_file.split('/')[-1].split('.')[0]
+    fc_file_name = sub_id + '_fc_map.nii.gz'
+    coff_matrix_file = opj(os.getcwd(),fc_file_name)
+    if os.path.exists(coff_matrix_file):
+        print('Saved file in : %s'%coff_matrix_file)
+        
+    else:
+
+        atlasObject = nib.load(atlas_file)
+        atlas = atlasObject.get_data()
+        num_ROIs = int(np.max(atlas) - np.min(atlas)) 
+
+        print('Min Index:', np.min(atlas),'Max Index', np.max(atlas))
+        print('Total Number of Parcellations = ',num_ROIs)
+        brain_data = nib.load(in_file)
+        brain = brain_data.get_data()
+        brain_affine = brain_data.affine
+        x_dim, y_dim, z_dim, num_volumes = brain.shape
+        
+        # Initialize a matrix of ROI time series and voxel time series
+
+        ROI_matrix = np.zeros((num_ROIs, num_volumes))
+        labels = atlas.astype(int) - 1
+
+        # mask_Obj = nib.load(mask_file)
+        # mask_data = mask_Obj.get_data()
+        '''
+        Mask file can also be used here instead of 
+        defining a threshold from standard deviation.
+        '''
+        std_Deviation = np.std(brain, axis = 3)
+        brain_voxels_X,brain_voxels_Y,brain_voxels_Z = np.where(std_Deviation>1e-2)
+        num_brain_voxels = len(brain_voxels_X)
+
+        voxel_matrix = np.zeros((num_brain_voxels, num_volumes))
+        # Fill up the voxel_matrix 
+
+        voxel_counter = 0
+        num_voxels_in_ROI = np.zeros((num_ROIs,1))
+        for i in range(x_dim):
+            for j in range(y_dim):
+                for k in range(z_dim):
+                    if std_Deviation[i,j,k] > 1e-2:
+                        voxel_matrix[voxel_counter] = brain[i,j,k] 
+                        voxel_counter += 1
+
+                    currentLabel = labels[i,j,k]              
+                    if currentLabel >-1:
+                        # print(currentLabel)
+                        # print(voxel_counter)
+                        ROI_matrix[currentLabel,:] +=  brain[i,j,k]
+                        num_voxels_in_ROI[currentLabel,0] += 1
+
+        del brain
+        del labels, atlas
+        print('Total number of selected voxels: ', num_brain_voxels)
+        ROImeans = np.divide(ROI_matrix,num_voxels_in_ROI) # Check if divide is working correctly
+
+        Xm = np.subtract(ROImeans, np.expand_dims(np.mean(ROImeans, axis =1),axis=1))
+        Ym = np.subtract(voxel_matrix, np.expand_dims(np.mean(voxel_matrix, axis =1),axis =1))
+
+        Xstd = np.expand_dims(np.std(ROImeans, axis = 1) + 1e-7, axis =1)
+        Ystd = np.expand_dims(np.std(voxel_matrix,axis = 1) + 1e-7, axis=1)
+
+        mult1 = np.divide(Xm, Xstd)
+        mult2 = np.divide(Ym , Ystd)
+        coff_matrix = np.dot(mult1, mult2.T)/num_volumes
+
+        Brainimg = np.zeros((x_dim,y_dim,z_dim,num_ROIs),dtype = np.float32)
+        for i in range(num_ROIs):
+            Brainimg[brain_voxels_X,brain_voxels_Y,brain_voxels_Z,i] = coff_matrix[i] 
+        CoffBrain = nib.Nifti1Image(Brainimg, affine = brain_affine)
+        print('Saved file in : %s'%coff_matrix_file)
+        nib.save(CoffBrain, coff_matrix_file)
+    return coff_matrix_file
 
 
 def pearsonr_with_roi_mean(in_file, atlas_file, mask_file):
@@ -83,27 +167,62 @@ def pearsonr_with_roi_mean(in_file, atlas_file, mask_file):
     return coff_matrix_file
 
 
-def build_correlation_wf(name = 'pearsonCorrcalc'):
+def build_correlation_wf(Registration = True,name = 'pearsonCorrcalc'):
     corr_wf = Workflow(name=name)
-
-    inputnode = Node(interface=util.IdentityInterface(fields=['in_files', 
-                                                               'atlas_file',
-                                                               'mask_file']),
-                        name='inputspec')
-    outputnode = Node(interface=util.IdentityInterface(fields=['pearsonCorr_files']),
-                         name='outputspec')
-    coff_matrix = MapNode(util.Function(function=pearsonr_with_roi_mean, 
-                                input_names=['in_file','atlas_file','mask_file'],
-                                output_names=['coff_matrix_file']),
+    if Registration:
+        inputnode = Node(interface=util.IdentityInterface(fields=['in_files', 
+                                                                   'atlas_files',
+                                                                   'func2std',
+                                                                   'reference',
+                                                                   'mask_file']),
+                                                            name='inputspec')
+        outputnode = Node(interface=util.IdentityInterface(fields=['pearsonCorr_files']),
+                             name='outputspec')
+        coff_matrix = MapNode(util.Function(function=pearsonr_with_roi_mean_w_reg, 
+                                    input_names=['in_file','atlas_file'],
+                                    output_names=['coff_matrix_file']),
+                          iterfield=['in_file','atlas_file'],
+                          name = 'coff_matrix')
+        transform_corr = MapNode(interface = fsl.ApplyXFM(interp='spline'), 
+                                iterfield = ['in_file','in_matrix_file'],
+                                name='transform_corr')
+        maskCorrFile = MapNode(interface=fsl.ImageMaths(suffix='_masked',
+                                               op_string='-mas'),
                       iterfield=['in_file'],
-                      name = 'coff_matrix')    
-    datasink = Node(interface=DataSink(), name='datasink')
+                      name = 'maskWarpFile')
+        datasink = Node(interface=DataSink(), name='datasink')
 
-    corr_wf.connect(inputnode, 'in_files', coff_matrix, 'in_file')
-    corr_wf.connect(inputnode, 'atlas_file', coff_matrix, 'atlas_file')
-    corr_wf.connect(inputnode, 'mask_file', coff_matrix, 'mask_file')
+        corr_wf.connect(inputnode, 'in_files', coff_matrix, 'in_file')
+        corr_wf.connect(inputnode, 'atlas_files', coff_matrix, 'atlas_file')
+        corr_wf.connect(coff_matrix,'coff_matrix_file', transform_corr, 'in_file')
+        corr_wf.connect(inputnode, 'func2std', transform_corr, 'in_matrix_file')
+        corr_wf.connect(inputnode, 'reference', transform_corr, 'reference')
+        corr_wf.connect(transform_corr,'out_file', maskCorrFile, 'in_file')
+        corr_wf.connect(inputnode, 'mask_file', maskCorrFile, 'in_file2')
 
-    corr_wf.connect(coff_matrix,'coff_matrix_file', outputnode, 'pearsonCorr_files')
-    corr_wf.connect(outputnode, 'pearsonCorr_files', datasink, 'out_file')
+        corr_wf.connect(maskCorrFile,'out_file', outputnode, 'pearsonCorr_files')
+        corr_wf.connect(outputnode, 'pearsonCorr_files', datasink, 'out_file')
+
+    else:
+
+        inputnode = Node(interface=util.IdentityInterface(fields=['in_files', 
+                                                                   'atlas_file',
+                                                                   'mask_file']),
+                            name='inputspec')
+        outputnode = Node(interface=util.IdentityInterface(fields=['pearsonCorr_files']),
+                             name='outputspec')
+        coff_matrix = MapNode(util.Function(function=pearsonr_with_roi_mean, 
+                                    input_names=['in_file','atlas_file','mask_file'],
+                                    output_names=['coff_matrix_file']),
+                          iterfield=['in_file'],
+                          name = 'coff_matrix')    
+        datasink = Node(interface=DataSink(), name='datasink')
+
+        corr_wf.connect(inputnode, 'in_files', coff_matrix, 'in_file')
+        corr_wf.connect(inputnode, 'atlas_file', coff_matrix, 'atlas_file')
+        corr_wf.connect(inputnode, 'mask_file', coff_matrix, 'mask_file')
+
+        corr_wf.connect(coff_matrix,'coff_matrix_file', outputnode, 'pearsonCorr_files')
+        corr_wf.connect(outputnode, 'pearsonCorr_files', datasink, 'out_file')
 
     return corr_wf

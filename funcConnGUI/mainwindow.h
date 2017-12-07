@@ -76,6 +76,8 @@ private slots:
 
     void on_checkBox_LowPass_clicked(bool checked);
 
+    void on_commandLinkButton_Mask_clicked();
+
 private:
     QJsonArray combinations;
     QString CommonDir ="/home/";

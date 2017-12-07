@@ -436,7 +436,7 @@ def fdrcorrect_worker(fdrcorrected_brain,
             fdrcorrected_brain[indices] = pvals_corrected_
         print("Done for ", roi_number)
 
-def fdr_correction(pvalues , type = 'indep_samps', is_npy = False):
+def fdr_correction(pvalues , type = 'indep_samps', procs = 8, is_npy = False):
     '''
     pvalues :: Pvalue maps for all ROIs
     Two types:
@@ -447,7 +447,6 @@ def fdr_correction(pvalues , type = 'indep_samps', is_npy = False):
     FDR_types = ['indep_samps', 'all']
 
     if (type == 'indep_samps'):
-        procs = 8
         pool = Pool(procs)
 
         m = MyManager()

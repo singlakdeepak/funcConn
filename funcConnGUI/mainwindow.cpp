@@ -27,6 +27,12 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->checkBox_preprocFeat->setChecked(false);
     ui->checkBox_ROICorrs->setChecked(false);
     ui->spinBox->setRange(1,5);
+
+    // Values set randomly for now. These are no of the threads which will
+    // be executed. Can be changed later to some other value.
+    ui->spinBox_threads->setRange(1,12);
+    ui->spinBox_threads->setValue(4);
+
     ui->radioButton_wt_Groups->setChecked(true);
     ui->chooseCombsButton->hide();
     ui->label_Hypothesis->hide();
@@ -438,6 +444,17 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
     ReferSummary["ReferImgPath"] = ui->lineEdit_Reference->text();
     json["ReferSummary"] = ReferSummary;
 
+
+    QString MaskFile = ui->lineEdit_Mask->text();
+    QFile Mask(MaskFile);
+    if (Mask.exists()){
+    json["MaskNotProvided"] = false;
+    json["UseMaskFile"] = MaskFile;
+    }
+    else {
+        json["MaskNotProvided"] = true;
+    }
+
     QJsonObject ProcessingType;
     ProcessingType["Info"] = QString("The inputs can be of 3 types: "
                                       "#0 : Unprocessed "
@@ -527,6 +544,12 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
 
         json["Melodic ICA"] = ui->checkBox_MelodicICA->isChecked();
     }
+    else if (ProcessingWay ==1){
+
+    }
+    else {
+        json["Registration"] = ui->radioButton_reg_y->isChecked();
+    }
 
     bool doStats = true;
     json["doStats"] = doStats;
@@ -548,7 +571,7 @@ void MainWindow::writeAnalysisName(QJsonObject &json) const
      *
      */
     json["Analysis Name"] = ui->lineEdit_AnalysisName->text();
-    json["No of threads"] = 8;
+    json["No of threads"] = ui->spinBox_threads->value();
     json["WorkingDir"] = WorkingDir;
     QJsonObject ReferenceImgpath;
     writeReferImgpath(ReferenceImgpath);
@@ -621,4 +644,45 @@ void MainWindow::on_checkBox_LowPass_clicked(bool checked)
         ui->lineEdit_lowpass->show();
     else
         ui->lineEdit_lowpass->hide();
+}
+
+void MainWindow::on_commandLinkButton_Mask_clicked()
+{
+    /*
+     * Sets the Mask File in the lineEdit box.
+     */
+    QString new_input;
+
+    // Get the input already present in the cell.
+    QString already_input = ui->lineEdit_Mask->text();
+    QFile Fout(already_input) ;
+
+    if (Fout.exists())
+    {
+        // If such file exists, then opne the Directory chooser from that path.
+        new_input=QFileDialog::getOpenFileName(
+                                                    this,
+                                                    tr("Open File"),
+                                                    already_input,
+                                                    "All files (*.*);;Text File (*.txt)"
+                                                       );
+    }
+    else
+    {
+        // else open it from the default path.
+        new_input=QFileDialog::getOpenFileName(
+                                                this,
+                                                tr("Open File"),
+                                                CommonDir,
+                                                "All files (*.*);;Text File (*.txt)"
+                                                   );
+    }
+    if (new_input!=NULL){
+        // It is used for handling the CANCEL button. In case the cancel is clicked in
+        // directory chooser, then we need to set it to previous input else the new input.
+    ui->lineEdit_Mask->setText(new_input);
+    }
+    else {
+        ui->lineEdit_Mask->setText(already_input);
+    }
 }
