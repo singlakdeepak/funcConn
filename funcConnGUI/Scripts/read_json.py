@@ -221,10 +221,14 @@ def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles = None,Grou
         datasinkouts_afterreg = []
         ROI_REG_DATASINK = OUTPUT_DIR + '/tmp/%s/datasink_transformedROI/'%RegistrationName
         func2std_DATASINK = OUTPUT_DIR + '/tmp/%s/datasink_func2std/'%RegistrationName
-        Reg_WorkFlow = parallelPreproc.reg_workflow(no_subjects,name = RegistrationName)
-      
+        if StructuralFiles!=None:
+            Reg_WorkFlow = parallelPreproc.reg_workflow_with_Anat(no_subject,
+                                                        name = RegistrationName)
+            Reg_WorkFlow.inputs.inputspec.anatomical_images = StructuralFiles
+        else:
+            Reg_WorkFlow = parallelPreproc.reg_workflow_wo_Anat(no_subjects,
+                                                        name = RegistrationName)              
         Reg_WorkFlow.inputs.inputspec.source_files = datasinkouts
-        Reg_WorkFlow.inputs.inputspec.anatomical_images = StructuralFiles
         Reg_WorkFlow.inputs.inputspec.target_image = ReferenceFile
         Reg_WorkFlow.inputs.inputspec.ROI_File = ROIFile
         Reg_WorkFlow.base_dir = TEMP_DIR_FOR_STORAGE
@@ -265,8 +269,8 @@ def call_corr_wf_with_reg(Files_for_corr_dict, atlas_files_dict,
         corr_wf = corr.build_correlation_wf(Registration = True,name = group)
         corr_wf.inputs.inputspec.in_files = files
 
-        print(atlas_files_dict[group])
-        print(func2stdDict[group])        
+        # print(atlas_files_dict[group])
+        # print(func2stdDict[group])        
         
         corr_wf.inputs.inputspec.atlas_files = atlas_files_dict[group]
         corr_wf.inputs.inputspec.func2std = func2stdDict[group]
@@ -472,6 +476,7 @@ if __name__ == '__main__':
     ProcessingWay = AnalysisParams['ProcessingType']['ProcessingWay']
     Ngroups = AnalysisParams['No of Groups']
     OUTPUT_DIR = AnalysisParams['OutputInfo']['OutDirectory']
+    Registration = AnalysisParams['Registration']
     TEMP_DIR_FOR_STORAGE = opj(OUTPUT_DIR, 'tmp')
 
 
@@ -504,10 +509,12 @@ if __name__ == '__main__':
             # CorrROImapFiles[ProcName] = []
             with open(FunctionaltxtFiles[i]) as file:
                 FunctionalFiles_in_this_group = [line.strip('\n') for line in file]
-            Registration = AnalysisParams['Registration']
+            
             if Registration:
-                with open(StructuraltxtFiles[i]) as file:
-                    StructuralFiles_in_this_group = [line.strip('\n') for line in file]
+                if (len(StructuraltxtFiles)!=0):
+                    with open(StructuraltxtFiles[i]) as file:
+                        StructuralFiles_in_this_group = [line.strip('\n') for line in file]
+                else: StructuralFiles_in_this_group = None
                 Preprocessed_Files, transformedROIs, func2stdtransforms = run_Preprocessing(AnalysisParams, 
                                                                             FunctionalFiles_in_this_group, 
                                                                             StructuralFiles = StructuralFiles_in_this_group,
@@ -596,30 +603,30 @@ if __name__ == '__main__':
 
         # Corr_calculated_Files = {'CorrCalc_group0':['/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix0/ProcessedFile_sub0_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix1/ProcessedFile_sub1_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix2/ProcessedFile_sub2_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix3/ProcessedFile_sub3_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix4/ProcessedFile_sub4_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix5/ProcessedFile_sub5_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix6/ProcessedFile_sub6_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix7/ProcessedFile_sub7_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix8/ProcessedFile_sub8_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix9/ProcessedFile_sub9_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix10/ProcessedFile_sub10_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix11/ProcessedFile_sub11_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix12/ProcessedFile_sub12_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix13/ProcessedFile_sub13_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix14/ProcessedFile_sub14_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix15/ProcessedFile_sub15_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix16/ProcessedFile_sub16_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix17/ProcessedFile_sub17_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix18/ProcessedFile_sub18_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix19/ProcessedFile_sub19_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix20/ProcessedFile_sub20_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix21/ProcessedFile_sub21_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix22/ProcessedFile_sub22_fc_map.npy']}
 
-        # doAnalysiswtGrps = AnalysisParams['Stats']['Analysis within Groups']
-        # doAnalysisbwGrps = AnalysisParams['Stats']['Analysis between Groups']
-        # doNormalFisher = AnalysisParams['Stats']['doNormalFisher']
-        # doSeparateFDR = AnalysisParams['Stats']['Separate FDR']
-        # # if doAnalysiswtGrps:
-        #     # Do Something. The Function is yet to be defined.
-
-        # # You can club the bw groups and wt groups correlations together 
-        # # because mean and std are already calculated in that case.
-        # if ((Ngroups==2)and doAnalysisbwGrps):
-        #     GR1grGr2 = AnalysisParams['Stats']['Gr1>Gr2']
-        #     call_stat_Analysis_bw_grps(Corr_calculated_Files,[1],OUTPUT_DIR, mask_file)
-        # elif ((Ngroups > 2) and doAnalysisbwGrps):
-        #     combinations = AnalysisParams['Stats']['Combinations']
-        #     call_stat_Analysis_bw_grps(Corr_calculated_Files, 
-        #                         combinations, 
-        #                         OUTPUT_DIR, 
-        #                         mask_file)
+        doAnalysiswtGrps = AnalysisParams['Stats']['Analysis within Groups']
+        doAnalysisbwGrps = AnalysisParams['Stats']['Analysis between Groups']
+        doNormalFisher = AnalysisParams['Stats']['doNormalFisher']
+        doSeparateFDR = AnalysisParams['Stats']['Separate FDR']
         # if doAnalysiswtGrps:
-        #     call_stat_Analysis_wt_grps(Corr_calculated_Files,OUTPUT_DIR,mask_file)
+            # Do Something. The Function is yet to be defined.
 
-        # stop = timeit.default_timer()
-        # file.write("Total time taken for calculating statistics: %ss \n" %(stop - stop2))
-        # Totaltime += stop - stop2
+        # You can club the bw groups and wt groups correlations together 
+        # because mean and std are already calculated in that case.
+        if ((Ngroups==2)and doAnalysisbwGrps):
+            GR1grGr2 = AnalysisParams['Stats']['Gr1>Gr2']
+            call_stat_Analysis_bw_grps(Corr_calculated_Files,[1],OUTPUT_DIR, mask_file)
+        elif ((Ngroups > 2) and doAnalysisbwGrps):
+            combinations = AnalysisParams['Stats']['Combinations']
+            call_stat_Analysis_bw_grps(Corr_calculated_Files, 
+                                combinations, 
+                                OUTPUT_DIR, 
+                                mask_file)
+        if doAnalysiswtGrps:
+            call_stat_Analysis_wt_grps(Corr_calculated_Files,OUTPUT_DIR,mask_file)
+
+        stop = timeit.default_timer()
+        file.write("Total time taken for calculating statistics: %ss \n" %(stop - stop2))
+        Totaltime += stop - stop2
 
     print("Total time taken for running the program: ", Totaltime)
     file.write("Total time taken for running the program: %ss \n" %(Totaltime))
