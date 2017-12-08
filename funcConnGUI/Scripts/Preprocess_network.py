@@ -679,96 +679,6 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
     return featpreproc
 
 '''
-def reg_workflow(name = 'registration'):
-    """Create a FEAT preprocessing workflow
-    Parameters
-    ----------
-    ::
-        name : name of workflow (default: 'registration')
-    Inputs::
-        inputspec.source_files : files (filename or list of filenames to register)
-        inputspec.mean_image : reference image to use
-        inputspec.anatomical_image : anatomical image to coregister to
-        inputspec.target_image : registration target
-    Outputs::
-        outputspec.func2anat_transform : FLIRT transform
-        outputspec.anat2target_transform : FLIRT+FNIRT transform
-        outputspec.transformed_files : transformed files in target space
-        outputspec.transformed_mean : mean image in target space
-    Example
-    -------
-    """
-
-    register = Workflow(name=name)
-
-    inputnode = Node(interface=util.IdentityInterface(fields=['source_files',
-                                                                 'anatomical_image',
-                                                                 'target_image']),
-                        name='inputspec')
-    outputnode = Node(interface=util.IdentityInterface(fields=['func2anat_transform',
-                                                                  'anat2target_transform',
-                                                                  'transformed_files',
-                                                                  'transformed_mean',
-                                                                  ]),
-                         name='outputspec')
-    meanfunc = Node(fsl.ImageMaths(op_string='-Tmean',suffix='_mean'), name = 'meanfunc')
-    register.connect(inputnode, 'source_files', meanfunc, 'in_file')
-    """
-    Estimate the tissue classes from the anatomical image. But use spm's segment
-    as FSL appears to be breaking.
-    """
-
-    stripper = Node(fsl.BET(), name='stripper')
-    register.connect(inputnode, 'anatomical_image', stripper, 'in_file')
-    fast = Node(fsl.FAST(), name='fast')
-    register.connect(stripper, 'out_file', fast, 'in_files')
-
-    """
-    Binarize the segmentation
-    """
-
-    binarize = Node(fsl.ImageMaths(op_string='-nan -thr 0.5 -bin'),
-                       name='binarize')
-    pickindex = lambda x, i: x[i]
-    register.connect(fast, ('partial_volume_files', pickindex, 2),
-                     binarize, 'in_file')
-
-    """
-    Calculate rigid transform from mean image to anatomical image
-    """
-
-    mean2anat = Node(fsl.FLIRT(), name='mean2anat')
-    mean2anat.inputs.dof = 6
-    register.connect(meanfunc,'out_file', mean2anat, 'in_file')
-    register.connect(stripper, 'out_file', mean2anat, 'reference')
-
-    """
-    Now use bbr cost function to improve the transform
-    """
-
-    mean2anatbbr = Node(fsl.FLIRT(), name='mean2anatbbr')
-    mean2anatbbr.inputs.dof = 6
-    mean2anatbbr.inputs.cost = 'bbr'
-    mean2anatbbr.inputs.schedule = os.path.join(os.getenv('FSLDIR'),
-                                                'etc/flirtsch/bbr.sch')
-    register.connect(meanfunc,'out_file', mean2anatbbr, 'in_file')
-    register.connect(binarize, 'out_file', mean2anatbbr, 'wm_seg')
-    register.connect(inputnode, 'anatomical_image', mean2anatbbr, 'reference')
-    register.connect(mean2anat, 'out_matrix_file',
-                     mean2anatbbr, 'in_matrix_file')
-
-    """
-    Calculate affine transform from anatomical to target
-    """
-
-    anat2target_affine = Node(fsl.FLIRT(), name='anat2target_linear')
-    anat2target_affine.inputs.searchr_x = [-180, 180]
-    anat2target_affine.inputs.searchr_y = [-180, 180]
-    anat2target_affine.inputs.searchr_z = [-180, 180]
-    register.connect(stripper, 'out_file', anat2target_affine, 'in_file')
-    register.connect(inputnode, 'target_image',
-                     anat2target_affine, 'reference')
-
 
 #     register.connect(anat2target_affine, 'out_matrix_file',
 #                      anat2target_nonlinear, 'affine_file')
@@ -827,9 +737,332 @@ def reg_workflow(name = 'registration'):
 
     return register
 '''
-
-def reg_workflow(no_subjects, name = 'registration'):
+def reg_workflow_with_Anat(no_subjects, name = 'registration'):
     """Create a FEAT preprocessing workflow
+    Parameters
+    ----------
+    ::
+        name : name of workflow (default: 'registration')
+    Inputs::
+        inputspec.source_files : files (filename or list of filenames to register)
+        inputspec.anatomical_images : anatomical images in the same subject-wise order for coregistration.
+        inputspec.target_image : registration target
+    Outputs::
+        outputspec.func2anat_transform : FLIRT transform
+        outputspec.transformed_files : transformed files in target space
+    Example
+    -------
+    """
+
+    register = Workflow(name=name)
+         
+    inputnode = Node(interface=util.IdentityInterface(fields=['source_files',
+                                                                 'anatomical_images',
+                                                                 'target_image',
+                                                                 'ROI_File']),
+                        name='inputspec')
+    outputnode = Node(interface=util.IdentityInterface(fields=['func2anat_transform',
+                                                                'func2std_transform',
+                                                                'transformed_ROI'
+                                                                  ]),
+                         name='outputspec')
+
+    ''' 
+    Pipeline:
+    #1 : Calculate the mean image from the functional run.
+    #2 : Do BET on the mean image.
+    #3 : FAST is done for segmenting the White matter.
+    #4 : Binarize is done for making the mask out of the file generated after the
+         FAST segmentation.
+    #5 : Now calculate the mean 2 anamtomical co-registration matrix. 
+    #6 : BBR is done for refining the matrix generated from mean2anatomical co-reg.
+    #7 : Now, calculate the transformation from anatomical to reference file. 
+    #8 : Calculate the mask from the transformed anat2target file.
+    #9 : Now , apply transformation using the target_image as reference and 
+         mean2anat matrix as transformation matrix. Keep Spline interpolation.
+    #10 : Now mask the output with the anat2targetmask so that the values outside 
+          the brain go zero. 
+
+    '''
+
+    # meanfunc = MapNode(fsl.ImageMaths(op_string='-Tmean',suffix='_mean'), iterfield = ['in_file'],name = 'meanfunc')
+    meanfunc = MapNode(interface=fsl.ExtractROI(t_size=1),
+                             iterfield=['in_file', 't_min'],
+                             name = 'meanfunc')
+    stripper = MapNode(fsl.BET(frac = 0.3), 
+      iterfield = ['in_file'], name='stripper')
+    fast = MapNode(fsl.FAST(), 
+          iterfield =['in_files'], 
+          name='fast')
+    selectfile = MapNode(interface=util.Select(index=[2]), 
+                        iterfield = ['inlist'],
+                        name='select')
+
+    
+    binarize = MapNode(fsl.ImageMaths(op_string='-nan -thr 0.5 -bin'),
+                   iterfield = ['in_file'],
+                   name='binarize')
+    mean2anat = MapNode(fsl.FLIRT(interp = 'trilinear'), 
+                        iterfield = ['in_file','reference'], 
+                        name='mean2anat')
+    mean2anatbbr = MapNode(fsl.FLIRT(interp = 'trilinear'), 
+                    iterfield = ['in_file','wm_seg','reference','in_matrix_file'], 
+                    name='mean2anatbbr')
+    anat2target_affine = MapNode(fsl.FLIRT(), 
+                        iterfield = ['in_file'], 
+                        name='anat2target_linear')
+    concat_mat = MapNode(fsl.ConvertXFM(concat_xfm = True), 
+                        iterfield=['in_file','in_file2'], 
+                        name='concat_mat')
+    inv_mat = MapNode(fsl.ConvertXFM(invert_xfm = True), 
+                      iterfield = ['in_file'], 
+                      name = 'inv_mat')
+    transform_ROI = MapNode(fsl.ApplyXFM(interp='nearestneighbour'), 
+                      iterfield = ['in_matrix_file','reference'],
+                      name='transform_ROI')
+
+    register.connect(inputnode, 'source_files', meanfunc, 'in_file')
+    register.connect(inputnode, ('source_files', pickmiddle), meanfunc, 't_min')
+    """
+    Estimate the tissue classes from the anatomical image. But use spm's segment
+    as FSL appears to be breaking.
+    """
+    
+    register.connect(inputnode, 'anatomical_images', stripper, 'in_file')
+
+    register.connect(stripper, 'out_file', fast, 'in_files')
+    """
+    Binarize the segmentation
+    """
+    pickindex = lambda x, i: x[i]
+    register.connect(fast, 'partial_volume_files', selectfile, 'inlist')
+
+    register.connect(selectfile, 'out', binarize, 'in_file')
+    # register.connect(fast, ('partial_volume_files', pickindex, 2),
+                     # binarize, 'in_file')
+
+    """
+    Calculate rigid transform from mean image to anatomical image
+    """
+    mean2anat.inputs.dof = 12
+    mean2anat.inputs.searchr_x = [-180, 180]
+    mean2anat.inputs.searchr_y = [-180, 180]
+    mean2anat.inputs.searchr_z = [-180, 180]
+    register.connect(meanfunc,'roi_file', mean2anat, 'in_file')
+    register.connect(stripper, 'out_file', mean2anat, 'reference')
+
+    """
+    Now use bbr cost function to improve the transform
+    """
+
+    mean2anatbbr.inputs.dof = 12
+    mean2anatbbr.inputs.searchr_x = [-180, 180]
+    mean2anatbbr.inputs.searchr_y = [-180, 180]
+    mean2anatbbr.inputs.searchr_z = [-180, 180]
+    mean2anatbbr.inputs.cost = 'bbr'
+    mean2anatbbr.inputs.schedule = os.path.join(os.getenv('FSLDIR'),
+                                                'etc/flirtsch/bbr.sch')
+    register.connect(meanfunc,'roi_file', mean2anatbbr, 'in_file')
+    register.connect(binarize, 'out_file', mean2anatbbr, 'wm_seg')
+    # register.connect(inputnode, 'anatomical_images', mean2anatbbr, 'reference')
+    register.connect(stripper, 'out_file', mean2anatbbr, 'reference')
+    register.connect(mean2anat, 'out_matrix_file',
+                     mean2anatbbr, 'in_matrix_file')
+    """
+    Calculate affine transform from anatomical to target
+    """
+
+    anat2target_affine.inputs.searchr_x = [-180, 180]
+    anat2target_affine.inputs.searchr_y = [-180, 180]
+    anat2target_affine.inputs.searchr_z = [-180, 180]
+    anat2target_affine.inputs.cost = 'corratio'
+    register.connect(stripper, 'out_file', anat2target_affine, 'in_file')
+    register.connect(inputnode, 'target_image',
+                     anat2target_affine, 'reference')
+    # register.connect(anat2target_affine,'out_file', anat2targetmask, 'in_file')
+
+    transform_ROI.inputs.padding_size = 0
+
+    register.connect(mean2anatbbr, 'out_matrix_file', concat_mat, 'in_file')
+    register.connect(anat2target_affine, 'out_matrix_file', concat_mat,'in_file2')
+    register.connect(concat_mat,'out_file', inv_mat, 'in_file')
+    register.connect(inputnode, 'ROI_File', transform_ROI, 'in_file')
+    register.connect(inv_mat, 'out_file', transform_ROI, 'in_matrix_file')
+    register.connect(meanfunc, 'roi_file', transform_ROI, 'reference')
+
+    datasink_transformedROI = Node(interface=DataSink(), name="datasink_transformedROI")
+    datasink_func2std = Node(interface=DataSink(), name="datasink_func2std")
+    
+    """
+    Assign all the output files
+    """
+    register.connect(mean2anatbbr, 'out_matrix_file',
+                     outputnode, 'func2anat_transform')
+    register.connect(concat_mat, 'out_file', 
+                      outputnode, 'func2std_transform')
+    register.connect(transform_ROI, 'out_file', outputnode, 'transformed_ROI')
+    register.connect(outputnode, 'transformed_ROI', datasink_transformedROI, 'out_file')
+    register.connect(outputnode, 'func2std_transform', datasink_func2std,'out_file')
+
+    return register
+
+def reg_workflow_with_Anat(no_subjects, name = 'registration'):
+    """Create a FEAT preprocessing workflow
+    Parameters
+    ----------
+    ::
+        name : name of workflow (default: 'registration')
+    Inputs::
+        inputspec.source_files : files (filename or list of filenames to register)
+        inputspec.anatomical_images : anatomical images in the same subject-wise order for coregistration.
+        inputspec.target_image : registration target
+    Outputs::
+        outputspec.func2anat_transform : FLIRT transform
+        outputspec.transformed_files : transformed files in target space
+    Example
+    -------
+    """
+
+    register = Workflow(name=name)
+         
+    inputnode = Node(interface=util.IdentityInterface(fields=['source_files',
+                                                                 'target_image',
+                                                                 'ROI_File']),
+                        name='inputspec')
+    outputnode = Node(interface=util.IdentityInterface(fields=['func2std_transform',
+                                                                'transformed_ROI'
+                                                                  ]),
+                         name='outputspec')
+
+    ''' 
+    Pipeline:
+    #1 : Calculate the mean image from the functional run.
+    #2 : Do BET on the mean image.
+    #3 : FAST is done for segmenting the White matter.
+    #4 : Binarize is done for making the mask out of the file generated after the
+         FAST segmentation.
+    #5 : Now calculate the mean 2 anamtomical co-registration matrix. 
+    #6 : BBR is done for refining the matrix generated from mean2anatomical co-reg.
+    #7 : Now, calculate the transformation from anatomical to reference file. 
+    #8 : Calculate the mask from the transformed anat2target file.
+    #9 : Now , apply transformation using the target_image as reference and 
+         mean2anat matrix as transformation matrix. Keep Spline interpolation.
+    #10 : Now mask the output with the anat2targetmask so that the values outside 
+          the brain go zero. 
+
+    '''
+
+    # meanfunc = MapNode(fsl.ImageMaths(op_string='-Tmean',suffix='_mean'), iterfield = ['in_file'],name = 'meanfunc')
+    meanfunc = MapNode(interface=fsl.ExtractROI(t_size=1),
+                             iterfield=['in_file', 't_min'],
+                             name = 'meanfunc')
+    fast = Node(fsl.FAST(), 
+          name='fast')
+    selectfile = Node(interface=util.Select(index=[2]),
+                        name='select')
+
+    
+    binarize = Node(fsl.ImageMaths(op_string='-nan -thr 0.5 -bin'),
+                   name='binarize')
+    mean2ref = MapNode(fsl.FLIRT(interp = 'trilinear'), 
+                        iterfield = ['in_file'], 
+                        name='mean2ref')
+    mean2refbbr = MapNode(fsl.FLIRT(interp = 'trilinear'), 
+                    iterfield = ['in_file','in_matrix_file'], 
+                    name='mean2refbbr')
+
+    inv_mat = MapNode(fsl.ConvertXFM(invert_xfm = True), 
+                      iterfield = ['in_file'], 
+                      name = 'inv_mat')
+    transform_ROI = MapNode(fsl.ApplyXFM(interp='nearestneighbour'), 
+                      iterfield = ['in_matrix_file','reference'],
+                      name='transform_ROI')
+
+    register.connect(inputnode, 'source_files', meanfunc, 'in_file')
+    register.connect(inputnode, ('source_files', pickmiddle), meanfunc, 't_min')
+    """
+    Estimate the tissue classes from the anatomical image. But use spm's segment
+    as FSL appears to be breaking.
+    """
+
+
+    register.connect(inputnode, 'target_image', fast, 'in_files')
+    """
+    Binarize the segmentation
+    """
+    pickindex = lambda x, i: x[i]
+    register.connect(fast, 'partial_volume_files', selectfile, 'inlist')
+
+    register.connect(selectfile, 'out', binarize, 'in_file')
+    # register.connect(fast, ('partial_volume_files', pickindex, 2),
+                     # binarize, 'in_file')
+
+    """
+    Calculate rigid transform from mean image to anatomical image
+    """
+    mean2ref.inputs.dof = 12
+    mean2ref.inputs.searchr_x = [-180, 180]
+    mean2ref.inputs.searchr_y = [-180, 180]
+    mean2ref.inputs.searchr_z = [-180, 180]
+    register.connect(meanfunc,'roi_file', mean2ref, 'in_file')
+    register.connect(inputnode, 'target_image', mean2ref, 'reference')
+
+    """
+    Now use bbr cost function to improve the transform
+    """
+
+    mean2refbbr.inputs.dof = 12
+    mean2refbbr.inputs.searchr_x = [-180, 180]
+    mean2refbbr.inputs.searchr_y = [-180, 180]
+    mean2refbbr.inputs.searchr_z = [-180, 180]
+    mean2refbbr.inputs.cost = 'bbr'
+    mean2refbbr.inputs.schedule = os.path.join(os.getenv('FSLDIR'),
+                                                'etc/flirtsch/bbr.sch')
+    register.connect(meanfunc,'roi_file', mean2refbbr, 'in_file')
+    register.connect(binarize, 'out_file', mean2refbbr, 'wm_seg')
+    # register.connect(inputnode, 'anatomical_images', mean2anatbbr, 'reference')
+    register.connect(inputnode, 'target_image', mean2refbbr, 'reference')
+    register.connect(mean2ref, 'out_matrix_file',
+                     mean2refbbr, 'in_matrix_file')
+
+    transform_ROI.inputs.padding_size = 0
+
+    register.connect(mean2refbbr,'out_matrix_file', inv_mat, 'in_file')
+    register.connect(inputnode, 'ROI_File', transform_ROI, 'in_file')
+    register.connect(inv_mat, 'out_file', transform_ROI, 'in_matrix_file')
+    register.connect(meanfunc, 'roi_file', transform_ROI, 'reference')
+
+    datasink_transformedROI = Node(interface=DataSink(), name="datasink_transformedROI")
+    datasink_func2std = Node(interface=DataSink(), name="datasink_func2std")
+    
+    """
+    Assign all the output files
+    """
+
+    register.connect(mean2refbbr, 'out_matrix_file', 
+                      outputnode, 'func2std_transform')
+    register.connect(transform_ROI, 'out_file', outputnode, 'transformed_ROI')
+    register.connect(outputnode, 'transformed_ROI', datasink_transformedROI, 'out_file')
+    register.connect(outputnode, 'func2std_transform', datasink_func2std,'out_file')
+
+    return register
+
+# def apply_inv_to_ROI(no_subjects, name = 'roi_inv'):
+#     register = Workflow(name=name)
+
+#     inputnode = Node(interface=util.IdentityInterface(fields=['ROI_File','func2std_transforms']),
+#                         name='inputspec')
+#     outputnode = Node(interface=util.IdentityInterface(fields=['transformed_ROIs']),
+#                          name='outputspec')
+
+#     inv_node = MapNode(fsl.ConvertXFM)
+
+
+def __reg_workflow(no_subjects, name = 'registration'):
+
+    """
+    This function has been deprecated. Please no longer use it.
+    Create a FEAT preprocessing workflow
     Parameters
     ----------
     ::
@@ -903,14 +1136,16 @@ def reg_workflow(no_subjects, name = 'registration'):
                                      no_output=True,
                                      frac = 0.3),
                       name = 'anat2targetmask') 
-    warpfile = MapNode(fsl.ApplyXFM(interp='spline'), iterfield = ['in_file', 'in_matrix_file'],name='txm_registered')
+    warpfile = MapNode(fsl.ApplyXFM(interp='spline'), 
+                      iterfield = ['in_file', 'in_matrix_file'],
+                      name='txm_registered')
     """
     Mask the functional runs with the extracted mask
     """
     maskWarpFile = MapNode(interface=fsl.ImageMaths(suffix='_masked',
                                                op_string='-mas'),
                       iterfield=['in_file'],
-                      name = 'maskWapFile')
+                      name = 'maskWarpFile')
 
     register.connect(inputnode, 'source_files', meanfunc, 'in_file')
     register.connect(inputnode, ('source_files', pickmiddle), meanfunc, 't_min')
