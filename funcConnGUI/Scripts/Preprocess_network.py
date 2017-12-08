@@ -906,7 +906,7 @@ def reg_workflow_with_Anat(no_subjects, name = 'registration'):
 
     return register
 
-def reg_workflow_with_Anat(no_subjects, name = 'registration'):
+def reg_workflow_wo_Anat(no_subjects, name = 'registration'):
     """Create a FEAT preprocessing workflow
     Parameters
     ----------
@@ -984,8 +984,6 @@ def reg_workflow_with_Anat(no_subjects, name = 'registration'):
     Estimate the tissue classes from the anatomical image. But use spm's segment
     as FSL appears to be breaking.
     """
-
-
     register.connect(inputnode, 'target_image', fast, 'in_files')
     """
     Binarize the segmentation
