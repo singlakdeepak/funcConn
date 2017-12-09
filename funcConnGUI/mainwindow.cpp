@@ -20,7 +20,7 @@ MainWindow::MainWindow(QWidget *parent) :
      * hidden according to the requirements of the program.
      *
      */
-    char* env = getenv("FSLDIR");
+
     ui->setupUi(this);
     ui->radioButton_Unprocessed->setChecked(true);
     ui->checkBox->setChecked(false);
@@ -46,19 +46,20 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->lineEdit_lowpass->hide();
     ui->label_BET_Correct->hide();
     ui->lineEdit_BET_correct_value->hide();
-
+    ui->checkBox_RobustBET->setChecked(false);
+    ui->checkBox_RobustBET->hide();
 
     //Here I set the default name for the Analysis. It can be changed accordingly.
     QString DefAnalysisName = "FConnectivityAnl";
 
     //In case 'FSLDIR' path exists, the box will get flooded.
-    if (QDir(env).exists()){
-        ui->lineEdit_FSLDIR->setText(env);
+    if (QDir(FSLDIR).exists()){
+        ui->lineEdit_FSLDIR->setText(FSLDIR);
     }
 
     //OutDir stores the current directory we are in.
     ui->lineEdit_AnalysisName->setText(DefAnalysisName);
-    ui->lineEdit_OutDir->setText(OutDir + DefAnalysisName);
+    ui->lineEdit_OutDir->setText(OutDir + "/"+DefAnalysisName);
 }
 
 
@@ -244,7 +245,28 @@ void MainWindow::on_commandLinkButton_FSLDIR_clicked()
     /*
      * TO BE REVIEWED. THE FN IS NOT YET COMPLETE.
      */
+    QString new_Dir;
 
+    if (QDir(FSLDIR).exists())
+    {
+        new_Dir=QFileDialog::getExistingDirectory(
+                                                    this,
+                                                    tr("Choose Directory"),
+                                                    FSLDIR);
+    }
+    else {
+        new_Dir =QFileDialog::getExistingDirectory(
+                                                this,
+                                                tr("Choose Directory"),
+                                                CommonDir);
+    }
+    if (new_Dir!=NULL){
+        ui->lineEdit_FSLDIR->setText(new_Dir);
+        FSLDIR = new_Dir;
+    }
+    else{
+        ui->lineEdit_OutDir->setText(FSLDIR);
+    }
     QString filename=QFileDialog::getExistingDirectory(
                                                 this,
                                                 tr("Choose Directory"),
@@ -536,9 +558,12 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
         json["B0 Unwarping"] = ui->checkBox_B0->isChecked();
         json["Slice Time Correct"] = ui->comboBox_STimeCorrect->currentIndex();
         json["BET Brain Extract"] = ui->checkBox_BET->isChecked();
-        if (ui->checkBox_BET->isChecked())
-            json["BET Correction Value"] = ui->lineEdit_BET_correct_value->text().toFloat();
-
+        if (ui->checkBox_BET->isChecked()){
+            QJsonObject BET;
+            BET["BET Correction Value"] = ui->lineEdit_BET_correct_value->text().toFloat();
+            BET["doRobustBET"] = ui->checkBox_RobustBET->isChecked();
+            json["BETParams"] = BET;
+        }
 
         json["FWHM"] = ui->doubleSpinBox_FWHM->value();
         json["Intensity Normalization"] = ui->checkBox_IntensityNorm->isChecked();
@@ -707,9 +732,11 @@ void MainWindow::on_checkBox_BET_clicked(bool checked)
     if (checked){
         ui->label_BET_Correct->show();
         ui->lineEdit_BET_correct_value->show();
+        ui->checkBox_RobustBET->show();
     }
     else{
         ui->label_BET_Correct->hide();
         ui->lineEdit_BET_correct_value->hide();
+        ui->checkBox_RobustBET->hide();
     }
 }

@@ -24,7 +24,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -515,6 +515,13 @@
              <widget class="QLineEdit" name="lineEdit_BET_correct_value">
               <property name="text">
                <string>0.3</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="checkBox_RobustBET">
+              <property name="text">
+               <string>RobustBET</string>
               </property>
              </widget>
             </item>

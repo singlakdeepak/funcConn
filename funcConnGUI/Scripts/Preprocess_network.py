@@ -197,6 +197,7 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
                                 Intensity_Norm = True,
                                 BETextract = True,
                                 BETvalue = 0,
+                                robustBET = False,
                                 MotionCorrection = 0, 
                                 SliceTimeCorrect = 0,
                                 time_repeat = 3):
@@ -343,8 +344,15 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
     """
     Strip the skull from the mean functional to generate a mask
     """
-
-    meanfuncmask = MapNode(interface=fsl.BET(mask = True,
+    if robustBET:
+        meanfuncmask = MapNode(interface=fsl.BET(args = '-R',
+                                              mask = True,
+                                             no_output=True,
+                                             frac = BETvalue),
+                              iterfield=['in_file'],
+                              name = 'meanfuncmask')
+    else:
+        meanfuncmask = MapNode(interface=fsl.BET(mask = True,
                                              no_output=True,
                                              frac = BETvalue),
                               iterfield=['in_file'],

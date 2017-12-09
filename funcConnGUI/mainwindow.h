@@ -86,6 +86,7 @@ private:
     QJsonArray combinations;
     QString CommonDir = getenv("PWD");
     QString OutDir = getenv("PWD");
+    QString FSLDIR = getenv("FSLDIR");
     QList<int> mirrored_checkStates;
     QList<QString> FeatFileNames;
     QList<QString> FunctionalFileNames;
