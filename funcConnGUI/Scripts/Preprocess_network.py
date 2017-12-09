@@ -196,6 +196,7 @@ def give_Slice_Timer_Node(SliceTimeCorrect,time_repeat):
 def create_parallelfeat_preproc(name='featpreproc', highpass= True, 
                                 Intensity_Norm = True,
                                 BETextract = True,
+                                BETvalue = 0,
                                 MotionCorrection = 0, 
                                 SliceTimeCorrect = 0,
                                 time_repeat = 3):
@@ -345,7 +346,7 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
 
     meanfuncmask = MapNode(interface=fsl.BET(mask = True,
                                              no_output=True,
-                                             frac = 0.3),
+                                             frac = BETvalue),
                               iterfield=['in_file'],
                               name = 'meanfuncmask')        
     """
@@ -678,66 +679,41 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
 #    featpreproc.connect(meanfunc3, 'out_file', outputnode, 'mean')
     return featpreproc
 
-'''
+def ROI_transformation(name = 'registration'):
+    register = Workflow(name=name)
+    inputnode = Node(interface = util.IdentityInterface(fields=['source_files',
+                                                                'ROI_File',
+                                                                'func2std']))
+    outputnode = Node(interface= util.IdentityInterface(fields = ['transformed_ROI']))
+    meanfunc = MapNode(interface=fsl.ExtractROI(t_size=1),
+                             iterfield=['in_file', 't_min'],
+                             name = 'meanfunc')
+    inv_mat = MapNode(fsl.ConvertXFM(invert_xfm = True), 
+                      iterfield = ['in_file'], 
+                      name = 'inv_mat')
+    transform_ROI = MapNode(fsl.ApplyXFM(interp='nearestneighbour'), 
+                      iterfield = ['in_matrix_file','reference'],
+                      name='transform_ROI')
+    register.connect(inputnode, 'source_files', meanfunc, 'in_file')
+    register.connect(inputnode, ('source_files', pickmiddle), meanfunc, 't_min')
+    transform_ROI.inputs.padding_size = 0
+    register.connect(inputnode,'func2std', inv_mat, 'in_file')
+    register.connect(inputnode, 'ROI_File', transform_ROI, 'in_file')
+    register.connect(inv_mat, 'out_file', transform_ROI, 'in_matrix_file')
+    register.connect(meanfunc, 'roi_file', transform_ROI, 'reference')
 
-#     register.connect(anat2target_affine, 'out_matrix_file',
-#                      anat2target_nonlinear, 'affine_file')
-#     register.connect(inputnode, 'anatomical_image',
-#                      anat2target_nonlinear, 'in_file')
-#     register.connect(inputnode, 'config_file',
-#                      anat2target_nonlinear, 'config_file')
-#     register.connect(inputnode, 'target_image',
-#                      anat2target_nonlinear, 'ref_file')
-
-    """
-    Transform the mean image. First to anatomical and then to target
-    """
-
-    warpmean = Node(fsl.ApplyWarp(interp='spline'), name='warpmean')
-    datasink = Node(interface=DataSink(), name="datasink")
-
-
-    register.connect(meanfunc,'out_file', warpmean, 'in_file')
-    register.connect(mean2anatbbr, 'out_matrix_file', warpmean, 'premat')
-    register.connect(inputnode, 'target_image', warpmean, 'ref_file')
-#     register.connect(anat2target_nonlinear, 'fieldcoeff_file',
-#                      warpmean, 'field_file')
-    register.connect(anat2target_affine, 'out_matrix_file',
-                     warpmean, 'postmat')
-    
-    """
-    Transform the remaining images. First to anatomical and then to target
-    """
-
-    warpall = MapNode(fsl.ApplyWarp(interp='spline'),
-                         iterfield=['in_file'],
-                         nested=True,
-                         name='warpall')
-    register.connect(inputnode, 'source_files', warpall, 'in_file')
-    register.connect(mean2anatbbr, 'out_matrix_file', warpall, 'premat')
-    register.connect(inputnode, 'target_image', warpall, 'ref_file')
-#     register.connect(anat2target_nonlinear, 'fieldcoeff_file',
-#                      warpall, 'field_file')
-    register.connect(anat2target_affine, 'out_matrix_file',
-                     warpall, 'postmat')
+    datasink_transformedROI = Node(interface=DataSink(), name="datasink_transformedROI")    
 
     """
     Assign all the output files
     """
-
-    register.connect(warpmean, 'out_file', outputnode, 'transformed_mean')
-    register.connect(warpall, 'out_file', outputnode, 'transformed_files')
-    register.connect(mean2anatbbr, 'out_matrix_file',
-                     outputnode, 'func2anat_transform')
-#     register.connect(anat2target_nonlinear, 'fieldcoeff_file',
-#                      outputnode, 'anat2target_transform')
-    register.connect(anat2target_affine, 'out_matrix_file',
-                     outputnode, 'anat2target_transform')
-    register.connect(warpall, 'out_file', datasink,'out_file')
-
+    register.connect(transform_ROI, 'out_file', outputnode, 'transformed_ROI')
+    register.connect(outputnode, 'transformed_ROI', datasink_transformedROI, 'out_file')
     return register
-'''
-def reg_workflow_with_Anat(no_subjects, name = 'registration'):
+
+
+
+def reg_workflow_with_Anat(no_subjects,  name = 'registration'):
     """Create a FEAT preprocessing workflow
     Parameters
     ----------

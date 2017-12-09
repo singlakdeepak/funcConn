@@ -42,6 +42,10 @@ def __run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles = None,Gr
     ReferenceFile = AnalysisParams['ReferSummary']['ReferImgPath']
     B0unwarping = AnalysisParams['B0 Unwarping']
     BETextract = AnalysisParams['BET Brain Extract']
+    if BETextract:
+        BETextractvalue = AnalysisParams['BET Correction Value']
+    else:
+        BETextractvalue = 0
     FWHM = AnalysisParams['FWHM']
     TemporalFilt = AnalysisParams['Temporal Filtering']
     HPsigma = AnalysisParams['High Pass Value (in sigma)']
@@ -66,6 +70,7 @@ def __run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles = None,Gr
                                     highpass= TemporalFilt, 
                                     Intensity_Norm = Intensity_Norm,
                                     BETextract = BETextract,
+                                    BETvalue = BETextractvalue,
                                     MotionCorrection = MotionCorrection,                                                
                                     SliceTimeCorrect = SliceTimeCorrect,
                                     time_repeat = TR)
@@ -82,6 +87,7 @@ def __run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles = None,Gr
                                     highpass= TemporalFilt, 
                                     Intensity_Norm = Intensity_Norm,
                                     BETextract = BETextract,
+                                    BETvalue = BETextractvalue,
                                     MotionCorrection = MotionCorrection, 
                                     SliceTimeCorrect = SliceTimeCorrect,
                                     time_repeat = TR)
@@ -141,120 +147,154 @@ def __run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles = None,Gr
         shutil.copy(datasinkouts[j],ProcessedFiles_Address)
     return ProcessedFilesDIRADDRESSES
 
-def run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles = None,Group = 0):
+def run_Preprocessing(AnalysisParams,
+                        FunctionalFiles = None,
+                        StructuralFiles = None,
+                        FeatFiles = None,
+                        doPreprocessing= True, Group = 0):
 
     ReferenceFile = AnalysisParams['ReferSummary']['ReferImgPath']
     ROIFile = AnalysisParams['ROIFilePath']
-    B0unwarping = AnalysisParams['B0 Unwarping']
-    BETextract = AnalysisParams['BET Brain Extract']
-    FWHM = AnalysisParams['FWHM']
-    TemporalFilt = AnalysisParams['Temporal Filtering']
-    HPsigma = AnalysisParams['High Pass Value (in sigma)']
-    LPsigma = AnalysisParams['Low Pass Value (in sigma)']
-    MotionCorrection = AnalysisParams['Motion Correction']
     Registration = AnalysisParams['Registration']
-    SliceTimeCorrect = AnalysisParams['Slice Time Correct']
-    Intensity_Norm = AnalysisParams['Intensity Normalization']
-    MelodicICA = AnalysisParams['Melodic ICA']
     # PerfusionSubtract = AnalysisParams['Perfusion Subtraction']
     OUTPUT_DIR = AnalysisParams['OutputInfo']['OutDirectory']
     TEMP_DIR_FOR_STORAGE = OUTPUT_DIR + '/tmp'
-    FeatProcessName = 'featpreproc_group%s'%Group
     RegistrationName = 'registration_group%s'%Group
-    RESULTS_FEAT_DATASINK = OUTPUT_DIR +'/tmp/%s/datasink/'%FeatProcessName
     TR = AnalysisParams['Repetition Time']
     print('Using Repetition time: %s'%TR)
 
+    if doPreprocessing:
+        B0unwarping = AnalysisParams['B0 Unwarping']
+        BETextract = AnalysisParams['BET Brain Extract']
+        if BETextract:
+            BETextractvalue = AnalysisParams['BET Correction Value']
+        else:
+            BETextractvalue = 0
+        FWHM = AnalysisParams['FWHM']
+        TemporalFilt = AnalysisParams['Temporal Filtering']
+        HPsigma = AnalysisParams['High Pass Value (in sigma)']
+        LPsigma = AnalysisParams['Low Pass Value (in sigma)']
+        MotionCorrection = AnalysisParams['Motion Correction']
+        SliceTimeCorrect = AnalysisParams['Slice Time Correct']
+        Intensity_Norm = AnalysisParams['Intensity Normalization']
+        MelodicICA = AnalysisParams['Melodic ICA']
+        FeatProcessName = 'featpreproc_group%s'%Group
+        RESULTS_FEAT_DATASINK = OUTPUT_DIR +'/tmp/%s/datasink/'%FeatProcessName
 
-    if TemporalFilt:
-        preproc = parallelPreproc.create_parallelfeat_preproc(name = FeatProcessName,
-                                    highpass= TemporalFilt, 
-                                    Intensity_Norm = Intensity_Norm,
-                                    BETextract = BETextract,
-                                    MotionCorrection = MotionCorrection,                                                
-                                    SliceTimeCorrect = SliceTimeCorrect,
-                                    time_repeat = TR)
+        if TemporalFilt:
+            preproc = parallelPreproc.create_parallelfeat_preproc(name = FeatProcessName,
+                                        highpass= TemporalFilt, 
+                                        Intensity_Norm = Intensity_Norm,
+                                        BETextract = BETextract,
+                                        BETvalue = BETextractvalue,
+                                        MotionCorrection = MotionCorrection,                                                
+                                        SliceTimeCorrect = SliceTimeCorrect,
+                                        time_repeat = TR)
 
-        preproc.inputs.inputspec.highpass = (HPsigma,LPsigma)                                                                                                                                                                                                                                                                                                                                                       
-        preproc.inputs.inputspec.func = FunctionalFiles
-        preproc.inputs.inputspec.fwhm = FWHM
-        preproc.base_dir = TEMP_DIR_FOR_STORAGE
-        preproc.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
-        preproc.write_graph(graph2use='colored', format='png', simple_form=True)
-        preproc.run('MultiProc', plugin_args={'n_procs': threads})          
-    else:
-        preproc = parallelPreproc.create_parallelfeat_preproc(name = FeatProcessName,
-                                    highpass= TemporalFilt, 
-                                    Intensity_Norm = Intensity_Norm,
-                                    BETextract = BETextract,
-                                    MotionCorrection = MotionCorrection, 
-                                    SliceTimeCorrect = SliceTimeCorrect,
-                                    time_repeat = TR)
-        preproc.inputs.inputspec.func = FunctionalFiles
-        preproc.inputs.inputspec.fwhm = FWHM
-        preproc.base_dir = TEMP_DIR_FOR_STORAGE
-        preproc.write_graph(graph2use='colored', format='png', simple_form=True)
-        preproc.run('MultiProc', plugin_args={'n_procs': threads})
+            preproc.inputs.inputspec.highpass = (HPsigma,LPsigma)                                                                                                                                                                                                                                                                                                                                                       
+            preproc.inputs.inputspec.func = FunctionalFiles
+            preproc.inputs.inputspec.fwhm = FWHM
+            preproc.base_dir = TEMP_DIR_FOR_STORAGE
+            preproc.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
+            preproc.write_graph(graph2use='colored', format='png', simple_form=True)
+            preproc.run('MultiProc', plugin_args={'n_procs': threads})          
+        else:
+            preproc = parallelPreproc.create_parallelfeat_preproc(name = FeatProcessName,
+                                        highpass= TemporalFilt, 
+                                        Intensity_Norm = Intensity_Norm,
+                                        BETextract = BETextract,
+                                        BETvalue = BETextractvalue,
+                                        MotionCorrection = MotionCorrection, 
+                                        SliceTimeCorrect = SliceTimeCorrect,
+                                        time_repeat = TR)
+            preproc.inputs.inputspec.func = FunctionalFiles
+            preproc.inputs.inputspec.fwhm = FWHM
+            preproc.base_dir = TEMP_DIR_FOR_STORAGE
+            preproc.write_graph(graph2use='colored', format='png', simple_form=True)
+            preproc.run('MultiProc', plugin_args={'n_procs': threads})
 
-    datasink_results=[]
-    datasink_results += [each for each in os.listdir(RESULTS_FEAT_DATASINK) if each.endswith('.json')]
-    with open(RESULTS_FEAT_DATASINK + datasink_results[0]) as JSON:
-        datafile = json.load(JSON)
-        datafile =datafile[0][1][0][1]
-    no_subjects = len(datafile)
-    datasinkouts = []
-    datasinkouts += [datafile[i][0] for i in range(no_subjects)]
+        datasink_results=[]
+        datasink_results += [each for each in os.listdir(RESULTS_FEAT_DATASINK) if each.endswith('.json')]
+        with open(RESULTS_FEAT_DATASINK + datasink_results[0]) as JSON:
+            datafile = json.load(JSON)
+            datafile =datafile[0][1][0][1]
+        no_subjects = len(datafile)
+        datasinkouts = []
+        datasinkouts += [datafile[i][0] for i in range(no_subjects)]
 
-    ProcessedFilesDIRADDRESSES = []
-    dst = OUTPUT_DIR + '/Preprocessing_group%s/'%Group
-    if not (os.path.exists(dst)):
-        os.mkdir(dst)
-    else:
-        shutil.rmtree(dst)
-        os.mkdir(dst)
-    for j in range(no_subjects):
-        ProcessedFiles_Address = '%sProcessedFile_sub%s.nii.gz'%(dst,j)
-        ProcessedFilesDIRADDRESSES += [ProcessedFiles_Address]
-        shutil.copy(datasinkouts[j],ProcessedFiles_Address)
+        ProcessedFilesDIRADDRESSES = []
+        dst = OUTPUT_DIR + '/Preprocessing_group%s/'%Group
+        if not (os.path.exists(dst)):
+            os.mkdir(dst)
+        else:
+            shutil.rmtree(dst)
+            os.mkdir(dst)
+        for j in range(no_subjects):
+            ProcessedFiles_Address = '%sProcessedFile_sub%s.nii.gz'%(dst,j)
+            ProcessedFilesDIRADDRESSES += [ProcessedFiles_Address]
+            shutil.copy(datasinkouts[j],ProcessedFiles_Address)
 
     if Registration:
-        datasinkouts_afterreg = []
-        ROI_REG_DATASINK = OUTPUT_DIR + '/tmp/%s/datasink_transformedROI/'%RegistrationName
-        func2std_DATASINK = OUTPUT_DIR + '/tmp/%s/datasink_func2std/'%RegistrationName
-        if StructuralFiles!=None:
-            Reg_WorkFlow = parallelPreproc.reg_workflow_with_Anat(no_subject,
-                                                        name = RegistrationName)
-            Reg_WorkFlow.inputs.inputspec.anatomical_images = StructuralFiles
-        else:
-            Reg_WorkFlow = parallelPreproc.reg_workflow_wo_Anat(no_subjects,
-                                                        name = RegistrationName)              
-        Reg_WorkFlow.inputs.inputspec.source_files = datasinkouts
-        Reg_WorkFlow.inputs.inputspec.target_image = ReferenceFile
-        Reg_WorkFlow.inputs.inputspec.ROI_File = ROIFile
-        Reg_WorkFlow.base_dir = TEMP_DIR_FOR_STORAGE
-        Reg_WorkFlow.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
-        regoutputs = Reg_WorkFlow.run('MultiProc', plugin_args={'n_procs': threads})
-        ROIsink_results=[]
-        ROIsink_results += [each for each in os.listdir(ROI_REG_DATASINK) if each.endswith('.json')]
-        func2std_results = []
-        func2std_results += [each for each in os.listdir(func2std_DATASINK) if each.endswith('.json')]
+        if FeatFiles==None:
+            no_subjects = len(FunctionalFiles)
+            datasinkouts_afterreg = []
+            ROI_REG_DATASINK = OUTPUT_DIR + '/tmp/%s/datasink_transformedROI/'%RegistrationName
+            func2std_DATASINK = OUTPUT_DIR + '/tmp/%s/datasink_func2std/'%RegistrationName
+            if StructuralFiles!=None:
+                Reg_WorkFlow = parallelPreproc.reg_workflow_with_Anat(no_subjects,
+                                                            name = RegistrationName)
+                Reg_WorkFlow.inputs.inputspec.anatomical_images = StructuralFiles
+            else:
+                Reg_WorkFlow = parallelPreproc.reg_workflow_wo_Anat(no_subjects,
+                                                            name = RegistrationName)              
+            Reg_WorkFlow.inputs.inputspec.source_files = datasinkouts
+            Reg_WorkFlow.inputs.inputspec.target_image = ReferenceFile
+            Reg_WorkFlow.inputs.inputspec.ROI_File = ROIFile
+            Reg_WorkFlow.base_dir = TEMP_DIR_FOR_STORAGE
+            Reg_WorkFlow.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
+            regoutputs = Reg_WorkFlow.run('MultiProc', plugin_args={'n_procs': threads})
+            ROIsink_results=[]
+            ROIsink_results += [each for each in os.listdir(ROI_REG_DATASINK) if each.endswith('.json')]
+            func2std_results = []
+            func2std_results += [each for each in os.listdir(func2std_DATASINK) if each.endswith('.json')]
 
-        with open(ROI_REG_DATASINK + ROIsink_results[0]) as JSON:
-            transROIfile = json.load(JSON)
-            transROIfile = transROIfile[0][1][0][1]
+            with open(ROI_REG_DATASINK + ROIsink_results[0]) as JSON:
+                transROIfile = json.load(JSON)
+                transROIfile = transROIfile[0][1][0][1]
 
-        with open(func2std_DATASINK + func2std_results[0]) as JSON:
-            func2stdfile = json.load(JSON)
-            func2stdfile = func2stdfile[0][1][0][1]
+            with open(func2std_DATASINK + func2std_results[0]) as JSON:
+                func2stdfile = json.load(JSON)
+                func2stdfile = func2stdfile[0][1][0][1]
 
-        ROIsinkouts=[]
-        ROIsinkouts += [transROIfile[i][0] for i in range(no_subjects)]
-        func2stdsinkouts = []
-        func2stdsinkouts += [func2stdfile[i][0] for i in range(no_subjects)]
+            ROIsinkouts=[]
+            ROIsinkouts += [transROIfile[i][0] for i in range(no_subjects)]
+            func2stdsinkouts = []
+            func2stdsinkouts += [func2stdfile[i][0] for i in range(no_subjects)]
+            print('Registered ROI->func ROIs: ', ROIsinkouts)
+            print('func2stdtransforms: ', func2stdsinkouts)
+            return ProcessedFilesDIRADDRESSES, ROIsinkouts, func2stdsinkouts
         
-        print('Registered ROI->func ROIs: ', ROIsinkouts)
-        print('func2stdtransforms: ', func2stdsinkouts)
-        return ProcessedFilesDIRADDRESSES, ROIsinkouts, func2stdsinkouts
+        else:
+
+            no_subjects = len(FeatFiles)
+            ProcessedFuncouts = [opj(each, 'filtered_func_data.nii.gz') for each in FeatFiles]
+            func2std_DATASINK = [opj(each, 'reg/example_func2standard.mat') for each in FeatFiles]
+            ROI_REG_DATASINK = OUTPUT_DIR + '/tmp/%s/datasink_transformedROI/'%RegistrationName
+            Reg_WorkFlow = parallelPreproc.ROI_transformation(name = RegistrationName)
+            Reg_WorkFlow.inputs.inputspec.source_files = ProcessedFuncouts
+            Reg_WorkFlow.inputs.inputspec.ROI_File = ROI_File
+            Reg_WorkFlow.inputs.inputspec.func2std = func2std_DATASINK
+            Reg_WorkFlow.base_dir = TEMP_DIR_FOR_STORAGE
+            Reg_WorkFlow.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
+            regoutputs = Reg_WorkFlow.run('MultiProc', plugin_args={'n_procs': threads})
+            ROIsink_results=[]
+            ROIsink_results += [each for each in os.listdir(ROI_REG_DATASINK) if each.endswith('.json')]            
+            with open(ROI_REG_DATASINK + ROIsink_results[0]) as JSON:
+                transROIfile = json.load(JSON)
+                transROIfile = transROIfile[0][1][0][1]
+            ROIsinkouts=[]
+            ROIsinkouts += [transROIfile[i][0] for i in range(no_subjects)]
+            return ProcessedFuncouts, ROIsinkouts, func2std_DATASINK
 
     return ProcessedFilesDIRADDRESSES
 
@@ -516,7 +556,7 @@ if __name__ == '__main__':
                         StructuralFiles_in_this_group = [line.strip('\n') for line in file]
                 else: StructuralFiles_in_this_group = None
                 Preprocessed_Files, transformedROIs, func2stdtransforms = run_Preprocessing(AnalysisParams, 
-                                                                            FunctionalFiles_in_this_group, 
+                                                                            FunctionalFiles = FunctionalFiles_in_this_group, 
                                                                             StructuralFiles = StructuralFiles_in_this_group,
                                                                             Group= i)
                 print('Preprocessed Files are: ', Preprocessed_Files)
@@ -526,7 +566,7 @@ if __name__ == '__main__':
             else: 
                 StructuralFiles_in_this_group = None
                 Preprocessed_Files = run_Preprocessing(AnalysisParams, 
-                                                    FunctionalFiles_in_this_group, 
+                                                    FunctionalFiles = FunctionalFiles_in_this_group, 
                                                     StructuralFiles = StructuralFiles_in_this_group,
                                                     Group= i)
                 print('Preprocessed Files are: ', Preprocessed_Files)
@@ -562,17 +602,22 @@ if __name__ == '__main__':
         Already Preprocessed with the use of FSL. I assume it has a general structure 
         and preprocessed functional files are present in folders. 
         <FEATFolder>/filtered_func_data.nii.gz
-
+        Here I also assume that the preprocessed functional image isn't registered to 
+        the standard space. So, every ROI has to be registered to the functional image. 
         '''
         FeatFiles = AnalysisParams['FeatFilesInfo']['FeatFilePaths']
         for i in range(Ngroups):
             ProcName = 'CorrCalc_group%s'%i
-            CorrROImapFiles[ProcName] = []
             with open(FeatFiles[i]) as file:
                 Feat_subs_in_this_group = [line.strip('\n') for line in file]
             print('Feat Folders in this group: ',Feat_subs_in_this_group)
-
-
+            Preprocessed_Files, transformedROIs, func2stdtransforms = run_Preprocessing(AnalysisParams, 
+                                                    FeatFiles = Feat_subs_in_this_group,
+                                                    doPreprocessing = False,
+                                                    Group= i)
+            CorrROImapFiles[ProcName] = Preprocessed_Files
+            transformedROIsDict[ProcName] = transformedROIs
+            func2stdDict[ProcName] = func2stdtransforms
 
     Totaltime=0
     file = open(opj(OUTPUT_DIR,'timesREADME.txt'),'w')
