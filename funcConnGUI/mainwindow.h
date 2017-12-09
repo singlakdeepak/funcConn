@@ -25,7 +25,7 @@ private slots:
 
     void on_pushButton_3_clicked();
 
-    void on_pushButton_6_clicked();
+//    void on_pushButton_6_clicked();
 
     void on_pushButton_12_clicked();
 
@@ -78,10 +78,14 @@ private slots:
 
     void on_commandLinkButton_Mask_clicked();
 
+    void on_pushButton_Go3_clicked();
+
+    void on_checkBox_BET_clicked(bool checked);
+
 private:
     QJsonArray combinations;
-    QString CommonDir ="/home/";
-    QString OutDir = "/home/";
+    QString CommonDir = getenv("PWD");
+    QString OutDir = getenv("PWD");
     QList<int> mirrored_checkStates;
     QList<QString> FeatFileNames;
     QList<QString> FunctionalFileNames;

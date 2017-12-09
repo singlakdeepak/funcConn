@@ -40,10 +40,13 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->radioButton_G1_gr_G2->setChecked(true);
     ui->radioButton_G2_gr_G1->hide();
     ui->radioButton_NormFischer->setChecked(true);
-    ui->radioButton_reg_y->setChecked(true);
+    ui->radioButton_reg_n->setChecked(true);
     ui->radioButton_SepFDRcorrect->setChecked(true);
     ui->lineEdit_highpass->hide();
     ui->lineEdit_lowpass->hide();
+    ui->label_BET_Correct->hide();
+    ui->lineEdit_BET_correct_value->hide();
+
 
     //Here I set the default name for the Analysis. It can be changed accordingly.
     QString DefAnalysisName = "FConnectivityAnl";
@@ -111,10 +114,10 @@ void MainWindow::on_pushButton_3_clicked()
     QApplication::quit();
 }
 
-void MainWindow::on_pushButton_6_clicked()
-{
-    QApplication::quit();
-}
+//void MainWindow::on_pushButton_6_clicked()
+//{
+//    QApplication::quit();
+//}
 
 void MainWindow::on_pushButton_12_clicked()
 {
@@ -145,7 +148,7 @@ void MainWindow::on_commandLinkButton_Reference_clicked()
                                                     this,
                                                     tr("Open File"),
                                                     already_input,
-                                                    "All files (*.*);;Text File (*.txt)"
+                                                    "Nifti File (*.nii.gz);;All files (*.*)"
                                                        );
     }
     else
@@ -155,7 +158,7 @@ void MainWindow::on_commandLinkButton_Reference_clicked()
                                                 this,
                                                 tr("Open File"),
                                                 CommonDir,
-                                                "All files (*.*);;Text File (*.txt)"
+                                                "Nifti File (*.nii.gz);;All files (*.*)"
                                                    );
     }
     if (new_input!=NULL){
@@ -215,7 +218,7 @@ void MainWindow::on_commandLinkButton_ROIFile_clicked()
                                                     this,
                                                     tr("Open File"),
                                                     already_input,
-                                                    "All files (*.*);;Text File (*.txt)"
+                                                    "Nifti File (*.nii.gz);;All files (*.*)"
                                                        );
     }
     else
@@ -224,7 +227,7 @@ void MainWindow::on_commandLinkButton_ROIFile_clicked()
                                                 this,
                                                 tr("Open File"),
                                                 CommonDir,
-                                                "All files (*.*);;Text File (*.txt)"
+                                                "Nifti File (*.nii.gz);;All files (*.*)"
                                                    );
     }
     if (new_input!=NULL){
@@ -245,7 +248,7 @@ void MainWindow::on_commandLinkButton_FSLDIR_clicked()
     QString filename=QFileDialog::getExistingDirectory(
                                                 this,
                                                 tr("Choose Directory"),
-                                                "/home/deepak/");
+                                                CommonDir);
     ui->lineEdit_FSLDIR->setText(filename);
 }
 
@@ -264,7 +267,7 @@ void MainWindow::on_commandLinkButton_CorrFile_clicked()
                                                     this,
                                                     tr("Open File"),
                                                     already_input,
-                                                    "All files (*.*);;Text File (*.txt)"
+                                                    "Nifti File (*.nii.gz);;All files (*.*)"
                                                        );
     }
     else
@@ -273,7 +276,7 @@ void MainWindow::on_commandLinkButton_CorrFile_clicked()
                                                 this,
                                                 tr("Open File"),
                                                 CommonDir,
-                                                "All files (*.*);;Text File (*.txt)"
+                                                "Nifti File (*.nii.gz);;All files (*.*)"
                                                    );
     }
     if (new_input!=NULL){
@@ -493,7 +496,7 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
             file.remove();
             FunctionalArray.append(FilePath);
         }
-        for (int i=1 ; i<=FunctionalFileNames.size() ; i++)
+        for (int i=1 ; i<=StructuralFileNames.size() ; i++)
         {
             FilePath = OutChosenPath + "/"+ ui->lineEdit_AnalysisName->text() + "_Group_" + QString::number(i)+"_StructuralFiles.txt";
             QFile::copy(StructuralFileNames.at(i-1), FilePath);
@@ -533,6 +536,10 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
         json["B0 Unwarping"] = ui->checkBox_B0->isChecked();
         json["Slice Time Correct"] = ui->comboBox_STimeCorrect->currentIndex();
         json["BET Brain Extract"] = ui->checkBox_BET->isChecked();
+        if (ui->checkBox_BET->isChecked())
+            json["BET Correction Value"] = ui->lineEdit_BET_correct_value->text().toFloat();
+
+
         json["FWHM"] = ui->doubleSpinBox_FWHM->value();
         json["Intensity Normalization"] = ui->checkBox_IntensityNorm->isChecked();
         json["Temporal Filtering"] = (ui->checkBox_HighPass->isChecked())||(ui->checkBox_LowPass->isChecked());
@@ -545,7 +552,7 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
         json["Melodic ICA"] = ui->checkBox_MelodicICA->isChecked();
     }
     else if (ProcessingWay ==1){
-
+        json["Registration"] = ui->radioButton_reg_y->isChecked();
     }
     else {
         json["Registration"] = ui->radioButton_reg_y->isChecked();
@@ -580,9 +587,9 @@ void MainWindow::writeAnalysisName(QJsonObject &json) const
 void MainWindow::on_pushButton_Go_clicked()
 {
     int lenFuncFiles= FunctionalFileNames.size();
-    int lenStructFiles = StructuralFileNames.size();
     int lenFeatFiles = FeatFileNames.size();
-    if (((lenFuncFiles!=spinBoxValue)||(lenStructFiles!=spinBoxValue)) && (lenFeatFiles != spinBoxValue)){
+//    if (((lenFuncFiles!=spinBoxValue)||(lenStructFiles!=spinBoxValue)) && (lenFeatFiles != spinBoxValue)){
+    if ((lenFuncFiles!=spinBoxValue) && (lenFeatFiles != spinBoxValue)){
         QMessageBox::warning(this,"Title","You haven't specified the complete 4D data files.");
     }
     else{
@@ -618,16 +625,19 @@ void MainWindow::on_pushButton_Go_clicked()
 void MainWindow::on_radioButton_Unprocessed_clicked()
 {
     ProcessingWay = 0;
+    ui->tabWidget->setTabEnabled(1,true);
 }
 
 void MainWindow::on_radioButton_PreprocwtFSL_clicked()
 {
     ProcessingWay = 1;
+    ui->tabWidget->setTabEnabled(1,false);
 }
 
 void MainWindow::on_radioButton_PreprocwFSL_clicked()
 {
     ProcessingWay = 2;
+    ui->tabWidget->setTabEnabled(1,false);
 }
 
 void MainWindow::on_checkBox_HighPass_clicked(bool checked)
@@ -664,7 +674,7 @@ void MainWindow::on_commandLinkButton_Mask_clicked()
                                                     this,
                                                     tr("Open File"),
                                                     already_input,
-                                                    "All files (*.*);;Text File (*.txt)"
+                                                    "Nifti File (*.nii.gz);;All files (*.*)"
                                                        );
     }
     else
@@ -674,7 +684,7 @@ void MainWindow::on_commandLinkButton_Mask_clicked()
                                                 this,
                                                 tr("Open File"),
                                                 CommonDir,
-                                                "All files (*.*);;Text File (*.txt)"
+                                                "Nifti File (*.nii.gz);;All files (*.*)"
                                                    );
     }
     if (new_input!=NULL){
@@ -684,5 +694,22 @@ void MainWindow::on_commandLinkButton_Mask_clicked()
     }
     else {
         ui->lineEdit_Mask->setText(already_input);
+    }
+}
+
+void MainWindow::on_pushButton_Go3_clicked()
+{
+    on_pushButton_Go_clicked();
+}
+
+void MainWindow::on_checkBox_BET_clicked(bool checked)
+{
+    if (checked){
+        ui->label_BET_Correct->show();
+        ui->lineEdit_BET_correct_value->show();
+    }
+    else{
+        ui->label_BET_Correct->hide();
+        ui->lineEdit_BET_correct_value->hide();
     }
 }
