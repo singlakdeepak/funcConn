@@ -39,6 +39,52 @@ def chooseindex(fwhm):
     else:
         return [1]
 
+def global_sig_regression(in_file, mask_file):
+    import nibabel as nib
+    import numpy as np
+    from os.path import join as opj
+    import os
+
+    sub_id = in_file.split('/')[-1].split('.')[0]
+    glb_reg_file_name = sub_id + '_glb_reg.nii.gz'
+    glb_reg_file_name = opj(os.getcwd(),glb_reg_file_name)
+    if os.path.exists(glb_reg_file_name):
+        print('Saved file in : %s'%glb_reg_file_name)
+        
+    else:
+        brain_data = nib.load(in_file)
+        brain = brain_data.get_data()
+        brain_affine = brain_data.affine
+        x_dim, y_dim, z_dim, num_volumes = brain.shape
+        
+        mask_Obj = nib.load(mask_file)
+        mask_data = mask_Obj.get_data()
+
+        brain_voxels_X,brain_voxels_Y,brain_voxels_Z = np.where(mask_data==1)
+        num_brain_voxels = len(brain_voxels_X)
+
+        voxel_matrix = np.zeros((num_volumes, num_brain_voxels))
+        # Fill up the voxel_matrix 
+
+        for i in range(num_volumes):
+            voxel_matrix[i] = brain[brain_voxels_X,
+                                    brain_voxels_Y,
+                                    brain_voxels_Z,
+                                    i]
+
+        mean_signal = np.expand_dims(np.mean(voxel_matrix, axis=1),axis=1)
+        pseudo_inv_mean_sig = np.dot(np.linalg.inv(np.dot(mean_signal.T,mean_signal)),mean_signal.T)
+             
+        beta_g = np.dot(pseudo_inv_mean_sig, voxel_matrix)
+        voxel_matrix -= np.dot(mean_signal, beta_g)
+     
+        for i in range(num_volumes):
+            brain[brain_voxels_X,brain_voxels_Y,brain_voxels_Z,i] = voxel_matrix[i]
+        brain_obj = nib.Nifti1Image(brain, affine = brain_affine)
+        nib.save(brain_obj,glb_reg_file_name)
+
+        print('Saved GSR file in: ', glb_reg_file_name)
+    return glb_reg_file_name        
 
 def getmeanscale(medianvals):
     return ['-mul %.10f' % (10000. / val) for val in medianvals]
