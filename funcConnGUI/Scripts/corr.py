@@ -172,7 +172,7 @@ def make_npy_from_CorrFile(Corr_file, mask_file):
     from os.path import join as opj
     import os
 
-    sub_id = in_file.split('/')[-1].split('.')[0]
+    sub_id = Corr_file.split('/')[-1].split('.')[0]
     fc_file_name = sub_id + '_fc_map.npy'
     coff_matrix_file = opj(os.getcwd(),fc_file_name)
     if os.path.exists(coff_matrix_file):
