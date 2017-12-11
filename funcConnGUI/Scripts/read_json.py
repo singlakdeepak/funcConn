@@ -170,7 +170,7 @@ def run_Preprocessing(AnalysisParams,
             BETextractvalue = AnalysisParams['BETParams']['BET Correction Value']
             doRobustBET = AnalysisParams['BETParams']['doRobustBET']
         else:
-            BETextractvalue = 0
+            BETextractvalue = 0.3
             doRobustBET = False
         FWHM = AnalysisParams['FWHM']
         TemporalFilt = AnalysisParams['Temporal Filtering']

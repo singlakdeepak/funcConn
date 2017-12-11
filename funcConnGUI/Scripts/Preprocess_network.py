@@ -541,9 +541,9 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
         Correction is not required, then it is not attached in the pipeline. 
         '''
         if ((MotionCorrection ==0)and (SliceTimeCorrect==0)):
+            featpreproc.connect(img2float, 'out_file', meanfunc, 'in_file')
+            featpreproc.connect(meanfunc, 'out_file', meanfuncmask, 'in_file')
             if BETextract:
-                featpreproc.connect(img2float, 'out_file', meanfunc, 'in_file')
-                featpreproc.connect(meanfunc, 'out_file', meanfuncmask, 'in_file')
                 featpreproc.connect(img2float, 'out_file', maskfunc, 'in_file')
                 featpreproc.connect(meanfuncmask, 'mask_file', maskfunc, 'in_file2')
                 featpreproc.connect(maskfunc, 'out_file', getthresh, 'in_file')
@@ -553,9 +553,9 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
                 featpreproc.connect(img2float, 'out_file', threshold, 'in_file')
 
         elif ((MotionCorrection ==0)and (SliceTimeCorrect!=0)):
+            featpreproc.connect(slicetimer, 'slice_time_corrected_file', meanfunc, 'in_file')
+            featpreproc.connect(meanfunc, 'out_file', meanfuncmask, 'in_file')
             if BETextract:
-                featpreproc.connect(slicetimer, 'slice_time_corrected_file', meanfunc, 'in_file')
-                featpreproc.connect(meanfunc, 'out_file', meanfuncmask, 'in_file')
                 featpreproc.connect(slicetimer, 'slice_time_corrected_file', maskfunc, 'in_file')
                 featpreproc.connect(meanfuncmask, 'mask_file', maskfunc, 'in_file2')
                 featpreproc.connect(maskfunc, 'out_file', getthresh, 'in_file')
@@ -564,16 +564,16 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
                 featpreproc.connect(slicetimer, 'slice_time_corrected_file', getthresh, 'in_file')
                 featpreproc.connect(slicetimer, 'slice_time_corrected_file', threshold, 'in_file')
         else:
+            featpreproc.connect(motion_correct, 'out_file', meanfunc, 'in_file')
+            featpreproc.connect(meanfunc, 'out_file', meanfuncmask, 'in_file')
             if BETextract:
-                featpreproc.connect(motion_correct, 'out_file', meanfunc, 'in_file')
-                featpreproc.connect(meanfunc, 'out_file', meanfuncmask, 'in_file')
-
                 featpreproc.connect(motion_correct, 'out_file', maskfunc, 'in_file')
                 featpreproc.connect(meanfuncmask, 'mask_file', maskfunc, 'in_file2')
 
                 featpreproc.connect(maskfunc, 'out_file', getthresh, 'in_file')
                 featpreproc.connect(maskfunc, 'out_file', threshold, 'in_file')
             else:
+                
                 featpreproc.connect(motion_correct, 'out_file', getthresh, 'in_file')
                 featpreproc.connect(motion_correct, 'out_file', threshold, 'in_file')            
 
