@@ -40,6 +40,15 @@ def chooseindex(fwhm):
         return [1]
 
 def global_sig_regression(in_file, mask_file):
+    '''
+    Refer the paper: The Global Signal and Observed Anticorrelated Resting State Brain Networks: 
+                      https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2694109/
+    Also see, Towards a consensus regarding global signal regression for 
+              resting state functional connectivity MRI: 
+              https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5489207/
+    Also see, https://fcp-indi.github.io/docs/user/nuisance.html
+    '''
+
     import nibabel as nib
     import numpy as np
     from os.path import join as opj
@@ -244,6 +253,7 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
                                 BETextract = True,
                                 BETvalue = 0,
                                 robustBET = False,
+                                GSR = False,
                                 MotionCorrection = 0, 
                                 SliceTimeCorrect = 0,
                                 time_repeat = 3):
@@ -517,6 +527,13 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
                             iterfield = ['in_file', 'in_file2'],
                             name = 'highpassfilt_correct')
 
+    if GSR:
+        GSR_node = MapNode(util.Function(function=global_sig_regression, 
+                                    input_names=['in_file','mask_file'],
+                                    output_names=['glb_reg_file_name']),
+                          iterfield=['in_file','mask_file'],
+                          name = 'gsr')
+
     def whether_BETextract_or_not(featpreproc,MotionCorrection = 0, SliceTimeCorrect =0, BETextract = True):
         '''
         It selects whether BET is to be done or not and in according to that attaches the nodes. 
@@ -699,12 +716,21 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
 
             featpreproc.connect(highpassfilt, 'out_file', add_node, 'in_file')
             featpreproc.connect(meanfunc3, 'out_file', add_node, 'in_file2')
-
-            featpreproc.connect(add_node, 'out_file', outputnode, 'highpassed_files')
+            if GSR:
+                featpreproc.connect(add_node,'out_file', GSR_node, 'in_file')
+                featpreproc.connect(meanfuncmask , 'mask_file', GSR_node, 'mask_file')
+                featpreproc.connect(GSR_node, 'glb_reg_file_name', outputnode,'highpassed_files')
+            else:
+                featpreproc.connect(add_node, 'out_file', outputnode, 'highpassed_files')
             featpreproc.connect(outputnode, 'highpassed_files',
                       datasink, 'out_file')
         else:
-            featpreproc.connect(outputnode, 'normalized_files', datasink, 'out_file')
+            if GSR:
+                featpreproc.connect(outputnode,'normalized_files', GSR_node, 'in_file')
+                featpreproc.connect(meanfuncmask , 'mask_file', GSR_node, 'mask_file')
+                featpreproc.connect(GSR_node,'glb_reg_file_name', datasink, 'out_file')
+            else:
+                featpreproc.connect(outputnode, 'normalized_files', datasink, 'out_file')
 
     else :
 
@@ -714,23 +740,29 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
         featpreproc.connect(meanscale, 'out_file', outputnode, 'normalized_files')
         
         if highpass:
+            
             featpreproc.connect(meanscale, 'out_file', meanfunc3, 'in_file')
             featpreproc.connect(inputnode, ('highpass', highpass_lowpass_operand), highpassfilt, 'op_string')
             featpreproc.connect(meanscale, 'out_file', highpassfilt, 'in_file')
             featpreproc.connect(highpassfilt, 'out_file', add_node, 'in_file')
             featpreproc.connect(meanfunc3, 'out_file', add_node, 'in_file2')
 
-            featpreproc.connect(add_node, 'out_file', outputnode, 'highpassed_files')
+            if GSR:
+                featpreproc.connect(add_node,'out_file', GSR_node, 'in_file')
+                featpreproc.connect(meanfuncmask , 'mask_file', GSR_node, 'mask_file')
+                featpreproc.connect(GSR_node, 'glb_reg_file_name', outputnode,'highpassed_files')
+            else:
+                featpreproc.connect(add_node, 'out_file', outputnode, 'highpassed_files')
             featpreproc.connect(outputnode, 'highpassed_files',
                       datasink, 'out_file')
         else:
-            featpreproc.connect(outputnode, 'normalized_files', datasink, 'out_file')
-#     if highpass:
-#         featpreproc.connect(highpass, 'out_file', meanfunc3, 'in_file')
-#     else:
-#         featpreproc.connect(meanscale, 'out_file', meanfunc3, 'in_file')
+            if GSR:
+                featpreproc.connect(outputnode,'normalized_files', GSR_node, 'in_file')
+                featpreproc.connect(meanfuncmask , 'mask_file', GSR_node, 'mask_file')
+                featpreproc.connect(GSR_node,'glb_reg_file_name', datasink, 'out_file')
+            else:
+                featpreproc.connect(outputnode, 'normalized_files', datasink, 'out_file')
 
-#    featpreproc.connect(meanfunc3, 'out_file', outputnode, 'mean')
     return featpreproc
 
 def ROI_transformation(name = 'registration'):
@@ -1075,15 +1107,6 @@ def reg_workflow_wo_Anat(no_subjects, name = 'registration'):
 
     return register
 
-# def apply_inv_to_ROI(no_subjects, name = 'roi_inv'):
-#     register = Workflow(name=name)
-
-#     inputnode = Node(interface=util.IdentityInterface(fields=['ROI_File','func2std_transforms']),
-#                         name='inputspec')
-#     outputnode = Node(interface=util.IdentityInterface(fields=['transformed_ROIs']),
-#                          name='outputspec')
-
-#     inv_node = MapNode(fsl.ConvertXFM)
 
 
 def __reg_workflow(no_subjects, name = 'registration'):

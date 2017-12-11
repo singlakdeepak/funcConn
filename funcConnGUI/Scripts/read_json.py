@@ -167,9 +167,11 @@ def run_Preprocessing(AnalysisParams,
         B0unwarping = AnalysisParams['B0 Unwarping']
         BETextract = AnalysisParams['BET Brain Extract']
         if BETextract:
-            BETextractvalue = AnalysisParams['BET Correction Value']
+            BETextractvalue = AnalysisParams['BETParams']['BET Correction Value']
+            doRobustBET = AnalysisParams['BETParams']['doRobustBET']
         else:
             BETextractvalue = 0
+            doRobustBET = False
         FWHM = AnalysisParams['FWHM']
         TemporalFilt = AnalysisParams['Temporal Filtering']
         HPsigma = AnalysisParams['High Pass Value (in sigma)']
@@ -178,6 +180,7 @@ def run_Preprocessing(AnalysisParams,
         SliceTimeCorrect = AnalysisParams['Slice Time Correct']
         Intensity_Norm = AnalysisParams['Intensity Normalization']
         MelodicICA = AnalysisParams['Melodic ICA']
+        applyGSR = AnalysisParams['applyGSR']
         FeatProcessName = 'featpreproc_group%s'%Group
         RESULTS_FEAT_DATASINK = OUTPUT_DIR +'/tmp/%s/datasink/'%FeatProcessName
 
@@ -187,6 +190,8 @@ def run_Preprocessing(AnalysisParams,
                                         Intensity_Norm = Intensity_Norm,
                                         BETextract = BETextract,
                                         BETvalue = BETextractvalue,
+                                        robustBET = doRobustBET,
+                                        GSR = applyGSR,
                                         MotionCorrection = MotionCorrection,                                                
                                         SliceTimeCorrect = SliceTimeCorrect,
                                         time_repeat = TR)
@@ -204,6 +209,8 @@ def run_Preprocessing(AnalysisParams,
                                         Intensity_Norm = Intensity_Norm,
                                         BETextract = BETextract,
                                         BETvalue = BETextractvalue,
+                                        robustBET = doRobustBET,
+                                        GSR = applyGSR,
                                         MotionCorrection = MotionCorrection, 
                                         SliceTimeCorrect = SliceTimeCorrect,
                                         time_repeat = TR)
@@ -495,12 +502,15 @@ def call_stat_Analysis_bw_grps(Files_for_stats_dict,
 if __name__ == '__main__':
 
     start = timeit.default_timer()
-    JSONFile = sys.argv[1]
+    print(sys.executable)
+    print(os.path.abspath(json.__file__))
+    JSONFile = str(sys.argv[1])
     # JSONFile = '/home1/ee3140506/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
     # JSONFile = '/home/deepak/Desktop/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
+    print("Name of JSON: ", JSONFile)
     with open(JSONFile) as JSON:
         try :
-            
+            print(JSON)
             data = json.load(JSON)
             AnalysisName = data['Analysis Name']
             threads = data['No of threads']
@@ -591,7 +601,7 @@ if __name__ == '__main__':
             CorrROImapFiles[ProcName] = []
             with open(FunctionaltxtFiles[i]) as file:
                 FunctionalFiles_in_this_group = [line.strip('\n') for line in file]
-            if (len(StructuralFiles)!=0):
+            if (len(StructuraltxtFiles)!=0):
                 with open(StructuraltxtFiles[i]) as file:
                     StructuralFiles_in_this_group = [line.strip('\n') for line in file]        
             print('Functional Files in this group: ',FunctionalFiles_in_this_group)
@@ -631,7 +641,6 @@ if __name__ == '__main__':
             Corr_calculated_Files = call_corr_wf_with_reg(CorrROImapFiles,
                                                 transformedROIsDict,
                                                 func2stdDict,
-                                                # ROI_File,
                                                 mask_file,
                                                 ReferenceFile,
                                                 TEMP_DIR_FOR_STORAGE)
@@ -646,7 +655,6 @@ if __name__ == '__main__':
 
         stop2 = timeit.default_timer()
 
-        # Corr_calculated_Files = {'CorrCalc_group0':['/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix0/ProcessedFile_sub0_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix1/ProcessedFile_sub1_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix2/ProcessedFile_sub2_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix3/ProcessedFile_sub3_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix4/ProcessedFile_sub4_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix5/ProcessedFile_sub5_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix6/ProcessedFile_sub6_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix7/ProcessedFile_sub7_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix8/ProcessedFile_sub8_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix9/ProcessedFile_sub9_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix10/ProcessedFile_sub10_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix11/ProcessedFile_sub11_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix12/ProcessedFile_sub12_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix13/ProcessedFile_sub13_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix14/ProcessedFile_sub14_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix15/ProcessedFile_sub15_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix16/ProcessedFile_sub16_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix17/ProcessedFile_sub17_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix18/ProcessedFile_sub18_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix19/ProcessedFile_sub19_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix20/ProcessedFile_sub20_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix21/ProcessedFile_sub21_fc_map.npy', '/home1/ee3140506/NYU_Cocaine_Analysis/tmp/CorrCalc_group0/coff_matrix/mapflow/_coff_matrix22/ProcessedFile_sub22_fc_map.npy']}
 
         doAnalysiswtGrps = AnalysisParams['Stats']['Analysis within Groups']
         doAnalysisbwGrps = AnalysisParams['Stats']['Analysis between Groups']

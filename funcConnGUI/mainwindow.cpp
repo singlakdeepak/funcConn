@@ -8,7 +8,7 @@
 #include<QFileDialog>
 #include<QJsonDocument>
 #include<QJsonObject>
-
+#include<QThread>
 #include<QProcess>
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -26,6 +26,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->checkBox->setChecked(false);
     ui->checkBox_preprocFeat->setChecked(false);
     ui->checkBox_ROICorrs->setChecked(false);
+    ui->checkBox_GSR->setChecked(false);
+
     ui->spinBox->setRange(1,5);
 
     // Values set randomly for now. These are no of the threads which will
@@ -572,7 +574,7 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
         json["High Pass Value (in sigma)"] = ui->checkBox_HighPass->isChecked() ? ui->lineEdit_highpass->text().toFloat()/(2*ui->lineEdit_TR->text().toFloat()) : float(-1);
 
         json["Low Pass Value (in sigma)"] = ui->checkBox_LowPass->isChecked() ? ui->lineEdit_lowpass->text().toFloat()/(2*ui->lineEdit_TR->text().toFloat()) : float(-1);
-
+        json["applyGSR"] = ui->checkBox_GSR->isChecked();
 
         json["Melodic ICA"] = ui->checkBox_MelodicICA->isChecked();
     }
@@ -638,11 +640,25 @@ void MainWindow::on_pushButton_Go_clicked()
         QJsonDocument saveDoc(Object);
         saveFile.write(saveDoc.toJson());
 
+//        QStringList arguments {WorkingDir+"/read_json.py",JSONFile};
+//        QProcess p;
+//        p.setWorkingDirectory(WorkingDir);
+//        p.start("python", arguments);
+//        p.waitForFinished(-1);
 
+//        QString p_stdout = p.readAll();
+
+        QString program( "python" );
+        QStringList args = QStringList() << "read_json.py"<<JSONFile;
         QProcess p;
-        p.start("python read_json.py " + JSONFile);
-        p.waitForFinished(-1);
-        QString p_stdout = p.readAllStandardOutput();
+        p.setWorkingDirectory(WorkingDir);
+        int exitCode = p.execute( program, args );
+
+//        QString cmd_qt = QString("python %1 %2").arg("read_json.py").arg(JSONFile);
+
+//        const char* cmd = cmd_qt.toLatin1().constData();
+//        system(cmd);
+
 
     }
 }
