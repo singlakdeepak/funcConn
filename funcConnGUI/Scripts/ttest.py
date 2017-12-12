@@ -8,15 +8,19 @@ from statsmodels.stats import multitest
 from multiprocessing import Pool
 from functools import partial
 import multiprocessing.managers
+from os.path import join as opj
 class MyManager(multiprocessing.managers.BaseManager):
     pass
-MyManager.register('ma_empty_like', ma.empty_like, multiprocessing.managers.ArrayProxy)
+# MyManager.register('ma_empty_like', ma.empty_like, multiprocessing.managers.ArrayProxy)
+MyManager.register('np_empty_like',np.empty_like, multiprocessing.managers.ArrayProxy)
 
 def make_brain_back_from_npy(NumpyfileList,FileListNames,mask_file):
     maskObj = nib.load(mask_file)
-    maskhd = maskObj.get_header()
+    # maskhd = maskObj.header
     maskAffine = maskObj.affine
-    maskhd['data_type'] = 'FLOAT32'
+    # maskhd['data_type'] = 'FLOAT32'
+    # maskhd['cal_min'] = -3
+    # maskhd['cal_max'] = 3
     maskData = maskObj.get_data()
     maskData = maskData.astype(int)
     brain_indices = np.where(maskData==1)
@@ -25,7 +29,7 @@ def make_brain_back_from_npy(NumpyfileList,FileListNames,mask_file):
     print(y_dim)
     print(z_dim)
     ROIs = NumpyfileList[0].shape[0]
-    Brainimg = np.zeros((x_dim,y_dim,z_dim,ROIs))
+    Brainimg = np.zeros((x_dim,y_dim,z_dim,ROIs),dtype = np.float32)
     print(maskData.shape)
     for i in range(len(NumpyfileList)):
         Map = NumpyfileList[i]
@@ -33,11 +37,12 @@ def make_brain_back_from_npy(NumpyfileList,FileListNames,mask_file):
             ThisImg = Brainimg[:,:,:,j]
             ThisImg[brain_indices] = Map[j]
             Brainimg[:,:,:,j] = ThisImg
-        Brain = nib.Nifti1Image(Brainimg, affine = maskAffine, 
-                                header = maskhd)
+        Brain = nib.Nifti1Image(Brainimg, affine = maskAffine) 
+                                # header = maskhd)
         nib.save(Brain, FileListNames[i])
 
-
+def convert_ma_to_np(MaskedArrayObj):
+    return ma.filled(MaskedArrayObj)
 def div0( a, b ):
     '''
     It is meant for ignoring the places where standard deviation 
@@ -51,8 +56,17 @@ def div0( a, b ):
 
 def convert_pvals_to_log_fmt(pvalues,Sample_mean_ArrayA = None, Sample_mean_ArrayB = None):
     if (Sample_mean_ArrayA is not None) and (Sample_mean_ArrayB is not None):
-        return (-1*np.log10(pvalues)*np.sign(Sample_mean_ArrayA - Sample_mean_ArrayB))
-    return (-1*np.log10(pvalues))
+        with np.errstate(divide='ignore', invalid='ignore'):
+            c = (-1*np.log10(pvalues)*np.sign(Sample_mean_ArrayA - Sample_mean_ArrayB)) 
+        return c
+    elif (Sample_mean_ArrayA is not None): 
+        with np.errstate(divide='ignore', invalid='ignore'):
+            c = (-1*np.log10(pvalues)*np.sign(Sample_mean_ArrayA))    
+        return c
+    else:
+        with np.errstate(divide='ignore', invalid='ignore'):
+            c = (-1*np.log10(pvalues))    
+        return c        
 
 def calc_mean_and_std(ROICorrMaps, n_subjects, ROIAtlasmask, ddof =1, applyFisher = False):
     '''
@@ -193,14 +207,17 @@ def ttest_1samp_ROIs_if_npy(ROICorrMaps,
                                 calc_mean_and_std_if_npy( ROICorrMaps,
                                                         n_subjects, ddof =1,
                                                         applyFisher = applyFisher)
+    np.save(opj(os.getcwd(),'Sample_mean_array.npy'),convert_ma_to_np(Sample_mean_Array))
+    np.save(opj(os.getcwd(),'Sample_std_array.npy'),convert_ma_to_np( Sample_std_Array))
+    
     if save_pval_in_log_fmt:
         ttest, pvals = _ttest_1samp(Sample_mean_Array,
                         Sample_std_Array,
                         n_subjects,
                         PopMean = PopMean)
-        return ttest, convert_pvals_to_log_fmt(pvals)
+        return Sample_mean_Array, (ttest, convert_pvals_to_log_fmt(pvals))
 
-    return _ttest_1samp(Sample_mean_Array,
+    return Sample_mean_Array, _ttest_1samp(Sample_mean_Array,
                         Sample_std_Array,
                         n_subjects,
                         PopMean = PopMean)
@@ -311,8 +328,7 @@ def ttest_ind_samples_if_npy(ROICorrMapsA, ROICorrMapsB,
                 Sample_mean_ArrayB, Sample_var_ArrayB, n_subjectsB,
                 equal_var = equal_var)
 
-def convert_ma_to_np(MaskedArrayObj):
-    return ma.filled(MaskedArrayObj)
+
 
 def fdrcorrect_worker2(A,B,args):
     return fdrcorrect_worker(A,B,*args)
@@ -361,8 +377,10 @@ def fdrcorrect_worker(fdrcorrected_brain,
         '''
         nobs = len(x)
         return np.arange(1,nobs+1)/float(nobs)
-    mask_pvals = pvals.mask
-    indices = np.where(mask_pvals ==False)
+#    mask_pvals = pvals.mask
+#    indices = np.where(mask_pvals ==False)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        indices = np.where(pvals>=0)
     Truepvals = ma.compressed(pvals)
 
     pvals_sortind = np.argsort(Truepvals)
@@ -393,14 +411,16 @@ def fdrcorrect_worker(fdrcorrected_brain,
     reject_ = np.empty_like(reject)
     reject_[pvals_sortind] = reject
     if not is_npy:
-        rejected_pvalBrain = ma.masked_all_like(pvals)
+#        rejected_pvalBrain = ma.masked_all_like(pvals)
+        rejected_pvalBrain = np.empty_like(pvals)
         rejected_pvalBrain[indices] = reject_
         if (type == 'indep_samps'):
             rejected_pvals[:,:,:,roi_number] = rejected_pvalBrain
         else:
             rejected_pvals = rejected_pvalBrain
 
-        pvals_correctedBrain = ma.masked_all_like(pvals)
+#        pvals_correctedBrain = ma.masked_all_like(pvals)
+        pvals_correctedBrain = np.empty_like(pvals)
         pvals_correctedBrain[indices] = pvals_corrected_
         if (type =='indep_samps'):
             fdrcorrected_brain[:,:,:,roi_number] = pvals_correctedBrain
@@ -416,7 +436,7 @@ def fdrcorrect_worker(fdrcorrected_brain,
             fdrcorrected_brain[indices] = pvals_corrected_
         print("Done for ", roi_number)
 
-def fdr_correction(pvalues , type = 'indep_samps', is_npy = False):
+def fdr_correction(pvalues , type = 'indep_samps', procs = 8, is_npy = False):
     '''
     pvalues :: Pvalue maps for all ROIs
     Two types:
@@ -427,13 +447,15 @@ def fdr_correction(pvalues , type = 'indep_samps', is_npy = False):
     FDR_types = ['indep_samps', 'all']
 
     if (type == 'indep_samps'):
-        procs = 8
         pool = Pool(procs)
 
         m = MyManager()
         m.start()
-        fdrcorrected_brain = m.ma_empty_like(pvalues)
-        rejected_pvals = m.ma_empty_like(pvalues)
+#        fdrcorrected_brain = m.ma_empty_like(pvalues)
+#        rejected_pvals = m.ma_empty_like(pvalues)
+        fdrcorrected_brain = m.np_empty_like(pvalues)
+        rejected_pvals = m.np_empty_like(pvalues)
+
         func = partial(fdrcorrect_worker2, fdrcorrected_brain, rejected_pvals)
         # no_rois : Total ROIS in the P-value file
         if not is_npy:
@@ -443,37 +465,7 @@ def fdr_correction(pvalues , type = 'indep_samps', is_npy = False):
         print('Total no of ROIs ',no_rois)
         MaxPools = no_rois//procs
         print('MaxPools: ', MaxPools)
-        # for roi_number in range(0,MaxPools*procs,procs):
-        #     pool_inputs = [] #np.arange(number_of_ROIs)
-        #     select_roi = 0
-        #     while (select_roi<procs):
-        #         print(roi_number +select_roi)
-        #         if not is_npy:
-        #             pool_inputs.append((roi_number+select_roi, 
-        #                             pvalues[:,:,:,roi_number+select_roi], is_npy))
-        #         else:
-        #             pool_inputs.append((roi_number+select_roi,
-        #                             ma.masked_array(pvalues[roi_number + select_roi,:],
-        #                             fill_value = 0),
-        #                             is_npy))
-        #         select_roi+=1
 
-        #     data_outputs = pool.map(func, pool_inputs)
-
-        # if (no_rois%procs!=0):
-        #     pool_inputs = [] #np.arange(number_of_ROIs)
-        #     for roi_number in range(MaxPools*procs,no_rois):
-        #         if not is_npy:
-        #             pool_inputs.append((roi_number, 
-        #                                 pvalues[:,:,:,roi_number], 
-        #                                 is_npy))
-        #         else:
-        #             pool_inputs.append((roi_number,
-        #                                 ma.masked_array(pvalues[roi_number,:],
-        #                                     fill_value = 0),
-        #                                 is_npy))
-
-        #     data_outputs = pool.map(func, pool_inputs)
 
         pool_inputs = [] #np.arange(number_of_ROIs)
         for roi_number in range(no_rois):

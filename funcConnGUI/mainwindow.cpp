@@ -8,7 +8,7 @@
 #include<QFileDialog>
 #include<QJsonDocument>
 #include<QJsonObject>
-#include<QJsonArray>
+#include<QThread>
 #include<QProcess>
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -20,13 +20,21 @@ MainWindow::MainWindow(QWidget *parent) :
      * hidden according to the requirements of the program.
      *
      */
-    char* env = getenv("FSLDIR");
+
     ui->setupUi(this);
     ui->radioButton_Unprocessed->setChecked(true);
     ui->checkBox->setChecked(false);
     ui->checkBox_preprocFeat->setChecked(false);
     ui->checkBox_ROICorrs->setChecked(false);
+    ui->checkBox_GSR->setChecked(false);
+
     ui->spinBox->setRange(1,5);
+
+    // Values set randomly for now. These are no of the threads which will
+    // be executed. Can be changed later to some other value.
+    ui->spinBox_threads->setRange(1,12);
+    ui->spinBox_threads->setValue(4);
+
     ui->radioButton_wt_Groups->setChecked(true);
     ui->chooseCombsButton->hide();
     ui->label_Hypothesis->hide();
@@ -34,22 +42,26 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->radioButton_G1_gr_G2->setChecked(true);
     ui->radioButton_G2_gr_G1->hide();
     ui->radioButton_NormFischer->setChecked(true);
-    ui->radioButton_reg_y->setChecked(true);
-    ui->radioButton_JointFDR->setChecked(true);
+    ui->radioButton_reg_n->setChecked(true);
+    ui->radioButton_SepFDRcorrect->setChecked(true);
     ui->lineEdit_highpass->hide();
     ui->lineEdit_lowpass->hide();
+    ui->label_BET_Correct->hide();
+    ui->lineEdit_BET_correct_value->hide();
+    ui->checkBox_RobustBET->setChecked(false);
+    ui->checkBox_RobustBET->hide();
 
     //Here I set the default name for the Analysis. It can be changed accordingly.
     QString DefAnalysisName = "FConnectivityAnl";
 
     //In case 'FSLDIR' path exists, the box will get flooded.
-    if (QDir(env).exists()){
-        ui->lineEdit_FSLDIR->setText(env);
+    if (QDir(FSLDIR).exists()){
+        ui->lineEdit_FSLDIR->setText(FSLDIR);
     }
 
     //OutDir stores the current directory we are in.
     ui->lineEdit_AnalysisName->setText(DefAnalysisName);
-    ui->lineEdit_OutDir->setText(OutDir + DefAnalysisName);
+    ui->lineEdit_OutDir->setText(OutDir + "/"+DefAnalysisName);
 }
 
 
@@ -105,10 +117,10 @@ void MainWindow::on_pushButton_3_clicked()
     QApplication::quit();
 }
 
-void MainWindow::on_pushButton_6_clicked()
-{
-    QApplication::quit();
-}
+//void MainWindow::on_pushButton_6_clicked()
+//{
+//    QApplication::quit();
+//}
 
 void MainWindow::on_pushButton_12_clicked()
 {
@@ -139,7 +151,7 @@ void MainWindow::on_commandLinkButton_Reference_clicked()
                                                     this,
                                                     tr("Open File"),
                                                     already_input,
-                                                    "All files (*.*);;Text File (*.txt)"
+                                                    "Nifti File (*.nii.gz);;All files (*.*)"
                                                        );
     }
     else
@@ -149,7 +161,7 @@ void MainWindow::on_commandLinkButton_Reference_clicked()
                                                 this,
                                                 tr("Open File"),
                                                 CommonDir,
-                                                "All files (*.*);;Text File (*.txt)"
+                                                "Nifti File (*.nii.gz);;All files (*.*)"
                                                    );
     }
     if (new_input!=NULL){
@@ -209,7 +221,7 @@ void MainWindow::on_commandLinkButton_ROIFile_clicked()
                                                     this,
                                                     tr("Open File"),
                                                     already_input,
-                                                    "All files (*.*);;Text File (*.txt)"
+                                                    "Nifti File (*.nii.gz);;All files (*.*)"
                                                        );
     }
     else
@@ -218,7 +230,7 @@ void MainWindow::on_commandLinkButton_ROIFile_clicked()
                                                 this,
                                                 tr("Open File"),
                                                 CommonDir,
-                                                "All files (*.*);;Text File (*.txt)"
+                                                "Nifti File (*.nii.gz);;All files (*.*)"
                                                    );
     }
     if (new_input!=NULL){
@@ -235,11 +247,32 @@ void MainWindow::on_commandLinkButton_FSLDIR_clicked()
     /*
      * TO BE REVIEWED. THE FN IS NOT YET COMPLETE.
      */
+    QString new_Dir;
 
+    if (QDir(FSLDIR).exists())
+    {
+        new_Dir=QFileDialog::getExistingDirectory(
+                                                    this,
+                                                    tr("Choose Directory"),
+                                                    FSLDIR);
+    }
+    else {
+        new_Dir =QFileDialog::getExistingDirectory(
+                                                this,
+                                                tr("Choose Directory"),
+                                                CommonDir);
+    }
+    if (new_Dir!=NULL){
+        ui->lineEdit_FSLDIR->setText(new_Dir);
+        FSLDIR = new_Dir;
+    }
+    else{
+        ui->lineEdit_OutDir->setText(FSLDIR);
+    }
     QString filename=QFileDialog::getExistingDirectory(
                                                 this,
                                                 tr("Choose Directory"),
-                                                "/home/deepak/");
+                                                CommonDir);
     ui->lineEdit_FSLDIR->setText(filename);
 }
 
@@ -258,7 +291,7 @@ void MainWindow::on_commandLinkButton_CorrFile_clicked()
                                                     this,
                                                     tr("Open File"),
                                                     already_input,
-                                                    "All files (*.*);;Text File (*.txt)"
+                                                    "Nifti File (*.nii.gz);;All files (*.*)"
                                                        );
     }
     else
@@ -267,7 +300,7 @@ void MainWindow::on_commandLinkButton_CorrFile_clicked()
                                                 this,
                                                 tr("Open File"),
                                                 CommonDir,
-                                                "All files (*.*);;Text File (*.txt)"
+                                                "Nifti File (*.nii.gz);;All files (*.*)"
                                                    );
     }
     if (new_input!=NULL){
@@ -328,6 +361,7 @@ void MainWindow::on_chooseCombsButton_clicked()
     QList<int> list;
     list<<100<<500;
     */
+
     QString AB;
     chooseCombinations choosecombinations;
     choosecombinations.setCheckboxes(spinBoxValue);
@@ -337,6 +371,7 @@ void MainWindow::on_chooseCombsButton_clicked()
     int GroupB = 2;
     int lastOne =1;
     for (int i = 0; i < mirrored_checkStates.size(); ++i) {
+        combinations.append(mirrored_checkStates.at(i)/2);
         if (mirrored_checkStates.at(i) == 2){
 
             AB+= "Group_" + QString::number(lastOne) + "_vs_Group_" + QString::number(GroupB) +",";
@@ -399,6 +434,35 @@ void MainWindow::on_checkBox_AllCombs_clicked(bool checked)
     }
 }
 
+void MainWindow::writeStats(QJsonObject &json) const
+{
+    if (ui->radioButton_wt_Groups->isChecked()){
+        json["Analysis within Groups"] = true;
+        json["Analysis between Groups"] = false;
+    }
+    if (ui->radioButton_bw_Groups->isChecked()){
+        json["Analysis within Groups"] = false;
+        json["Analysis between Groups"] = true;
+        if (spinBoxValue ==2)
+            json["Gr1>Gr2"] = ui->radioButton_G1_gr_G2->isChecked();
+        else{
+            json["Combinations"] = combinations;
+        }
+    }
+    /*
+     * Fisher Types are :
+     * False: MaxMinFisher,
+     * True: Normal Fisher
+     *
+     * FDR Correction:
+     * False: Joint FDR
+     * True: Separate FDR for each ROI
+    */
+
+    json["doNormalFisher"] = ui->radioButton_NormFischer->isChecked();
+    json["Separate FDR"] = ui->radioButton_SepFDRcorrect->isChecked();
+
+}
 void MainWindow::writeReferImgpath(QJsonObject &json) const
 {
     QString FilePath;
@@ -406,6 +470,17 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
     ReferSummary["Info"] = QString("It tells the path of the file used for reference.");
     ReferSummary["ReferImgPath"] = ui->lineEdit_Reference->text();
     json["ReferSummary"] = ReferSummary;
+
+
+    QString MaskFile = ui->lineEdit_Mask->text();
+    QFile Mask(MaskFile);
+    if (Mask.exists()){
+    json["MaskNotProvided"] = false;
+    json["UseMaskFile"] = MaskFile;
+    }
+    else {
+        json["MaskNotProvided"] = true;
+    }
 
     QJsonObject ProcessingType;
     ProcessingType["Info"] = QString("The inputs can be of 3 types: "
@@ -445,7 +520,7 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
             file.remove();
             FunctionalArray.append(FilePath);
         }
-        for (int i=1 ; i<=FunctionalFileNames.size() ; i++)
+        for (int i=1 ; i<=StructuralFileNames.size() ; i++)
         {
             FilePath = OutChosenPath + "/"+ ui->lineEdit_AnalysisName->text() + "_Group_" + QString::number(i)+"_StructuralFiles.txt";
             QFile::copy(StructuralFileNames.at(i-1), FilePath);
@@ -485,6 +560,13 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
         json["B0 Unwarping"] = ui->checkBox_B0->isChecked();
         json["Slice Time Correct"] = ui->comboBox_STimeCorrect->currentIndex();
         json["BET Brain Extract"] = ui->checkBox_BET->isChecked();
+        if (ui->checkBox_BET->isChecked()){
+            QJsonObject BET;
+            BET["BET Correction Value"] = ui->lineEdit_BET_correct_value->text().toFloat();
+            BET["doRobustBET"] = ui->checkBox_RobustBET->isChecked();
+            json["BETParams"] = BET;
+        }
+
         json["FWHM"] = ui->doubleSpinBox_FWHM->value();
         json["Intensity Normalization"] = ui->checkBox_IntensityNorm->isChecked();
         json["Temporal Filtering"] = (ui->checkBox_HighPass->isChecked())||(ui->checkBox_LowPass->isChecked());
@@ -492,11 +574,24 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
         json["High Pass Value (in sigma)"] = ui->checkBox_HighPass->isChecked() ? ui->lineEdit_highpass->text().toFloat()/(2*ui->lineEdit_TR->text().toFloat()) : float(-1);
 
         json["Low Pass Value (in sigma)"] = ui->checkBox_LowPass->isChecked() ? ui->lineEdit_lowpass->text().toFloat()/(2*ui->lineEdit_TR->text().toFloat()) : float(-1);
-
+        json["applyGSR"] = ui->checkBox_GSR->isChecked();
 
         json["Melodic ICA"] = ui->checkBox_MelodicICA->isChecked();
     }
+    else if (ProcessingWay ==1){
+        json["Registration"] = ui->radioButton_reg_y->isChecked();
+    }
+    else {
+        json["Registration"] = ui->radioButton_reg_y->isChecked();
+    }
 
+    bool doStats = true;
+    json["doStats"] = doStats;
+    if (doStats){
+        QJsonObject StatsObj;
+        writeStats(StatsObj);
+        json["Stats"] = StatsObj;
+    }
 }
 
 
@@ -510,6 +605,7 @@ void MainWindow::writeAnalysisName(QJsonObject &json) const
      *
      */
     json["Analysis Name"] = ui->lineEdit_AnalysisName->text();
+    json["No of threads"] = ui->spinBox_threads->value();
     json["WorkingDir"] = WorkingDir;
     QJsonObject ReferenceImgpath;
     writeReferImgpath(ReferenceImgpath);
@@ -518,9 +614,9 @@ void MainWindow::writeAnalysisName(QJsonObject &json) const
 void MainWindow::on_pushButton_Go_clicked()
 {
     int lenFuncFiles= FunctionalFileNames.size();
-    int lenStructFiles = StructuralFileNames.size();
     int lenFeatFiles = FeatFileNames.size();
-    if (((lenFuncFiles!=spinBoxValue)||(lenStructFiles!=spinBoxValue)) && (lenFeatFiles != spinBoxValue)){
+//    if (((lenFuncFiles!=spinBoxValue)||(lenStructFiles!=spinBoxValue)) && (lenFeatFiles != spinBoxValue)){
+    if ((lenFuncFiles!=spinBoxValue) && (lenFeatFiles != spinBoxValue)){
         QMessageBox::warning(this,"Title","You haven't specified the complete 4D data files.");
     }
     else{
@@ -544,11 +640,25 @@ void MainWindow::on_pushButton_Go_clicked()
         QJsonDocument saveDoc(Object);
         saveFile.write(saveDoc.toJson());
 
+//        QStringList arguments {WorkingDir+"/read_json.py",JSONFile};
+//        QProcess p;
+//        p.setWorkingDirectory(WorkingDir);
+//        p.start("python", arguments);
+//        p.waitForFinished(-1);
 
+//        QString p_stdout = p.readAll();
+
+        QString program( "python" );
+        QStringList args = QStringList() << "read_json.py"<<JSONFile;
         QProcess p;
-        p.start("python read_json.py " + JSONFile);
-        p.waitForFinished(-1);
-        QString p_stdout = p.readAllStandardOutput();
+        p.setWorkingDirectory(WorkingDir);
+        int exitCode = p.execute( program, args );
+
+//        QString cmd_qt = QString("python %1 %2").arg("read_json.py").arg(JSONFile);
+
+//        const char* cmd = cmd_qt.toLatin1().constData();
+//        system(cmd);
+
 
     }
 }
@@ -556,16 +666,19 @@ void MainWindow::on_pushButton_Go_clicked()
 void MainWindow::on_radioButton_Unprocessed_clicked()
 {
     ProcessingWay = 0;
+    ui->tabWidget->setTabEnabled(1,true);
 }
 
 void MainWindow::on_radioButton_PreprocwtFSL_clicked()
 {
     ProcessingWay = 1;
+    ui->tabWidget->setTabEnabled(1,false);
 }
 
 void MainWindow::on_radioButton_PreprocwFSL_clicked()
 {
     ProcessingWay = 2;
+    ui->tabWidget->setTabEnabled(1,false);
 }
 
 void MainWindow::on_checkBox_HighPass_clicked(bool checked)
@@ -582,4 +695,64 @@ void MainWindow::on_checkBox_LowPass_clicked(bool checked)
         ui->lineEdit_lowpass->show();
     else
         ui->lineEdit_lowpass->hide();
+}
+
+void MainWindow::on_commandLinkButton_Mask_clicked()
+{
+    /*
+     * Sets the Mask File in the lineEdit box.
+     */
+    QString new_input;
+
+    // Get the input already present in the cell.
+    QString already_input = ui->lineEdit_Mask->text();
+    QFile Fout(already_input) ;
+
+    if (Fout.exists())
+    {
+        // If such file exists, then opne the Directory chooser from that path.
+        new_input=QFileDialog::getOpenFileName(
+                                                    this,
+                                                    tr("Open File"),
+                                                    already_input,
+                                                    "Nifti File (*.nii.gz);;All files (*.*)"
+                                                       );
+    }
+    else
+    {
+        // else open it from the default path.
+        new_input=QFileDialog::getOpenFileName(
+                                                this,
+                                                tr("Open File"),
+                                                CommonDir,
+                                                "Nifti File (*.nii.gz);;All files (*.*)"
+                                                   );
+    }
+    if (new_input!=NULL){
+        // It is used for handling the CANCEL button. In case the cancel is clicked in
+        // directory chooser, then we need to set it to previous input else the new input.
+    ui->lineEdit_Mask->setText(new_input);
+    }
+    else {
+        ui->lineEdit_Mask->setText(already_input);
+    }
+}
+
+void MainWindow::on_pushButton_Go3_clicked()
+{
+    on_pushButton_Go_clicked();
+}
+
+void MainWindow::on_checkBox_BET_clicked(bool checked)
+{
+    if (checked){
+        ui->label_BET_Correct->show();
+        ui->lineEdit_BET_correct_value->show();
+        ui->checkBox_RobustBET->show();
+    }
+    else{
+        ui->label_BET_Correct->hide();
+        ui->lineEdit_BET_correct_value->hide();
+        ui->checkBox_RobustBET->hide();
+    }
 }

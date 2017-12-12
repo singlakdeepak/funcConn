@@ -7,7 +7,7 @@
 namespace Ui {
 class chooseCombinations;
 }
-
+//dsada
 class chooseCombinations : public QDialog
 {
     Q_OBJECT

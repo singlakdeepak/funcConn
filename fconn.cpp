@@ -53,18 +53,20 @@ int main (int argc,char *argv[])
   
   
   getattributes(argc,argv);
+  std::cout<<"got attributes"<<std::endl;
   
   if(input==false||output==false ||(roi2 == false && roi1 == false && all == false && seedcmp == false))
   {
 	showhelpinfo();
 	exit(1);
   }
-
+std::cout<<"got 1"<<std::endl;
   if( ( roi1 == true&&roi2 == true&& all == true ) || ( roi1 == true&&roi2 == true&& seedcmp == true ) || ( all == true && seedcmp == true ))
   {
 	showhelpinfo();
 	exit(1);
   }
+  std::cout<<"got 2"<<std::endl;
 	///######################### Creating the project folder #######################################################
    
 	mode_t nMode = 0733; // UNIX style permissions
@@ -1111,15 +1113,20 @@ void getattributes(int argc,char *argv[])
   std::istringstream iss(inp);
   std::string s;
   std::vector< std::string > inp_arg;
+  std::cout<<*argv<<std::endl;
+  std::cout<<inp<<std::endl;
   while ( getline( iss, s, ' ' ) ) {
     inp_arg.push_back(s);
   }
 
-  int i =0;
+  int i =1;
 
-  while(i<inp_arg.size())
+  std::cout<<argc<<std::endl;
+
+  while(i<argc)
   {
-  	char tmp = inp_arg[i][0];
+  	char tmp = argv[i][1];
+  	std::cout<<tmp<<std::endl;
 	switch(tmp)
 	{
 	  /*option h show the help infomation*/
@@ -1132,7 +1139,7 @@ void getattributes(int argc,char *argv[])
 		// std::cout<<optarg<<std::endl;
 		// strcpy(ipfilename,optarg);
 		i++;
-		ipfilename = inp_arg[i];
+		ipfilename = argv[i];
 		if(ipfilename.find(".gz")!=std::string::npos){
 			gzip = true;
 			std::string command = "gunzip ";
@@ -1149,7 +1156,7 @@ void getattributes(int argc,char *argv[])
 	  case 'r':
 		roi1= true;
 		i++;
-		roifname = inp_arg[i];
+		roifname = argv[i];
 		if(roifname.find(".gz")!=std::string::npos){
 			gzip = true;
 			std::string command = "gunzip ";
@@ -1158,13 +1165,13 @@ void getattributes(int argc,char *argv[])
 			roifname = roifname.substr(0,(roifname.length()-3));
 		}
 		i++;
-		ROI_MAX = std::stoi(inp_arg[i]);
+		ROI_MAX = std::stoi(argv[i]);
 		
 		break;
 	  case 'R':
 		roi2= true;
 		i++;
-		roifname = inp_arg[i];
+		roifname = argv[i];
 		if(roifname.find(".gz")!=std::string::npos){
 			gzip = true;
 			std::string command = "gunzip ";
@@ -1173,28 +1180,28 @@ void getattributes(int argc,char *argv[])
 			roifname = roifname.substr(0,(roifname.length()-3));
 		}
 		i++;
-		ROI_MAX = std::stoi(inp_arg[i]);
+		ROI_MAX = std::stoi(argv[i]);
 		break;
 	  case 'o':
 		output = true;
 		//strcpy(ofname,optarg);
 		i++;
-		ofname = inp_arg[i];
+		ofname = argv[i];
 		break;
 	  case 't':
 		// std::cout<<"thresh"<<std::endl;
 		// std::cout<<optarg<<std::endl;
 	  	i++;
-		thresh = std::stoi(inp_arg[i]);
+		thresh = std::stoi(argv[i]);
 	  break;
 	  case 's':
 		 seedcmp = true;
 		 i++;
-		 seedx = std::stoi(inp_arg[i]);
+		 seedx = std::stoi(argv[i]);
 		 i++;
-		 seedy = std::stoi(inp_arg[i]);
+		 seedy = std::stoi(argv[i]);
 		 i++;
-		 seedz = std::stoi(inp_arg[i]);
+		 seedz = std::stoi(argv[i]);
 		break;
 	  case 'a': all = true;
 				// std::cout<<all<<std::endl;
@@ -1202,7 +1209,7 @@ void getattributes(int argc,char *argv[])
 	  /*invail input will get the heil infomation*/
 	  case 'm': mask = true;
 	  			i++;
-	  			maskfilename = inp_arg[i];
+	  			maskfilename = argv[i];
 	  			break;
 	  default:
 				showhelpinfo();
