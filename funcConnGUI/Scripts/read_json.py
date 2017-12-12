@@ -398,7 +398,8 @@ def call_stat_Analysis_wt_grps(Files_for_stats_dict,
         NumpyFileList.append(Pvalues_in_log)
         FileNamesForSaving.append(opj(destination,'Pvals_group_%s.nii.gz'%i))
         if  applyFDR :
-            rejected, FDRCorrected = ttest.fdr_correction(Pvals, procs = threads, is_npy = True)
+            rejected, FDRCorrected = ttest.fdr_correction(ttest.convert_ma_to_np(Pvals), 
+                                                            procs = threads, is_npy = True)
             np.save(opj(destination,'Qvals_Normal_group_%s.npy'%i),
                                     FDRCorrected)
 
@@ -471,7 +472,8 @@ def call_stat_Analysis_bw_grps(Files_for_stats_dict,
                                             previous,
                                             previous + i + 1)))
                 if  applyFDR :
-                    rejected, FDRCorrected = ttest.fdr_correction(Pvals, procs = threads, is_npy = True)
+                    rejected, FDRCorrected = ttest.fdr_correction(ttest.convert_ma_to_np(Pvals), 
+                                                                    procs = threads, is_npy = True)
                     np.save(opj(destination,'Qvals_Normal_group_{}_group_{}.npy'.format(
                                             previous,
                                             previous + i + 1)),
