@@ -172,9 +172,7 @@ def ttest_1samp_for_all_ROIs(ROICorrMaps,
     Ref: https://docs.scipy.org/doc/numpy/reference/generated/numpy.arctanh.html
      https://en.wikipedia.org/wiki/Fisher_transformation
     TO BE ASKED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    
-    # The ttest will return t value Inf or NaN where the denom is
-    # zero. See what to return in these places. Ask tomorrow.
+
     '''
 
 
@@ -189,9 +187,9 @@ def ttest_1samp_for_all_ROIs(ROICorrMaps,
                         Sample_std_Array,
                         n_subjects,
                         PopMean = PopMean)
-        return ttest, convert_pvals_to_log_fmt(pvals)
+        return Sample_mean_Array, (ttest, convert_pvals_to_log_fmt(pvals))
 
-    return _ttest_1samp(Sample_mean_Array,
+    return Sample_mean_Array, _ttest_1samp(Sample_mean_Array,
                         Sample_std_Array,
                         n_subjects,
                         PopMean = PopMean)
@@ -281,11 +279,15 @@ def ttest_ind_samples(ROICorrMapsA, ROICorrMapsB, ROIAtlasmask,
         ttest, pvals = _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
                 Sample_mean_ArrayB, Sample_var_ArrayB, n_subjectsB,
                 equal_var = equal_var)
-        return ttest, convert_pvals_to_log_fmt(pvals, 
+        return Sample_mean_ArrayA, \
+                Sample_mean_ArrayB, \
+                (ttest, convert_pvals_to_log_fmt(pvals, 
                                             Sample_mean_ArrayA = Sample_mean_ArrayA,
-                                            Sample_mean_ArrayB = Sample_mean_ArrayB)
+                                            Sample_mean_ArrayB = Sample_mean_ArrayB))
     # pvalues = stats.t.sf(np.abs(ttest_ind), df)*2
-    return _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
+    return Sample_mean_ArrayA, \
+            Sample_mean_ArrayB, \
+             _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
                 Sample_mean_ArrayB, Sample_var_ArrayB, n_subjectsB,
                 equal_var = equal_var)
 
@@ -319,9 +321,11 @@ def ttest_ind_samples_if_npy(ROICorrMapsA, ROICorrMapsB,
         ttest, pvals = _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
                 Sample_mean_ArrayB, Sample_var_ArrayB, n_subjectsB,
                 equal_var = equal_var)
-        return ttest, convert_pvals_to_log_fmt(pvals,
+        return Sample_mean_ArrayA, \
+                Sample_mean_ArrayB, \
+                (ttest, convert_pvals_to_log_fmt(pvals,
                                             Sample_mean_ArrayA = Sample_mean_ArrayA,
-                                            Sample_mean_ArrayB = Sample_mean_ArrayB)
+                                            Sample_mean_ArrayB = Sample_mean_ArrayB))
     return  Sample_mean_ArrayA, \
                 Sample_mean_ArrayB, \
                 _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
@@ -370,6 +374,10 @@ def fdrcorrect_worker(fdrcorrected_brain,
     of false hypotheses will be available (soon).
     Method names can be abbreviated to first letter, 'i' or 'p' for fdr_bh and 'n' for
     fdr_by.
+
+
+    I am not quite sure whether this is working correctly. Should I ignore all the values which 
+    are 0. Or also incorporate them while doing this.
     '''
 
     def _ecdf(x):
@@ -391,9 +399,7 @@ def fdrcorrect_worker(fdrcorrected_brain,
     elif method in ['n', 'negcorr']:
         cm = np.sum(1./np.arange(1, len(pvals_sorted)+1))   #corrected this
         ecdffactor = _ecdf(pvals_sorted) / cm
-##    elif method in ['n', 'negcorr']:
-##        cm = np.sum(np.arange(len(pvals)))
-##        ecdffactor = ecdf(pvals_sorted)/cm
+
     else:
         raise ValueError('only indep and negcorr implemented')
     reject = pvals_sorted <= ecdffactor*alpha
@@ -466,11 +472,10 @@ def fdr_correction(pvalues , type = 'indep_samps', procs = 8, is_npy = False):
         MaxPools = no_rois//procs
         print('MaxPools: ', MaxPools)
 
-
-        pool_inputs = [] #np.arange(number_of_ROIs)
+        pool_inputs = [] 
         for roi_number in range(no_rois):
 
-            print(roi_number)
+            # print(roi_number)
             if not is_npy:
                 pool_inputs.append((roi_number, 
                                 pvalues[:,:,:,roi_number], is_npy))
