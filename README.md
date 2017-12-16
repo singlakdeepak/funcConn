@@ -1,4 +1,4 @@
-# FCONN : Functional Connectivity Toolkit
+# FCONN : A Toolkit on analysis of Functional Connectivity in BOLD fMRI
 
 ## ABOUT
 FCONN is a multi processing fMRI toolkit for functional connectivity analysis. It aims for finding the all pair correlation 
@@ -19,6 +19,7 @@ Before instaling this one must have the following softwares downloaded and confi
 * QTCreator v5.7
 * FSL Software
 * [Anaconda](https://www.anaconda.com/download/#linux) complete for Python 3.6
+* Nipype (See the instructions [here](http://miykael.github.io/nipype-beginner-s-guide/installation.html))
 
     *Read [this small blog](https://github.com/singlakdeepak/Wiki/blob/master/InstallingMKL.md) for installation of Intel-MKL.
 
@@ -26,7 +27,7 @@ Before instaling this one must have the following softwares downloaded and confi
 ## COMPILATION
 Use the make command to compile the toolkit
 
-## RUNNING THE TOOLKIT 
+## RUNNING THE FCONN TOOLKIT 
 
 Usage : fconn -i <fmri.nii/nii.gz> 
 ```  
