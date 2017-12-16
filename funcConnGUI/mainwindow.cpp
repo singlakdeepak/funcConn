@@ -611,6 +611,15 @@ void MainWindow::writeAnalysisName(QJsonObject &json) const
     writeReferImgpath(ReferenceImgpath);
     json["AnalysisParams"] = ReferenceImgpath;
 }
+
+void MainWindow::runProgram(QString JSONFile){
+    QString program( "python" );
+    QStringList args = QStringList() << "read_json.py"<<JSONFile;
+    QProcess p;
+    p.setWorkingDirectory(WorkingDir);
+    int exitCode = p.execute( program, args );
+}
+
 void MainWindow::on_pushButton_Go_clicked()
 {
     int lenFuncFiles= FunctionalFileNames.size();
@@ -639,20 +648,10 @@ void MainWindow::on_pushButton_Go_clicked()
         writeAnalysisName(Object);
         QJsonDocument saveDoc(Object);
         saveFile.write(saveDoc.toJson());
+        saveFile.close();
 
-//        QStringList arguments {WorkingDir+"/read_json.py",JSONFile};
-//        QProcess p;
-//        p.setWorkingDirectory(WorkingDir);
-//        p.start("python", arguments);
-//        p.waitForFinished(-1);
+        runProgram(JSONFile);
 
-//        QString p_stdout = p.readAll();
-
-        QString program( "python" );
-        QStringList args = QStringList() << "read_json.py"<<JSONFile;
-        QProcess p;
-        p.setWorkingDirectory(WorkingDir);
-        int exitCode = p.execute( program, args );
 
 //        QString cmd_qt = QString("python %1 %2").arg("read_json.py").arg(JSONFile);
 
@@ -662,6 +661,7 @@ void MainWindow::on_pushButton_Go_clicked()
 
     }
 }
+
 
 void MainWindow::on_radioButton_Unprocessed_clicked()
 {

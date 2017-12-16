@@ -82,6 +82,7 @@ private slots:
 
     void on_checkBox_BET_clicked(bool checked);
 
+    void runProgram(QString JSONFile);
 private:
     QJsonArray combinations;
     QString CommonDir = getenv("PWD");

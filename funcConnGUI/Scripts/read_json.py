@@ -512,7 +512,7 @@ if __name__ == '__main__':
     print("Name of JSON: ", JSONFile)
     with open(JSONFile) as JSON:
         try :
-            print(JSON)
+            
             data = json.load(JSON)
             AnalysisName = data['Analysis Name']
             threads = data['No of threads']
