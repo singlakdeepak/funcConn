@@ -155,13 +155,13 @@ def remove(path):
         try:
             shutil.rmtree(path)
         except OSError:
-            print "Unable to remove folder: %s" % path
+            print("Unable to remove folder: %s" % path)
     else:
         try:
             if os.path.exists(path):
                 os.remove(path)
         except OSError:
-            print "Unable to remove file: %s" % path
+            print("Unable to remove file: %s"%path)
 
 def run_Preprocessing(AnalysisParams,
                         FunctionalFiles = None,
