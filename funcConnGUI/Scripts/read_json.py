@@ -298,12 +298,7 @@ def run_Preprocessing(AnalysisParams,
             ROIsinkouts += [transROIfile[i][0] for i in range(no_subjects)]
             func2stdsinkouts = []
             func2stdsinkouts += [func2stdfile[i][0] for i in range(no_subjects)]
-            if not savePreprocessing:
-                folders = [opj(TEMP_DIR_FOR_STORAGE + '/%s'%RegistrationName, 
-                            folder) for folder in os.listdir(TEMP_DIR_FOR_STORAGE + '/%s'%RegistrationName)]
-                for folder in folders:
-                    if (ROI_REG_DATASINK !=folder) and (func2std_DATASINK!= folder):
-                        remove(folder)
+
             print('Registered ROI->func ROIs: ', ROIsinkouts)
             print('func2stdtransforms: ', func2stdsinkouts)
             return ProcessedFilesDIRADDRESSES, ROIsinkouts, func2stdsinkouts
@@ -686,6 +681,12 @@ if __name__ == '__main__':
                                                 ROIFile,
                                                 mask_file, 
                                                 TEMP_DIR_FOR_STORAGE)
+        # if not savePreprocessing:
+        #     folders = [opj(TEMP_DIR_FOR_STORAGE + '/%s'%RegistrationName, 
+        #                 folder) for folder in os.listdir(TEMP_DIR_FOR_STORAGE + '/%s'%RegistrationName)]
+        #     for folder in folders:
+        #         if (ROI_REG_DATASINK !=folder) and (func2std_DATASINK!= folder):
+        #             remove(folder)
         stop2 = timeit.default_timer()
         file.write("Total time taken for Correlation calculation: %ss \n"%(stop2 - stop1))
         Totaltime += stop2 - stop1

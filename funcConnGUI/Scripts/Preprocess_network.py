@@ -953,8 +953,9 @@ def reg_workflow_with_Anat(no_subjects,  name = 'registration'):
     register.connect(meanfunc, 'roi_file', transform_ROI, 'reference')
 
     datasink_transformedROI = Node(interface=DataSink(), name="datasink_transformedROI")
+    datasink_transformedROI.inputs.remove_dest_dir = True
     datasink_func2std = Node(interface=DataSink(), name="datasink_func2std")
-    
+    datasink_func2std.inputs.remove_dest_dir = True
     """
     Assign all the output files
     """
@@ -1093,12 +1094,14 @@ def reg_workflow_wo_Anat(no_subjects, name = 'registration'):
     register.connect(meanfunc, 'roi_file', transform_ROI, 'reference')
 
     datasink_transformedROI = Node(interface=DataSink(), name="datasink_transformedROI")
+    datasink_transformedROI.inputs.remove_dest_dir = True
     datasink_func2std = Node(interface=DataSink(), name="datasink_func2std")
-    
+    datasink_func2std.inputs.remove_dest_dir = True
+
+
     """
     Assign all the output files
     """
-
     register.connect(mean2refbbr, 'out_matrix_file', 
                       outputnode, 'func2std_transform')
     register.connect(transform_ROI, 'out_file', outputnode, 'transformed_ROI')
