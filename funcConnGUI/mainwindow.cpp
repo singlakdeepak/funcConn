@@ -667,18 +667,21 @@ void MainWindow::on_radioButton_Unprocessed_clicked()
 {
     ProcessingWay = 0;
     ui->tabWidget->setTabEnabled(1,true);
+    ui->tabWidget->setTabEnabled(2,true);
 }
 
 void MainWindow::on_radioButton_PreprocwtFSL_clicked()
 {
     ProcessingWay = 1;
     ui->tabWidget->setTabEnabled(1,false);
+    ui->tabWidget->setTabEnabled(2,false);
 }
 
 void MainWindow::on_radioButton_PreprocwFSL_clicked()
 {
     ProcessingWay = 2;
     ui->tabWidget->setTabEnabled(1,false);
+    ui->tabWidget->setTabEnabled(2,true);
 }
 
 void MainWindow::on_checkBox_HighPass_clicked(bool checked)

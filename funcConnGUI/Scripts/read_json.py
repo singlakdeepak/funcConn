@@ -147,11 +147,29 @@ def __run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles = None,Gr
         shutil.copy(datasinkouts[j],ProcessedFiles_Address)
     return ProcessedFilesDIRADDRESSES
 
+def remove(path):
+    """
+    Remove the file or directory
+    """
+    if os.path.isdir(path):
+        try:
+            shutil.rmtree(path)
+        except OSError:
+            print "Unable to remove folder: %s" % path
+    else:
+        try:
+            if os.path.exists(path):
+                os.remove(path)
+        except OSError:
+            print "Unable to remove file: %s" % path
+
 def run_Preprocessing(AnalysisParams,
                         FunctionalFiles = None,
                         StructuralFiles = None,
                         FeatFiles = None,
-                        doPreprocessing= True, Group = 0):
+                        doPreprocessing= True, 
+                        savePreprocessing = True, 
+                        Group = 0):
 
     ReferenceFile = AnalysisParams['ReferSummary']['ReferImgPath']
     ROIFile = AnalysisParams['ROIFilePath']
@@ -240,6 +258,9 @@ def run_Preprocessing(AnalysisParams,
             ProcessedFiles_Address = '%sProcessedFile_sub%s.nii.gz'%(dst,j)
             ProcessedFilesDIRADDRESSES += [ProcessedFiles_Address]
             shutil.copy(datasinkouts[j],ProcessedFiles_Address)
+        if not savePreprocessing:
+            remove(opj(TEMP_DIR_FOR_STORAGE, FeatProcessName))
+
 
     if Registration:
         if FeatFiles==None:
@@ -254,7 +275,7 @@ def run_Preprocessing(AnalysisParams,
             else:
                 Reg_WorkFlow = parallelPreproc.reg_workflow_wo_Anat(no_subjects,
                                                             name = RegistrationName)              
-            Reg_WorkFlow.inputs.inputspec.source_files = datasinkouts
+            Reg_WorkFlow.inputs.inputspec.source_files = ProcessedFilesDIRADDRESSES
             Reg_WorkFlow.inputs.inputspec.target_image = ReferenceFile
             Reg_WorkFlow.inputs.inputspec.ROI_File = ROIFile
             Reg_WorkFlow.base_dir = TEMP_DIR_FOR_STORAGE
@@ -277,6 +298,12 @@ def run_Preprocessing(AnalysisParams,
             ROIsinkouts += [transROIfile[i][0] for i in range(no_subjects)]
             func2stdsinkouts = []
             func2stdsinkouts += [func2stdfile[i][0] for i in range(no_subjects)]
+            if not savePreprocessing:
+                folders = [opj(TEMP_DIR_FOR_STORAGE + '/%s'%RegistrationName, 
+                            folder) for folder in os.listdir(TEMP_DIR_FOR_STORAGE + '/%s'%RegistrationName)]
+                for folder in folders:
+                    if (ROI_REG_DATASINK !=folder) and (func2std_DATASINK!= folder):
+                        remove(folder)
             print('Registered ROI->func ROIs: ', ROIsinkouts)
             print('func2stdtransforms: ', func2stdsinkouts)
             return ProcessedFilesDIRADDRESSES, ROIsinkouts, func2stdsinkouts
@@ -416,6 +443,10 @@ def call_stat_Analysis_wt_grps(Files_for_stats_dict,
     print('Analysis Over.')
 
 
+
+
+
+
 def call_stat_Analysis_bw_grps(Files_for_stats_dict, 
                         combinations_reqd, 
                         destination, 
@@ -530,7 +561,7 @@ if __name__ == '__main__':
     OUTPUT_DIR = AnalysisParams['OutputInfo']['OutDirectory']
     Registration = AnalysisParams['Registration']
     TEMP_DIR_FOR_STORAGE = opj(OUTPUT_DIR, 'tmp')
-
+    save_Preprocessed_Files = AnalysisParams['OutputInfo']['Save preprocessed .feat']
 
     CorrROImapFiles = {}
     transformedROIsDict = {}
@@ -570,6 +601,7 @@ if __name__ == '__main__':
                 Preprocessed_Files, transformedROIs, func2stdtransforms = run_Preprocessing(AnalysisParams, 
                                                                             FunctionalFiles = FunctionalFiles_in_this_group, 
                                                                             StructuralFiles = StructuralFiles_in_this_group,
+                                                                            savePreprocessing = save_Preprocessed_Files,
                                                                             Group= i)
                 print('Preprocessed Files are: ', Preprocessed_Files)
                 CorrROImapFiles[ProcName] = Preprocessed_Files
@@ -580,6 +612,7 @@ if __name__ == '__main__':
                 Preprocessed_Files = run_Preprocessing(AnalysisParams, 
                                                     FunctionalFiles = FunctionalFiles_in_this_group, 
                                                     StructuralFiles = StructuralFiles_in_this_group,
+                                                    savePreprocessing = save_Preprocessed_Files,
                                                     Group= i)
                 print('Preprocessed Files are: ', Preprocessed_Files)
                 CorrROImapFiles[ProcName] = Preprocessed_Files
