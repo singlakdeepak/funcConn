@@ -25,9 +25,9 @@ def make_brain_back_from_npy(NumpyfileList,FileListNames,mask_file):
     maskData = maskData.astype(int)
     brain_indices = np.where(maskData==1)
     x_dim, y_dim, z_dim = maskData.shape
-    print(x_dim)
-    print(y_dim)
-    print(z_dim)
+    # print(x_dim)
+    # print(y_dim)
+    # print(z_dim)
     ROIs = NumpyfileList[0].shape[0]
     Brainimg = np.zeros((x_dim,y_dim,z_dim,ROIs),dtype = np.float32)
     print(maskData.shape)
