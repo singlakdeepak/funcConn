@@ -266,8 +266,8 @@ def run_Preprocessing(AnalysisParams,
         if FeatFiles==None:
             no_subjects = len(FunctionalFiles)
             datasinkouts_afterreg = []
-            ROI_REG_DATASINK = OUTPUT_DIR + '/tmp/%s/datasink_transformedROI/'%RegistrationName
-            func2std_DATASINK = OUTPUT_DIR + '/tmp/%s/datasink_func2std/'%RegistrationName
+            ROI_REG_DATASINK = OUTPUT_DIR + '/tmp/%s/datasink_transformedROI'%RegistrationName
+            func2std_DATASINK = OUTPUT_DIR + '/tmp/%s/datasink_func2std'%RegistrationName
             if StructuralFiles!=None:
                 Reg_WorkFlow = parallelPreproc.reg_workflow_with_Anat(no_subjects,
                                                             name = RegistrationName)
