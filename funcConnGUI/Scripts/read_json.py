@@ -286,11 +286,11 @@ def run_Preprocessing(AnalysisParams,
             func2std_results = []
             func2std_results += [each for each in os.listdir(func2std_DATASINK) if each.endswith('.json')]
 
-            with open(ROI_REG_DATASINK + ROIsink_results[0]) as JSON:
+            with open(opj(ROI_REG_DATASINK, ROIsink_results[0])) as JSON:
                 transROIfile = json.load(JSON)
                 transROIfile = transROIfile[0][1][0][1]
 
-            with open(func2std_DATASINK + func2std_results[0]) as JSON:
+            with open(opj(func2std_DATASINK, func2std_results[0])) as JSON:
                 func2stdfile = json.load(JSON)
                 func2stdfile = func2stdfile[0][1][0][1]
 
@@ -398,9 +398,7 @@ def call_stat_Analysis_wt_grps(Files_for_stats_dict,
                                 mask_file,
                                 applyFDR = True):
     total_groups = len(Files_for_stats_dict)
-    i = 0
-    if (total_groups>1): return
-    else:
+    for i in range(total_groups):
         NumpyFileList = []
         FileNamesForSaving = []
         ProcName = 'CorrCalc_group%s'%i
@@ -450,7 +448,8 @@ def call_stat_Analysis_wt_grps(Files_for_stats_dict,
 def call_stat_Analysis_bw_grps(Files_for_stats_dict, 
                         combinations_reqd, 
                         destination, 
-                        mask_file, 
+                        mask_file,
+                        Gr1grGr2= True, 
                         applyFDR = True):
     tell_combs = len(combinations_reqd)
     total_groups = len(Files_for_stats_dict)
@@ -470,7 +469,8 @@ def call_stat_Analysis_bw_grps(Files_for_stats_dict,
                                                                 Files_for_stats_dict[ProcName2],
                                                                 save_pval_in_log_fmt = False,
                                                                 equal_var= False, 
-                                                                applyFisher = True)
+                                                                applyFisher = True,
+                                                                Gr1grGr2= Gr1grGr2)
                 Tvals = ttest.convert_ma_to_np(Tvals)
                 np.save(opj(destination,'Tvals_group_{}_group_{}.npy'.format(
                                             previous,
@@ -480,8 +480,13 @@ def call_stat_Analysis_bw_grps(Files_for_stats_dict,
                 FileNamesForSaving.append(opj(destination,'Tvals_group_{}_group_{}.nii.gz'.format(
                                             previous,
                                             previous + i + 1)))
+                if Gr1grGr2: sign = 1
+                else: sign = -1
 
-
+                NumpyFileList.append((MeanGr1-MeanGr2)*sign)
+                FileNamesForSaving.append(opj(destination,'Corr_difference_group_{}_group_{}.nii.gz'.format(
+                                            previous,
+                                            previous + i + 1)))                
 
 
                 np.save(opj(destination,'Pvals_Normal_group_{}_group_{}.npy'.format(
@@ -535,8 +540,6 @@ def call_stat_Analysis_bw_grps(Files_for_stats_dict,
 if __name__ == '__main__':
 
     start = timeit.default_timer()
-    print(sys.executable)
-    print(os.path.abspath(json.__file__))
     JSONFile = str(sys.argv[1])
     # JSONFile = '/home1/ee3140506/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
     # JSONFile = '/home/deepak/Desktop/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
@@ -580,7 +583,6 @@ if __name__ == '__main__':
         mask_file = opj(TEMP_DIR_FOR_STORAGE,'mask_for_ttest_mask.nii.gz')
         print('Made mask for the ttest: %s/mask_for_ttest.nii.gz'%TEMP_DIR_FOR_STORAGE)
     else:
-        # mask_file = '/usr/local/fsl/data/standard/MNI152_T1_2mm_brain_mask.nii.gz'
         mask_file = AnalysisParams['UseMaskFile']
     
     if (ProcessingWay==0):
@@ -701,8 +703,11 @@ if __name__ == '__main__':
         # You can club the bw groups and wt groups correlations together 
         # because mean and std are already calculated in that case.
         if ((Ngroups==2)and doAnalysisbwGrps):
-            GR1grGr2 = AnalysisParams['Stats']['Gr1>Gr2']
-            call_stat_Analysis_bw_grps(Corr_calculated_Files,[1],OUTPUT_DIR, mask_file)
+            Gr1grGr2 = AnalysisParams['Stats']['Gr1>Gr2']
+            call_stat_Analysis_bw_grps(Corr_calculated_Files,[1],
+                                        OUTPUT_DIR, 
+                                        mask_file,
+                                        Gr1grGr2= Gr1grGr2)
         elif ((Ngroups > 2) and doAnalysisbwGrps):
             combinations = AnalysisParams['Stats']['Combinations']
             call_stat_Analysis_bw_grps(Corr_calculated_Files, 

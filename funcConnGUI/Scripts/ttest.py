@@ -54,10 +54,13 @@ def div0( a, b ):
         # c[ ~ np.isfinite( c )] = 0  # -inf inf NaN
     return c
 
-def convert_pvals_to_log_fmt(pvalues,Sample_mean_ArrayA = None, Sample_mean_ArrayB = None):
+def convert_pvals_to_log_fmt(pvalues, 
+                            sign = 1, 
+                            Sample_mean_ArrayA = None, 
+                            Sample_mean_ArrayB = None):
     if (Sample_mean_ArrayA is not None) and (Sample_mean_ArrayB is not None):
         with np.errstate(divide='ignore', invalid='ignore'):
-            c = (-1*np.log10(pvalues)*np.sign(Sample_mean_ArrayA - Sample_mean_ArrayB)) 
+            c = (-1*np.log10(pvalues)*np.sign((Sample_mean_ArrayA - Sample_mean_ArrayB)*sign)) 
         return c
     elif (Sample_mean_ArrayA is not None): 
         with np.errstate(divide='ignore', invalid='ignore'):
@@ -223,7 +226,7 @@ def ttest_1samp_ROIs_if_npy(ROICorrMaps,
 
 def _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
                 Sample_mean_ArrayB,Sample_var_ArrayB, n_subjectsB,
-                equal_var = True):
+                equal_var = True,sign = 1):
     if equal_var:
         # force df to be an array for masked division not to throw a warning
         df = ma.asanyarray(n_subjectsA + n_subjectsB - 2.0)
@@ -240,7 +243,7 @@ def _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
         denom = ma.sqrt(vn1 + vn2)
 
     with np.errstate(divide='ignore', invalid='ignore'):
-        ttest_ind = (Sample_mean_ArrayA - Sample_mean_ArrayB) / denom
+        ttest_ind = (Sample_mean_ArrayA - Sample_mean_ArrayB)*sign / denom
     pvalues = special.betainc(0.5*df, 0.5, df/(df + ttest_ind*ttest_ind)).reshape(ttest_ind.shape)
     
     # ttest_ind, pvalues = ma.filled(ttest_ind), ma.filled(pvalues)
@@ -293,7 +296,9 @@ def ttest_ind_samples(ROICorrMapsA, ROICorrMapsB, ROIAtlasmask,
 
 def ttest_ind_samples_if_npy(ROICorrMapsA, ROICorrMapsB, 
                             save_pval_in_log_fmt = True,
-                            equal_var = True, applyFisher = False):
+                            equal_var = True, 
+                            applyFisher = False,
+                            Gr1grGr2 = True):
     '''
     Modified from https://docs.scipy.org/doc/scipy-0.19.1/reference/generated/scipy.stats.ttest_ind.html ,
     https://github.com/scipy/scipy/blob/v0.19.1/scipy/stats/stats.py#L3950-L4072
@@ -301,7 +306,10 @@ def ttest_ind_samples_if_npy(ROICorrMapsA, ROICorrMapsB,
     Since it didn't support if the data is large and everything can't be loaded at once. So,
     such modification has been made.
     '''
-
+    if Gr1grGr2:
+        sign = 1
+    else:
+        sign = -1
     n_subjectsA = len(ROICorrMapsA)
     n_subjectsB = len(ROICorrMapsB)
     assert (n_subjectsA > 0)
@@ -318,19 +326,20 @@ def ttest_ind_samples_if_npy(ROICorrMapsA, ROICorrMapsB,
     del(Sample_std_ArrayB)
     # pvalues = stats.t.sf(np.abs(ttest_ind), df)*2
     if save_pval_in_log_fmt:
+
         ttest, pvals = _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
                 Sample_mean_ArrayB, Sample_var_ArrayB, n_subjectsB,
-                equal_var = equal_var)
+                equal_var = equal_var, sign = sign)
         return Sample_mean_ArrayA, \
                 Sample_mean_ArrayB, \
-                (ttest, convert_pvals_to_log_fmt(pvals,
+                (ttest, convert_pvals_to_log_fmt(pvals, sign = sign,
                                             Sample_mean_ArrayA = Sample_mean_ArrayA,
                                             Sample_mean_ArrayB = Sample_mean_ArrayB))
     return  Sample_mean_ArrayA, \
                 Sample_mean_ArrayB, \
                 _ttest_ind(Sample_mean_ArrayA, Sample_var_ArrayA, n_subjectsA,
                 Sample_mean_ArrayB, Sample_var_ArrayB, n_subjectsB,
-                equal_var = equal_var)
+                equal_var = equal_var, sign = sign)
 
 
 
