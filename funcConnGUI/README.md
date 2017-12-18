@@ -14,13 +14,17 @@
     * 2 sample t-test
     * Paired t-test
 
-### Preprocessing of fMRI data
-* User can also preprocess the data accordingly. It also has options for proceeding without preprocessing or if it has been done already in FSL. By the way, here the GUI contains the basic preprocessing pipeline with the methods:
-    * Slice Timing Correction
-    * Motion Correction
+## Preprocessing of fMRI data
+A user can also preprocess the data if he wants. All the preprocessing methods have been implemented using **NiPype**: a pipeline for neuroimaging analysis. Nipype creates parallel workflows for preprocessing in different subjects. It also has options for proceeding without preprocessing or if it has been done already in FSL. By the way, here the GUI contains the basic preprocessing pipeline with the methods:
+
+### Slice Time Correction
+Ascending, Descending or Interleaved order. You can also provide a Slice Time Correction file in the same format as that of FSL. 
+
+### Motion Correction
+This option corrects the motion of the brain during the scan and calls FSL's MCFLIRT command at the backend.
     * BET Brain Extraction
     * Spatial Smoothing using SUSAN
     * Temporal filtering with both High Pass as well as low pass or BandPass
     * Intensity Normalization
-* All the Preprocessing methods have been implemented using **NiPype**:Pipeline for Neuroimaging analysis.
+ 
 
