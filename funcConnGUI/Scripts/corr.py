@@ -161,6 +161,7 @@ def pearsonr_with_roi_mean(in_file, atlas_file, mask_file):
         coff_matrix = np.dot(mult1, mult2.T)/num_volumes
 
         np.save(fc_file_name, coff_matrix)
+        print('Saved file in : %s'%coff_matrix_file)
 
         Brainimg = np.zeros((x_dim,y_dim,z_dim,num_ROIs),dtype = np.float32)
         for i in range(num_ROIs):
@@ -170,8 +171,7 @@ def pearsonr_with_roi_mean(in_file, atlas_file, mask_file):
         coff_matrix_file_in_nii = opj(os.getcwd(),fc_file_nii)
         print('Saved nii file in : %s'%coff_matrix_file_in_nii)
         nib.save(CoffBrain, coff_matrix_file_in_nii)        
-        print('Saved file in : %s'%coff_matrix_file)
-    return coff_matrix_file
+    return coff_matrix_file, coff_matrix_file_in_nii
 
 
 
