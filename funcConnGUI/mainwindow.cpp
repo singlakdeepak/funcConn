@@ -43,6 +43,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->radioButton_G2_gr_G1->hide();
     ui->radioButton_NormFischer->setChecked(true);
     ui->radioButton_reg_n->setChecked(true);
+    ui->radioButton_Ank_Corr->setChecked(true);
+
     ui->radioButton_SepFDRcorrect->setChecked(true);
     ui->lineEdit_highpass->hide();
     ui->lineEdit_lowpass->hide();
@@ -587,6 +589,7 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
 
     bool doStats = true;
     json["doStats"] = doStats;
+    json["CorrFunction"] = ui->radioButton_Ank_Corr->isChecked();
     if (doStats){
         QJsonObject StatsObj;
         writeStats(StatsObj);
