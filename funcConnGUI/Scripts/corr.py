@@ -252,7 +252,8 @@ def build_correlation_wf(Registration = True,name = 'pearsonCorrcalc'):
                                                                    'atlas_file',
                                                                    'mask_file']),
                             name='inputspec')
-        outputnode = Node(interface=util.IdentityInterface(fields=['pearsonCorr_files']),
+        outputnode = Node(interface=util.IdentityInterface(fields=['pearsonCorr_files', 
+                                                                    'pearsonCorr_files_in_nii']),
                              name='outputspec')
         coff_matrix = MapNode(util.Function(function=pearsonr_with_roi_mean, 
                                     input_names=['in_file','atlas_file','mask_file'],
@@ -266,6 +267,7 @@ def build_correlation_wf(Registration = True,name = 'pearsonCorrcalc'):
         corr_wf.connect(inputnode, 'mask_file', coff_matrix, 'mask_file')
 
         corr_wf.connect(coff_matrix,'coff_matrix_file', outputnode, 'pearsonCorr_files')
+        corr_wf.connect(coff_matrix, 'coff_matrix_file_in_nii', outputnode, 'pearsonCorr_files_in_nii')
         corr_wf.connect(outputnode, 'pearsonCorr_files', datasink, 'out_file')
         # coff_matrix = MapNode(util.Function(function=pearsonr_with_roi_mean_w_reg, 
         #                             input_names=['in_file','atlas_file'],
