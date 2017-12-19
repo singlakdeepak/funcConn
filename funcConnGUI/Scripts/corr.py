@@ -247,43 +247,43 @@ def build_correlation_wf(Registration = True,name = 'pearsonCorrcalc'):
                             name='inputspec')
         outputnode = Node(interface=util.IdentityInterface(fields=['pearsonCorr_files']),
                              name='outputspec')
-        # coff_matrix = MapNode(util.Function(function=pearsonr_with_roi_mean, 
-        #                             input_names=['in_file','atlas_file','mask_file'],
-        #                             output_names=['coff_matrix_file']),
-        #                   iterfield=['in_file'],
-        #                   name = 'coff_matrix')    
-        # datasink = Node(interface=DataSink(), name='datasink')
-
-        # corr_wf.connect(inputnode, 'in_files', coff_matrix, 'in_file')
-        # corr_wf.connect(inputnode, 'atlas_file', coff_matrix, 'atlas_file')
-        # corr_wf.connect(inputnode, 'mask_file', coff_matrix, 'mask_file')
-
-        # corr_wf.connect(coff_matrix,'coff_matrix_file', outputnode, 'pearsonCorr_files')
-        # corr_wf.connect(outputnode, 'pearsonCorr_files', datasink, 'out_file')
-        coff_matrix = MapNode(util.Function(function=pearsonr_with_roi_mean_w_reg, 
-                                    input_names=['in_file','atlas_file'],
+        coff_matrix = MapNode(util.Function(function=pearsonr_with_roi_mean, 
+                                    input_names=['in_file','atlas_file','mask_file'],
                                     output_names=['coff_matrix_file']),
                           iterfield=['in_file'],
-                          name = 'coff_matrix')
-        maskCorrFile = MapNode(interface=fsl.ImageMaths(suffix='_masked',
-                                               op_string='-mas'),
-                      iterfield=['in_file'],
-                      name = 'maskWarpFile')
-        make_npy_from_Corr = MapNode(util.Function(function=make_npy_from_CorrFile, 
-                                    input_names=['Corr_file','mask_file'],
-                                    output_names=['coff_matrix_file']),
-                          iterfield=['Corr_file'],
-                          name = 'coff_matrix_in_npy')
+                          name = 'coff_matrix')    
         datasink = Node(interface=DataSink(), name='datasink')
 
         corr_wf.connect(inputnode, 'in_files', coff_matrix, 'in_file')
         corr_wf.connect(inputnode, 'atlas_file', coff_matrix, 'atlas_file')
-        corr_wf.connect(coff_matrix,'coff_matrix_file', maskCorrFile, 'in_file')
-        corr_wf.connect(inputnode, 'mask_file', maskCorrFile, 'in_file2')
+        corr_wf.connect(inputnode, 'mask_file', coff_matrix, 'mask_file')
 
-        corr_wf.connect(maskCorrFile,'out_file', make_npy_from_Corr, 'Corr_file')
-        corr_wf.connect(inputnode,'mask_file', make_npy_from_Corr, 'mask_file')
-        corr_wf.connect(make_npy_from_Corr, 'coff_matrix_file', outputnode, 'pearsonCorr_files')
+        corr_wf.connect(coff_matrix,'coff_matrix_file', outputnode, 'pearsonCorr_files')
         corr_wf.connect(outputnode, 'pearsonCorr_files', datasink, 'out_file')
+        # coff_matrix = MapNode(util.Function(function=pearsonr_with_roi_mean_w_reg, 
+        #                             input_names=['in_file','atlas_file'],
+        #                             output_names=['coff_matrix_file']),
+        #                   iterfield=['in_file'],
+        #                   name = 'coff_matrix')
+        # maskCorrFile = MapNode(interface=fsl.ImageMaths(suffix='_masked',
+        #                                        op_string='-mas'),
+        #               iterfield=['in_file'],
+        #               name = 'maskWarpFile')
+        # make_npy_from_Corr = MapNode(util.Function(function=make_npy_from_CorrFile, 
+        #                             input_names=['Corr_file','mask_file'],
+        #                             output_names=['coff_matrix_file']),
+        #                   iterfield=['Corr_file'],
+        #                   name = 'coff_matrix_in_npy')
+        # datasink = Node(interface=DataSink(), name='datasink')
+
+        # corr_wf.connect(inputnode, 'in_files', coff_matrix, 'in_file')
+        # corr_wf.connect(inputnode, 'atlas_file', coff_matrix, 'atlas_file')
+        # corr_wf.connect(coff_matrix,'coff_matrix_file', maskCorrFile, 'in_file')
+        # corr_wf.connect(inputnode, 'mask_file', maskCorrFile, 'in_file2')
+
+        # corr_wf.connect(maskCorrFile,'out_file', make_npy_from_Corr, 'Corr_file')
+        # corr_wf.connect(inputnode,'mask_file', make_npy_from_Corr, 'mask_file')
+        # corr_wf.connect(make_npy_from_Corr, 'coff_matrix_file', outputnode, 'pearsonCorr_files')
+        # corr_wf.connect(outputnode, 'pearsonCorr_files', datasink, 'out_file')
 
     return corr_wf
