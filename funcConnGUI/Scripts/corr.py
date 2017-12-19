@@ -256,11 +256,11 @@ def build_correlation_wf(Registration = True,name = 'pearsonCorrcalc'):
                              name='outputspec')
         coff_matrix = MapNode(util.Function(function=pearsonr_with_roi_mean, 
                                     input_names=['in_file','atlas_file','mask_file'],
-                                    output_names=['coff_matrix_file']),
+                                    output_names=['coff_matrix_file','coff_matrix_file_in_nii']),
                           iterfield=['in_file'],
                           name = 'coff_matrix')    
         datasink = Node(interface=DataSink(), name='datasink')
-
+        # selectfile = MapNode(interface=util.Select(index=[0]), iterfield = ['inlist'],name='select')
         corr_wf.connect(inputnode, 'in_files', coff_matrix, 'in_file')
         corr_wf.connect(inputnode, 'atlas_file', coff_matrix, 'atlas_file')
         corr_wf.connect(inputnode, 'mask_file', coff_matrix, 'mask_file')
