@@ -113,7 +113,7 @@ def pearsonr_with_roi_mean(in_file, atlas_file, mask_file):
         print('Total Number of Parcellations = ',num_ROIs)
         brain_data = nib.load(in_file)
         brain = brain_data.get_data()
-
+        brain_affine = brain_data.affine
         x_dim, y_dim, z_dim, num_volumes = brain.shape
         
         # Initialize a matrix of ROI time series and voxel time series
@@ -123,8 +123,8 @@ def pearsonr_with_roi_mean(in_file, atlas_file, mask_file):
 
         mask_Obj = nib.load(mask_file)
         mask_data = mask_Obj.get_data()
-        brain_voxels,_,_ = np.where(mask_data==1)
-        num_brain_voxels = len(brain_voxels)
+        brain_voxels_X,brain_voxels_Y,brain_voxels_Z = np.where(mask_data==1)
+        num_brain_voxels = len(brain_voxels_X)
 
         voxel_matrix = np.zeros((num_brain_voxels, num_volumes))
         # Fill up the voxel_matrix 
@@ -161,8 +161,15 @@ def pearsonr_with_roi_mean(in_file, atlas_file, mask_file):
         coff_matrix = np.dot(mult1, mult2.T)/num_volumes
 
         np.save(fc_file_name, coff_matrix)
-        
 
+        Brainimg = np.zeros((x_dim,y_dim,z_dim,num_ROIs),dtype = np.float32)
+        for i in range(num_ROIs):
+            Brainimg[brain_voxels_X,brain_voxels_Y,brain_voxels_Z,i] = coff_matrix[i] 
+        CoffBrain = nib.Nifti1Image(Brainimg, affine = brain_affine)
+        fc_file_nii = sub_id + '_fc_map.nii.gz'
+        coff_matrix_file_in_nii = opj(os.getcwd(),fc_file_nii)
+        print('Saved nii file in : %s'%coff_matrix_file_in_nii)
+        nib.save(CoffBrain, coff_matrix_file_in_nii)        
         print('Saved file in : %s'%coff_matrix_file)
     return coff_matrix_file
 
