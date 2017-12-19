@@ -616,14 +616,7 @@ void avg_roi_time_corr(){
 			temp2 += temp*temp*g[3];
 		  }
 		  
-			if(roi_image[(z*g[1]+y)*g[0]+x]>0){
-				Valid tv ;
-				tv.x = x;
-				tv.y = y;
-				tv.z = z;
-				// int temp = valid.size();
-				valid.push_back(tv);
-		  }
+			
 		  // else{
 				// int temp = -1;
 				
@@ -632,6 +625,15 @@ void avg_roi_time_corr(){
 				  
 		  EX[ (x*g[1] +y)*g[2] + z] = temp;
 		  EX_sq[ (x*g[1] +y)*g[2] + z] = sqrt(temp2- temp*temp);
+
+		  if(EX_sq[ (x*g[1] +y)*g[2] + z] > 1e-2){
+				Valid tv ;
+				tv.x = x;
+				tv.y = y;
+				tv.z = z;
+				// int temp = valid.size();
+				valid.push_back(tv);
+		  }
 
 		}
 	  } 
@@ -651,7 +653,7 @@ void avg_roi_time_corr(){
   # pragma omp parallel for
   for (int i = 0; i < valid.size(); ++i)
   {	
-  	int roi_no = roi_image[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z];
+  	int roi_no = roi_image[(valid[i].z*g[1] +valid[i].y)*g[0] + valid[i].x];
   	if(roi_no==0)
   		continue;
   	roi_tot[roi_no-1]++;
@@ -683,8 +685,8 @@ void avg_roi_time_corr(){
   {	
   		double temp  = 0,temp2 = 0;
   		for (int t = 0; t < g[3]; ++t){
-  			roi_avg[i*ROI_MAX+t]/=roi_tot[i];
-  			temp += (double)roi_avg[i*ROI_MAX+t]/g[3] ;
+  			roi_avg[i*g[3]+t]/=roi_tot[i];
+  			temp += (double)roi_avg[i*g[3]+t]/g[3] ;
 			temp2 += temp*temp*g[3];
   		}
 
@@ -692,23 +694,23 @@ void avg_roi_time_corr(){
   		roi_var[i] = sqrt(temp2- temp*temp);
 
   }
-  # pragma omp parallel for
-  for (int i = 0; i < ROI_MAX; ++i)
-  {	
-  		if(roi_var[i]!=0){
-  			for (int t = 0; t < g[3]; ++t){
-  				roi_avg[i*ROI_MAX+t]=(roi_avg[i*ROI_MAX+t]-roi_mean[i])/roi_var[i];
-  				}
-  		}else{
-  			for (int t = 0; t < g[3]; ++t){
-  				roi_avg[i*ROI_MAX+t] = 0;
-  			}
+  // # pragma omp parallel for
+  // for (int i = 0; i < ROI_MAX; ++i)
+  // {	
+  // 		if(roi_var[i]!=0){
+  // 			for (int t = 0; t < g[3]; ++t){
+  // 				roi_avg[i*g[3]+t]=(roi_avg[i*g[3]+t]-roi_mean[i])/roi_var[i];
+  // 				}
+  // 		}else{
+  // 			for (int t = 0; t < g[3]; ++t){
+  // 				roi_avg[i*g[3]+t] = 0;
+  // 			}
 
-  		}
+  // 		}
 
   		
 
-  }
+  // }
 
 
   free(EX_sq);
@@ -875,7 +877,7 @@ void avg_corr_roi(){
   double *EX_sq = (double *) malloc( sizeof(double) * g[0] * g[1]* g[2] ) ;
   
 	//#CALCULATING THE MEAN AND STD DEVIATION OF DATA AND CREATING A VALID VOXEL MAPPINGS ################################
-  
+ std::cout<<":::: mean std start ::::"<<std::endl;
   for (int z = 0; z < g[2]; ++z){
 	for (int y = 0; y < g[1]; ++y)
 	  {
@@ -889,28 +891,26 @@ void avg_corr_roi(){
 			temp2 += temp*temp*g[3];
 		  }
 		  
-			if(roi_image[(z*g[1]+y)*g[0]+x]>0){
+			
+				  
+		  EX[ (x*g[1] +y)*g[2] + z] = temp;
+		  EX_sq[ (x*g[1] +y)*g[2] + z] = sqrt(temp2- temp*temp);
+
+		  if(EX_sq[ (x*g[1] +y)*g[2] + z]> 1e-2){
 				Valid tv ;
 				tv.x = x;
 				tv.y = y;
 				tv.z = z;
-				int temp = valid.size();
+				// int temp = valid.size();
 				valid.push_back(tv);
-		  }else{
-				int temp = -1;
-				
-				
 		  }
-				  
-		  EX[ (x*g[1] +y)*g[2] + z] = temp;
-		  EX_sq[ (x*g[1] +y)*g[2] + z] = sqrt(temp2- temp*temp);
 
 		}
 	  } 
 
   }
 
-
+ std::cout<<":::: mean std end ::::"<<std::endl;
 
 	//################## MAKING A MATRIX OF NORMALIZED DATA###########################################
   int valid_size = valid.size();
@@ -922,17 +922,17 @@ void avg_corr_roi(){
   double * roi_var = (double * ) calloc(ROI_MAX, sizeof(double));
   double * roi_tot = (double * ) calloc(ROI_MAX, sizeof(double));
 	
-  # pragma omp parallel for
+ std::cout<<":::: init start ::::"<<std::endl;
+ # pragma omp parallel for
   for (int i = 0; i < valid.size(); ++i)
   {	
-  	int roi_no = roi_image[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z];
-  	if(roi_no==0)
-  		continue;
-  	roi_tot[roi_no-1]++;
+  	int roi_no = roi_image[(valid[i].z*g[1] +valid[i].y)*g[2] + valid[i].x];
+  	if(roi_no!=0)
+  	  	roi_tot[roi_no-1]++;
 	for (int t = 0; t < g[3]; ++t){
 		double currentdev = EX_sq[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z];
 		double tempNormdata;
-		if (currentdev == 0){
+		if (currentdev <= 1e-2){
 			tempNormdata = 0;
 			image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] = tempNormdata;
 			Valid_matrix[i*g[3]+t] = tempNormdata;
@@ -940,6 +940,7 @@ void avg_corr_roi(){
 		}
 		else{
 			tempNormdata = (double)(image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] - EX[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z])/currentdev;
+	  		if(roi_no!=0)
 	  		roi_avg[(roi_no-1)*g[3]+t ] += (double)(image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] - EX[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z]);
 	  		image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] = tempNormdata;
 	  		Valid_matrix[i*g[3]+t] = tempNormdata;
@@ -947,8 +948,8 @@ void avg_corr_roi(){
 		}
 
 	}
-
-	roi_coeff[(roi_no-1)*valid_size+i]=EX_sq[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z];
+	if(roi_no!=0)
+		roi_coeff[(roi_no-1)*valid_size+i]=EX_sq[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z];
 
   }
 
@@ -957,8 +958,8 @@ void avg_corr_roi(){
   {	
   		double temp  = 0,temp2 = 0;
   		for (int t = 0; t < g[3]; ++t){
-  			roi_avg[i*ROI_MAX+t]/=roi_tot[i];
-  			temp += (double)roi_avg[i*ROI_MAX+t]/g[3] ;
+  			roi_avg[i*g[3]+t]/=roi_tot[i];
+  			temp += (double)roi_avg[i*g[3]+t]/g[3] ;
 			temp2 += temp*temp*g[3];
   		}
 
@@ -970,11 +971,13 @@ void avg_corr_roi(){
   # pragma omp parallel for
   for (int i = 0; i < valid.size(); ++i)
   {	
-  	int roi_no = roi_image[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z];
+  	int roi_no = roi_image[(valid[i].z*g[1] +valid[i].y)*g[2] + valid[i].x];
   	if(roi_no==0)
   		continue;
   	roi_coeff[(roi_no-1)*valid_size+i]/=roi_var[roi_no];
   }
+
+   std::cout<<":::: init end ::::"<<std::endl;
 
   free(EX_sq);
   // free(roi_var);
@@ -988,8 +991,10 @@ void avg_corr_roi(){
 	free(EX);
 	int dime = g[3];
 	float timeseries = 1/(float)dime;
+	 std::cout<<":::: blas start ::::"<<std::endl;
 	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,ROI_MAX,dime,valid_size,timeseries,roi_coeff,valid_size,Valid_matrix,dime,0.0,roi_result_temp,dime);
 	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasTrans,ROI_MAX,valid_size,dime,1.0,roi_result_temp,dime,Valid_matrix,dime,0.0,roi_result,valid_size);
+	 std::cout<<":::: blas end ::::"<<std::endl;
 	// int n =  8192;
 	// double * roi_chunk = (double * )malloc( sizeof(double)*ROI_MAX*n );
 	// double * roi_chunk2 = (double * )malloc( sizeof(double)*ROI_MAX*n );
@@ -1105,6 +1110,7 @@ void avg_corr_roi(){
 	g_copy.dim[3] = ROI_MAX;
 	image_data_cpy.resize(g_copy);
 
+ std::cout<<":::: output start ::::"<<std::endl;
 	#pragma omp parallel for collapse(3)
 	for (int x = 0; x < g[0]; ++x)
 	  for (int y = 0; y < g[1]; ++y)
@@ -1127,6 +1133,7 @@ void avg_corr_roi(){
 	std::string filename("avg_roi_avg_time_series.nii");
 	filename = ofname +"/"+ filename;
 	nifti_parser2.save_to_file(filename.c_str());
+	 std::cout<<":::: output end  ::::"<<std::endl;
 }
 
 void correl()
@@ -1264,8 +1271,7 @@ void showhelpinfo()
   std::cout<<"\t -i\t\t filename of the input volume \n";
   std::cout<<"\t -o \t\t project name  \n ";
   std::cout<<" one of the arguments must be present \n";
-  std::cout<<"\t -r <roi_filename> <N>\t\t \n";
-  std::cout<<"\t\t N \t\t x-coordinate for seed (compulosry in -s mode if -r options not there)\n";
+  std::cout<<"\t -r <roi_filename> <N>\t\t filename of the volume containg the desired ROI \n";
   std::cout<<"\t -R <roi_filename> <N> \t\t filename of the volume containg the desired ROI \n";
   std::cout<<"\t -s x y z  \t\t for seed to all voxel mode(no argument) \n";
   std::cout<<"\t\t x \t\t x-coordinate for seed (compulosry in -s mode if -r options not there)\n";
