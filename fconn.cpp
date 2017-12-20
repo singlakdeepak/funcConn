@@ -1,8 +1,15 @@
-extern "C" {
+#ifdef BUILD1
+    extern "C" {
 
-#include <cblas.h>
+		#include <cblas.h>
 
-}
+	}
+#else
+    #include "mkl.h"
+    #include "mkl_cblas.h"
+#endif
+
+
 #include <omp.h>
 #include <iostream>
 #include <unistd.h>
@@ -591,6 +598,9 @@ void all_pair_corr(){
 	long long valid_size = valid.size();
 	no_of_oper = 5*(g[0]*g[1]*g[2]*g[3])+(g[0]*g[1]*g[2]) + valid_size*valid_size*2*g[3];
 	//std::cout<<"Time taken:  for CORRELATION "<< timeTk<<std::endl;
+	std::cout<<"NO OF OPER :"<<no_of_oper<<std::endl;
+	std::cout<<"time taken :"<<time_taken<<std::endl;
+
 }
 
 
@@ -608,9 +618,14 @@ void avg_roi_time_corr(){
   if(nifti_parser.load_from_file(ipfilename));
 	  nifti_parser >> image_data;
 
-	std::string cmd = "gzip ";
-  	cmd+=ipfilename;
-  	system(cmd.c_str());
+	try{  
+		std::string cmd = "gzip ";
+	  	cmd+=ipfilename;
+	  	system(cmd.c_str());
+	}catch(...){
+
+			std::cout<<"Gzip problem caught"<<std::endl;
+	}
 	std::cout<<ipfilename<<std::endl;
 
 	// LOADING THE ROI
@@ -625,10 +640,15 @@ void avg_roi_time_corr(){
 	//CHECK IF THE GEOMETRY OF THE MASK AND IMAGE IS SAME
    	g_roi = roi_image.geometry();
    	
-   	cmd = "gzip ";
-  	cmd+=roifname;
-  	system(cmd.c_str());
-  	
+   	try{
+	   	std::string cmd = "gzip ";
+	  	cmd+=roifname;
+	  	system(cmd.c_str());
+  	}catch(...){
+
+			std::cout<<"Gzip problem caught"<<std::endl;
+	}
+
   	if(g_roi[0]!=g[0]||g_roi[1]!=g[1]||g_roi[2]!=g[2]){
   		std::cout<<":::: ERROR INVALID MASK ::::"<<std::endl;
   		return;
@@ -642,9 +662,16 @@ void avg_roi_time_corr(){
 		//CHECK IF THE GEOMETRY OF THE MASK AND IMAGE IS SAME
 	  if(mask){
 	  	g_mask = mask_image.geometry();
-	  	cmd = "gzip ";
-  		cmd+=maskfilename;
-  		system(cmd.c_str());
+	  	
+	  	try{
+		  	std::string cmd = "gzip ";
+	  		cmd+=maskfilename;
+	  		system(cmd.c_str());
+	  	}catch(...){
+
+			std::cout<<"Gzip problem caught"<<std::endl;
+		}
+
 	  	if(g_mask[0]!=g[0]||g_mask[1]!=g[1]||g_mask[2]!=g[2]){
 	  		std::cout<<":::: ERROR INVALID MASK ::::"<<std::endl;
 	  		return;
@@ -850,9 +877,14 @@ void avg_corr_roi(){
   if(nifti_parser.load_from_file(ipfilename));
 	  nifti_parser >> image_data;
 
-	std::string cmd = "gzip ";
-  	cmd+=ipfilename;
-  	system(cmd.c_str());
+	try{
+		std::string cmd = "gzip ";
+	  	cmd+=ipfilename;
+	  	system(cmd.c_str());
+	}catch(...){
+
+			std::cout<<"Gzip problem caught"<<std::endl;
+	}
 	//std::cout<<ipfilename<<std::endl;
 
 	// LOADING THE ROI
@@ -867,10 +899,14 @@ void avg_corr_roi(){
 	//CHECK IF THE GEOMETRY OF THE MASK AND IMAGE IS SAME
    	g_roi = roi_image.geometry();
    	
-   	cmd = "gzip ";
-  	cmd+=roifname;
-  	system(cmd.c_str());
-  	
+   	try{
+	   	std::string cmd = "gzip ";
+	  	cmd+=roifname;
+	  	system(cmd.c_str());
+  	}catch(...){
+
+			std::cout<<"Gzip problem caught"<<std::endl;
+	}
   	if(g_roi[0]!=g[0]||g_roi[1]!=g[1]||g_roi[2]!=g[2]){
   		std::cout<<":::: ERROR INVALID MASK ::::"<<std::endl;
   		return;
@@ -884,9 +920,14 @@ void avg_corr_roi(){
 		//CHECK IF THE GEOMETRY OF THE MASK AND IMAGE IS SAME
 	  if(mask){
 	  	g_mask = mask_image.geometry();
-	  	cmd = "gzip ";
-  		cmd+=maskfilename;
-  		system(cmd.c_str());
+		try{ 
+		  	std::string cmd = "gzip ";
+	  		cmd+=maskfilename;
+	  		system(cmd.c_str());
+	  	}catch(...){
+
+			std::cout<<"Gzip problem caught"<<std::endl;
+		}
 	  	if(g_mask[0]!=g[0]||g_mask[1]!=g[1]||g_mask[2]!=g[2]){
 	  		std::cout<<":::: ERROR INVALID MASK ::::"<<std::endl;
 	  		return;
@@ -1121,11 +1162,17 @@ void getattributes(int argc,char *argv[])
 		i++;
 		ipfilename = argv[i];
 		if(ipfilename.find(".gz")!=std::string::npos){
-			gzip = true;
-			std::string command = "gunzip ";
-			command += ipfilename;
-			system(command.c_str());
-			ipfilename = ipfilename.substr(0,(ipfilename.length()-3));
+			try
+			{
+				gzip = true;
+				std::string command = "gunzip ";
+				command += ipfilename;
+				system(command.c_str());
+				ipfilename = ipfilename.substr(0,(ipfilename.length()-3));
+			}catch(...){
+
+				std::cout<<"Gunzip problem caught"<<std::endl;
+			}
 		}
 
 		// if(ipfilename.find(".dcm")!=std::string::npos)
@@ -1138,11 +1185,16 @@ void getattributes(int argc,char *argv[])
 		i++;
 		roifname = argv[i];
 		if(roifname.find(".gz")!=std::string::npos){
-			gzip = true;
-			std::string command = "gunzip ";
-			command += roifname;
-			system(command.c_str());
-			roifname = roifname.substr(0,(roifname.length()-3));
+			try{
+				gzip = true;
+				std::string command = "gunzip ";
+				command += roifname;
+				system(command.c_str());
+				roifname = roifname.substr(0,(roifname.length()-3));
+			}catch(...){
+
+				std::cout<<"Gunzip problem caught"<<std::endl;
+			}
 		}
 		i++;
 		ROI_MAX = std::stoi(argv[i]);
@@ -1153,11 +1205,16 @@ void getattributes(int argc,char *argv[])
 		i++;
 		roifname = argv[i];
 		if(roifname.find(".gz")!=std::string::npos){
-			gzip = true;
-			std::string command = "gunzip ";
-			command += roifname;
-			system(command.c_str());
-			roifname = roifname.substr(0,(roifname.length()-3));
+			try{
+				gzip = true;
+				std::string command = "gunzip ";
+				command += roifname;
+				system(command.c_str());
+				roifname = roifname.substr(0,(roifname.length()-3));
+			}catch(...){
+
+				std::cout<<"Gunzip problem caught"<<std::endl;
+			}
 		}
 		i++;
 		ROI_MAX = std::stoi(argv[i]);
@@ -1191,11 +1248,16 @@ void getattributes(int argc,char *argv[])
 	  			i++;
 	  			maskfilename = argv[i];
 				if(maskfilename.find(".gz")!=std::string::npos){
-					gzip = true;
-					std::string command = "gunzip ";
-					command += maskfilename;
-					system(command.c_str());
-					maskfilename = maskfilename.substr(0,(maskfilename.length()-3));
+					try{
+						gzip = true;
+						std::string command = "gunzip ";
+						command += maskfilename;
+						system(command.c_str());
+						maskfilename = maskfilename.substr(0,(maskfilename.length()-3));
+					}catch(...){
+
+						std::cout<<"Gunzip problem caught"<<std::endl;
+					}
 				}
 	  			break;
 	  case 'f': flops = true;
@@ -1204,6 +1266,7 @@ void getattributes(int argc,char *argv[])
 
 	  default:
 				showhelpinfo();
+				exit(0);
 	  break;
 	}
 
