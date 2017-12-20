@@ -330,12 +330,15 @@ def run_Preprocessing(AnalysisParams,
 def call_corr_wf_with_reg(Files_for_corr_dict, atlas_files_dict,
                     func2stdDict,
                      mask_file, reference,
-                     TEMP_DIR_FOR_STORAGE):
+                     TEMP_DIR_FOR_STORAGE, 
+                     use_Ankita_Function = False):
     Corr_calculated_Files = {}
     for group, files in Files_for_corr_dict.items():
         datasink_dest = TEMP_DIR_FOR_STORAGE + '/' + group + '/datasink/'
 
-        corr_wf = corr.build_correlation_wf(Registration = True,name = group)
+        corr_wf = corr.build_correlation_wf(Registration = True,
+                                use_Ankita_Function= use_Ankita_Function, 
+                                name = group)
         corr_wf.inputs.inputspec.in_files = files
 
         # print(atlas_files_dict[group])
@@ -362,12 +365,18 @@ def call_corr_wf_with_reg(Files_for_corr_dict, atlas_files_dict,
         Corr_calculated_Files[group] = datasinkouts
     return Corr_calculated_Files
 
-def call_corr_wf(Files_for_corr_dict, atlas_file, mask_file, TEMP_DIR_FOR_STORAGE):
+def call_corr_wf(Files_for_corr_dict, 
+            atlas_file, 
+            mask_file, 
+            TEMP_DIR_FOR_STORAGE,
+            use_Ankita_Function = False):
     Corr_calculated_Files = {}
     for group, files in Files_for_corr_dict.items():
         datasink_dest = TEMP_DIR_FOR_STORAGE + '/' + group + '/datasink/'
 
-        corr_wf = corr.build_correlation_wf(Registration = False, name = group)
+        corr_wf = corr.build_correlation_wf(Registration = False, 
+                                            use_Ankita_Function= use_Ankita_Function,
+                                            name = group)
         corr_wf.inputs.inputspec.in_files = files
         corr_wf.inputs.inputspec.atlas_file = atlas_file
         corr_wf.inputs.inputspec.mask_file = mask_file
@@ -675,12 +684,16 @@ if __name__ == '__main__':
                                                 func2stdDict,
                                                 mask_file,
                                                 ReferenceFile,
-                                                TEMP_DIR_FOR_STORAGE)
+                                                TEMP_DIR_FOR_STORAGE,
+                                                use_Ankita_Function = 
+                                                    AnalysisParams['CorrFunction'])
         else:
             Corr_calculated_Files = call_corr_wf(CorrROImapFiles, 
                                                 ROIFile,
                                                 mask_file, 
-                                                TEMP_DIR_FOR_STORAGE)
+                                                TEMP_DIR_FOR_STORAGE,
+                                                use_Ankita_Function = 
+                                                    AnalysisParams['CorrFunction'])
         # if not savePreprocessing:
         #     folders = [opj(TEMP_DIR_FOR_STORAGE + '/%s'%RegistrationName, 
         #                 folder) for folder in os.listdir(TEMP_DIR_FOR_STORAGE + '/%s'%RegistrationName)]
