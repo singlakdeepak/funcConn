@@ -31,7 +31,7 @@ int thresh=0;
 bool seedcmp = false,all=false,flops = false;
 int seedx ,seedy,seedz;
 int ROI_MAX;
-long no_of_oper=0;
+long long no_of_oper=0;
 double time_taken =0.0;
 
 
@@ -588,7 +588,8 @@ void all_pair_corr(){
 	}
 
 
-	no_of_oper = 5*(g[0]*g[1]*g[2]*g[3])+(g[0]*g[1]*g[2]) + valid.size()*valid.size()*2*g[3];
+	long long valid_size = valid.size();
+	no_of_oper = 5*(g[0]*g[1]*g[2]*g[3])+(g[0]*g[1]*g[2]) + valid_size*valid_size*2*g[3];
 	//std::cout<<"Time taken:  for CORRELATION "<< timeTk<<std::endl;
 }
 
@@ -610,13 +611,13 @@ void avg_roi_time_corr(){
 	std::string cmd = "gzip ";
   	cmd+=ipfilename;
   	system(cmd.c_str());
-	//std::cout<<ipfilename<<std::endl;
+	std::cout<<ipfilename<<std::endl;
 
 	// LOADING THE ROI
   if(nifti_parser2.load_from_file(roifname))
   	   nifti_parser2 >> roi_image;
 
-	//std::cout<<roifname<<std::endl;  
+	std::cout<<roifname<<std::endl;  
   image::geometry<4> g = image_data.geometry();
   //image::geometry<4> g_copy;
   image::geometry<3> g_roi;
@@ -699,11 +700,11 @@ void avg_roi_time_corr(){
 	  } 
 
   }
-
+std::cout<<"time taken :"<<time_taken<<std::endl;
 
 
 	//################## MAKING A MATRIX OF NORMALIZED DATA###########################################
-  int valid_size = valid.size();
+  long long valid_size = valid.size();
   double * Valid_matrix = (double * )malloc( sizeof(double)*valid_size*g[3]);
   // double * roi_result = (double * )malloc( sizeof(double)*ROI_MAX*valid_size);
   double * roi_avg = (double * ) calloc(ROI_MAX*g[3], sizeof(double));
@@ -746,6 +747,7 @@ void avg_roi_time_corr(){
   }
 
   time_taken += (double)(clock()-tStart)/CLOCKS_PER_SEC;
+  std::cout<<"time taken :"<<time_taken<<std::endl;
   tStart = clock();
 
   // #pragma omp parallel for
@@ -764,7 +766,7 @@ void avg_roi_time_corr(){
 
   }
   time_taken += (double)(clock()-tStart)/CLOCKS_PER_SEC;
-  
+  std::cout<<"time taken :"<<time_taken<<std::endl;
   // #pragma omp parallel for
   // for (int i = 0; i < ROI_MAX; ++i){	
   // 		if(roi_var[i]!=0){
@@ -814,7 +816,7 @@ void avg_roi_time_corr(){
 	  tStart = clock();
 	  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,ROI_MAX,valid_size,dime,timeseries,roi_avg,dime,Valid_matrix,valid_size,0.0,res,valid_size);
 	  time_taken += (double)(clock()-tStart)/CLOCKS_PER_SEC;
-
+	  std::cout<<"time taken :"<<time_taken<<std::endl;
 	#pragma omp parallel for
 	for(int r = 0;r<ROI_MAX;r++)
 		for (int i = 0; i < valid_size; ++i)
@@ -826,6 +828,10 @@ void avg_roi_time_corr(){
 	filename = ofname+"/"+ filename;
 	nifti_parser2.save_to_file(filename.c_str());
 	no_of_oper = 2*ROI_MAX*g[3]*valid_size+5*(g[0]*g[1]*g[2]*g[3])+(g[0]*g[1]*g[2]);
+	std::cout<<"ROI_MAX, g[3], valid_size "<<ROI_MAX<<" "<<g[3]<<" "<<valid_size<<std::endl;
+	std::cout<<"no_of_oper :"<<no_of_oper<<std::endl;
+	std::cout<<"time taken :"<<time_taken<<std::endl;
+
 }
 
 void avg_corr_roi(){
@@ -983,6 +989,7 @@ void avg_corr_roi(){
   }
 
   time_taken += (double)(clock()-tStart)/CLOCKS_PER_SEC;
+  std::cout<<"time taken :"<<time_taken<<std::endl;
   tStart = clock();
 
   // #pragma omp parallel for
@@ -1001,7 +1008,7 @@ void avg_corr_roi(){
 
   }
   time_taken += (double)(clock()-tStart)/CLOCKS_PER_SEC;
-  
+  std::cout<<"time taken :"<<time_taken<<std::endl;
   #pragma omp parallel for
   for (int i = 0; i < ROI_MAX; ++i){	
   		if(roi_var[i]!=0){
@@ -1051,7 +1058,7 @@ void avg_corr_roi(){
 	  tStart = clock();
 	  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,ROI_MAX,valid_size,dime,timeseries,roi_avg,dime,Valid_matrix,valid_size,0.0,res,valid_size);
 	  time_taken += (double)(clock()-tStart)/CLOCKS_PER_SEC;
-
+	  std::cout<<"time taken :"<<time_taken<<std::endl;
 	#pragma omp parallel for
 	for(int r = 0;r<ROI_MAX;r++)
 		for (int i = 0; i < valid_size; ++i)
@@ -1063,6 +1070,9 @@ void avg_corr_roi(){
 	filename = ofname+"/"+ filename;
 	nifti_parser2.save_to_file(filename.c_str());
 	no_of_oper = 2*ROI_MAX*g[3]*valid_size+5*(g[0]*g[1]*g[2]*g[3])+(g[0]*g[1]*g[2]);
+	std::cout<<"NO OF OPER :"<<no_of_oper<<std::endl;
+	std::cout<<"time taken :"<<time_taken<<std::endl;
+
 
 
 
