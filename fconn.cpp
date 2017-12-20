@@ -687,11 +687,11 @@ void avg_roi_time_corr(){
   double * roi_mean = (double * ) calloc(ROI_MAX, sizeof(double));	
   
   std::cout<<"val "<<roi_avg[0]<<std::endl;
-  
+  tStart = clock();
   #pragma omp parallel for shared(time_taken,roi_tot,roi_avg)
   for (int i = 0; i < valid.size(); ++i)
   {	
-  	tStart = clock();
+  	
   	int roi_no = roi_image[(valid[i].z*g[1] +valid[i].y)*g[0] + valid[i].x];
   	if(roi_no!=0)
   		roi_tot[roi_no-1]++;
@@ -716,11 +716,11 @@ void avg_roi_time_corr(){
 
 	}
 
-	time_taken += (double)(clock()-tStart)/CLOCKS_PER_SEC;
+	
 
   }
 
-  
+  time_taken += (double)(clock()-tStart)/CLOCKS_PER_SEC;
   tStart = clock();
 
   // #pragma omp parallel for
