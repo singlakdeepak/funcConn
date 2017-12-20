@@ -445,7 +445,7 @@ void all_pair_corr(){
 	for (int t = 0; t < g[3]; ++t){
 		double currentdev = EX_sq[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z];
 		double tempNormdata;
-		if (currentdev < 0.005){
+		if (currentdev == 0){
 			tempNormdata = 0;
 			image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] = tempNormdata;
 			Valid_matrix[i*g[3]+t] = tempNormdata;
@@ -611,8 +611,8 @@ void avg_roi_time_corr(){
   		return;
   	}
   image::basic_image<int,3> mask_image;
-	if(mask&&nifti_parser2.load_from_file(maskfilename))
-	  	   nifti_parser2 >> mask_image;
+	if(mask&&nifti_parser.load_from_file(maskfilename))
+	  	   nifti_parser >> mask_image;
 	image::geometry<3> g_mask;
 
 
@@ -626,9 +626,9 @@ void avg_roi_time_corr(){
 	  }
 
 
-  std::string cmd = "gzip ";
-  cmd+=ipfilename;
-  system(cmd.c_str());
+  // std::string cmd = "gzip ";
+  // cmd+=ipfilename;
+  // system(cmd.c_str());
 
 	//############### DEFINING VARIABLES ####################################
 
@@ -870,7 +870,7 @@ void avg_roi_time_corr(){
  	// save the result
 
 	//image::io::nifti nifti_parser2;
-	cmd = "gzip ";
+	std::string cmd = "gzip ";
 	cmd+=ipfilename;
   	system(cmd.c_str());
 
@@ -978,7 +978,7 @@ void avg_corr_roi(){
 	for (int t = 0; t < g[3]; ++t){
 		
 		double tempNormdata;
-		if (currentdev <= 1e-2){
+		if (currentdev == 0){
 			tempNormdata = 0;
 			image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] = tempNormdata;
 			Valid_matrix[i*g[3]+t] = tempNormdata;
@@ -1223,6 +1223,7 @@ void getattributes(int argc,char *argv[])
 	  /*option h show the help infomation*/
 	  case 'h':
 		showhelpinfo();
+		exit(0);
 		break;
 	  /*option u pres ent the username*/
 	  case 'i':
@@ -1301,9 +1302,16 @@ void getattributes(int argc,char *argv[])
 	  case 'm': mask = true;
 	  			i++;
 	  			maskfilename = argv[i];
+				if(maskfilename.find(".gz")!=std::string::npos){
+					gzip = true;
+					std::string command = "gunzip ";
+					command += maskfilename;
+					system(command.c_str());
+					maskfilename = maskfilename.substr(0,(maskfilename.length()-3));
+				}
 	  			break;
 	  case 'f': flops = true;
-	  			i++;
+	  			
 	  			break;
 
 	  default:
