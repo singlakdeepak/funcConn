@@ -686,7 +686,7 @@ void avg_roi_time_corr(){
   double * roi_tot = (double * ) calloc(ROI_MAX, sizeof(double));
   double * roi_mean = (double * ) calloc(ROI_MAX, sizeof(double));	
   
-  std::cout<<"val "<<roi_avg[0]<<std::endl;
+  // std::cout<<"val "<<roi_avg[0]<<std::endl;
   tStart = clock();
   #pragma omp parallel for shared(time_taken,roi_tot,roi_avg)
   for (int i = 0; i < valid.size(); ++i)
@@ -910,6 +910,22 @@ void avg_corr_roi(){
   		std::cout<<":::: ERROR INVALID MASK ::::"<<std::endl;
   		return;
   	}
+
+   image::basic_image<int,3> mask_image;
+	if(mask&&nifti_parser.load_from_file(maskfilename))
+	  	   nifti_parser >> mask_image;
+	image::geometry<3> g_mask;
+
+
+		//CHECK IF THE GEOMETRY OF THE MASK AND IMAGE IS SAME
+	  if(mask){
+	  	g_mask = mask_image.geometry();
+	  	if(g_mask[0]!=g[0]||g_mask[1]!=g[1]||g_mask[2]!=g[2]){
+	  		std::cout<<":::: ERROR INVALID MASK ::::"<<std::endl;
+	  		return;
+	  	}
+	  }
+
   
 
   std::string cmd = "gzip ";
@@ -941,7 +957,7 @@ void avg_corr_roi(){
 		  EX[ (x*g[1] +y)*g[2] + z] = temp;
 		  EX_sq[ (x*g[1] +y)*g[2] + z] = sqrt(temp2- temp*temp);
 
-		  if(EX_sq[ (x*g[1] +y)*g[2] + z]> 1e-2){
+		  if((mask&&mask_image[(z*g[1]+y)*g[0]+x]==1)||(!mask&&EX_sq[ (x*g[1] +y)*g[2] + z] > 1e-2)){
 				Valid tv ;
 				tv.x = x;
 				tv.y = y;
@@ -1021,6 +1037,7 @@ void avg_corr_roi(){
   	if(roi_no==0)
   		continue;
   	roi_coeff[(roi_no-1)*valid_size+i]/=roi_var[roi_no];
+  	roi_coeff[(roi_no-1)*valid_size+i]/=roi_tot[roi_no];
   }
 
    std::cout<<":::: init end ::::"<<std::endl;
