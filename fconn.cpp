@@ -55,7 +55,7 @@ int main (int argc,char *argv[])
 	exit(1);
   }
   
-  std::cout<<" 1"<<std::endl;
+ // std::cout<<" 1"<<std::endl;
 
   getattributes(argc,argv);
   
@@ -64,13 +64,13 @@ int main (int argc,char *argv[])
 	showhelpinfo();
 	exit(1);
   }
-std::cout<<" 2"<<std::endl;
+//std::cout<<" 2"<<std::endl;
   if( ( roi1 == true&&roi2 == true&& all == true ) || ( roi1 == true&&roi2 == true&& seedcmp == true ) || ( all == true && seedcmp == true ))
   {
 	showhelpinfo();
 	exit(1);
   }
-  std::cout<<" 3"<<std::endl;
+  //std::cout<<" 3"<<std::endl;
 	///######################### Creating the project folder #######################################################
    
 	mode_t nMode = 0733; // UNIX style permissions
@@ -139,6 +139,13 @@ void seed_correl(){
 	// LOADING THE MASK
   if(mask&&nifti_parser2.load_from_file(maskfilename))
   	   nifti_parser2 >> mask_image;
+
+
+  std::string cmd = "gzip ";
+  cmd+=ipfilename;
+  system(cmd.c_str());
+
+  
   
   image::geometry<4> g = image_data.geometry();
   image::geometry<4> g_copy;
@@ -151,11 +158,11 @@ void seed_correl(){
   		std::cout<<":::: ERROR INVALID MASK ::::"<<std::endl;
   		return;
   	}
+  	cmd = "gzip ";
+  	cmd+=maskfilename;
+  	system(cmd.c_str());
   }
 
-  std::string cmd = "gzip ";
-  cmd+=ipfilename;
-  system(cmd.c_str());
 
 	//############################# DEFINING MORE VARIABLES ####################################
 
@@ -348,6 +355,10 @@ void all_pair_corr(){
   if(nifti_parser.load_from_file(ipfilename));
 	  nifti_parser >> image_data;
 
+  std::string cmd = "gzip ";
+  cmd+=ipfilename;
+  system(cmd.c_str());
+
 	// LOADING THE MASK
   if(mask&&nifti_parser2.load_from_file(maskfilename))
   	   nifti_parser2 >> mask_image;
@@ -359,15 +370,18 @@ void all_pair_corr(){
 	//CHECK IF THE GEOMETRY OF THE MASK AND IMAGE IS SAME
   if(mask){
   	g_mask = mask_image.geometry();
+  	cmd = "gzip ";
+  	cmd+=maskfilename;
+  	system(cmd.c_str());
   	if(g_mask[0]!=g[0]||g_mask[1]!=g[1]||g_mask[2]!=g[2]){
   		std::cout<<":::: ERROR INVALID MASK ::::"<<std::endl;
   		return;
   	}
   }
 
-  std::string cmd = "gzip ";
-  cmd+=ipfilename;
-  system(cmd.c_str());
+  // std::string cmd = "gzip ";
+  // cmd+=ipfilename;
+  // system(cmd.c_str());
 
 	//############### DEFINING VARIABLES ####################################
 
@@ -593,19 +607,27 @@ void avg_roi_time_corr(){
   if(nifti_parser.load_from_file(ipfilename));
 	  nifti_parser >> image_data;
 
-	std::cout<<ipfilename<<std::endl;
+	std::string cmd = "gzip ";
+  	cmd+=ipfilename;
+  	system(cmd.c_str());
+	//std::cout<<ipfilename<<std::endl;
 
 	// LOADING THE ROI
   if(nifti_parser2.load_from_file(roifname))
   	   nifti_parser2 >> roi_image;
 
-	std::cout<<roifname<<std::endl;  
+	//std::cout<<roifname<<std::endl;  
   image::geometry<4> g = image_data.geometry();
   //image::geometry<4> g_copy;
   image::geometry<3> g_roi;
 
 	//CHECK IF THE GEOMETRY OF THE MASK AND IMAGE IS SAME
    	g_roi = roi_image.geometry();
+   	
+   	cmd = "gzip ";
+  	cmd+=roifname;
+  	system(cmd.c_str());
+  	
   	if(g_roi[0]!=g[0]||g_roi[1]!=g[1]||g_roi[2]!=g[2]){
   		std::cout<<":::: ERROR INVALID MASK ::::"<<std::endl;
   		return;
@@ -619,6 +641,9 @@ void avg_roi_time_corr(){
 		//CHECK IF THE GEOMETRY OF THE MASK AND IMAGE IS SAME
 	  if(mask){
 	  	g_mask = mask_image.geometry();
+	  	cmd = "gzip ";
+  		cmd+=maskfilename;
+  		system(cmd.c_str());
 	  	if(g_mask[0]!=g[0]||g_mask[1]!=g[1]||g_mask[2]!=g[2]){
 	  		std::cout<<":::: ERROR INVALID MASK ::::"<<std::endl;
 	  		return;
@@ -768,48 +793,6 @@ void avg_roi_time_corr(){
 	int n =  8192;
 	// double * roi_chunk = (double * )malloc( sizeof(double)*ROI_MAX*n);
 	double * res = (double * )malloc( sizeof(double)*ROI_MAX*valid_size);
-	// double * Valid_matrix_chunk= (double * )malloc( sizeof(double)*g[3]*n);
-	// double * Valid_matrix_chunk_trans= (double * )malloc( sizeof(double)*n*g[3]);
- //  if(res==NULL){
-	//   free(Valid_matrix);
-	//   free(Valid_matrix_chunk);
-	//   free(res);
-	//   std::cout<<"res Allocating failed"<<std::endl;
-	//   exit(0);
-	// }
-
- //  if(Valid_matrix_chunk==NULL){
-	//   free(Valid_matrix);
-	//   free(Valid_matrix_chunk);
-	//   free(res);
-	//   std::cout<<"valid Allocating failed"<<std::endl;
-	//   exit(0);
-	// }
-
-	// for(int starti = 0;starti<valid.size();starti+=n)
-	// for(int startj = starti;startj<valid.size();startj+=n)
-	// {
-
-
-	  // tStart = clock();
-	 
-	  // std::cout<<starti<<","<<startj<<std::endl;
-	 //  int n2 = ROI_MAX;
-	 //  int n3 = min(n,valid.size()-startj);
-	 //  int n_toget=max(n2,n3);
-
-	 //  #pragma omp parallel for collapse(2)
-	 //  for (int i = 0; i < n_toget; ++i)
-	 //  {
-		// for (int j = 0; j < g[3]; ++j)
-		// {
-		//   //######### AS BOTH THE MATRICES ARE OF DIFFERENT SIZES SO SELECT ACCORDINGLY######################################### 
-		//   if(i<n2)
-		//   roi_chunk[i*g[3] + j]=roi_avg[(starti+i)*g[3] + (j)];
-		//   if(i<n3)
-		//   Valid_matrix_chunk_trans[j*n + i]=Valid_matrix[(startj+i)*g[3] + (j)];
-		// }
-	 //  }
 
 		image::geometry<4> g_copy;
 		g_copy.dim[0] = g[0];
@@ -831,48 +814,12 @@ void avg_roi_time_corr(){
 	  tStart = clock();
 	  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,ROI_MAX,valid_size,dime,timeseries,roi_avg,dime,Valid_matrix,valid_size,0.0,res,valid_size);
 	  time_taken += (double)(clock()-tStart)/CLOCKS_PER_SEC;
-	   //std::cout<<"Time taken:  for CORRELATION "<< ((double)(clock() - tStart)/CLOCKS_PER_SEC)<<std::endl;
-	  //timeTk += (double)(clock() - tStart)/CLOCKS_PER_SEC ;
-		
-
-	
-	  // for(int i_roi = 0;i_roi<ROI_MAX;i_roi++)
-		 //  for(int j_roi = 0;j_roi<n3;j_roi++){
-		 //  	if(startj==0){
-
-		 //  		// roi_result[(i_roi)*valid_size + (starti*n+j_roi) ]=res[i_roi*n+j_roi];
-		 //  		image_data_cpy[((i_roi*g[2]+valid[(starti*n+j_roi)].z)*g[1]+valid[(starti*n+j_roi)].y)*g[0]+valid[(starti*n+j_roi)].x] = res[i_roi*n+j_roi];
-
-		 //  	}else{
-		 //  		// roi_result[(i_roi)*valid_size + (starti*n+j_roi) ]+=res[i_roi*n+j_roi];
-		 //  		image_data_cpy[((i_roi*g[2]+valid[(starti*n+j_roi)].z)*g[1]+valid[(starti*n+j_roi)].y)*g[0]+valid[(starti*n+j_roi)].x] += res[i_roi*n+j_roi];
-		 //  	}
-
-		 //  }
-	
-	// }
-	//std::cout<<"Time taken:  for CORRELATION "<< timeTk<<std::endl;
-
-	// make result 
-	
-	// #pragma omp parallel for collapse(3)
-	// for (int x = 0; x < g[0]; ++x)
-	//   for (int y = 0; y < g[1]; ++y)
-	// 	 for (int z = 0; z < g[2]; ++z)
-	// 	 	for(int r = 0;r<ROI_MAX;r++)
-	// 			image_data_cpy[((r*g[2]+z)*g[1]+y)*g[0]+x] = 0;
 
 	#pragma omp parallel for
 	for(int r = 0;r<ROI_MAX;r++)
 		for (int i = 0; i < valid_size; ++i)
 		 	image_data_cpy[((r*g[2]+valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] = res[r*valid_size +i];
 
- 	// save the result
-
-	//image::io::nifti nifti_parser2;
-	std::string cmd = "gzip ";
-	cmd+=ipfilename;
-  	system(cmd.c_str());
 
 	nifti_parser2.load_from_image(image_data_cpy);
 	std::string filename("avg_roi_time_series.nii");
@@ -883,7 +830,8 @@ void avg_roi_time_corr(){
 
 void avg_corr_roi(){
 
-	//DEFINING VARIABLES  
+
+ //DEFINING VARIABLES  
   image::io::nifti nifti_parser,nifti_parser2;
   image::basic_image<double,4> image_data;
   image::basic_image<double,4> image_data_cpy;
@@ -896,22 +844,32 @@ void avg_corr_roi(){
   if(nifti_parser.load_from_file(ipfilename));
 	  nifti_parser >> image_data;
 
+	std::string cmd = "gzip ";
+  	cmd+=ipfilename;
+  	system(cmd.c_str());
+	//std::cout<<ipfilename<<std::endl;
+
 	// LOADING THE ROI
-  if(nifti_parser2.load_from_file(roifname))
-  	   nifti_parser2 >> roi_image;
-  
+  if(nifti_parser.load_from_file(roifname))
+  	   nifti_parser >> roi_image;
+
+	//std::cout<<roifname<<std::endl;  
   image::geometry<4> g = image_data.geometry();
-  image::geometry<4> g_copy;
+  //image::geometry<4> g_copy;
   image::geometry<3> g_roi;
 
 	//CHECK IF THE GEOMETRY OF THE MASK AND IMAGE IS SAME
    	g_roi = roi_image.geometry();
+   	
+   	cmd = "gzip ";
+  	cmd+=roifname;
+  	system(cmd.c_str());
+  	
   	if(g_roi[0]!=g[0]||g_roi[1]!=g[1]||g_roi[2]!=g[2]){
   		std::cout<<":::: ERROR INVALID MASK ::::"<<std::endl;
   		return;
   	}
-
-   image::basic_image<int,3> mask_image;
+  image::basic_image<int,3> mask_image;
 	if(mask&&nifti_parser.load_from_file(maskfilename))
 	  	   nifti_parser >> mask_image;
 	image::geometry<3> g_mask;
@@ -920,17 +878,19 @@ void avg_corr_roi(){
 		//CHECK IF THE GEOMETRY OF THE MASK AND IMAGE IS SAME
 	  if(mask){
 	  	g_mask = mask_image.geometry();
+	  	cmd = "gzip ";
+  		cmd+=maskfilename;
+  		system(cmd.c_str());
 	  	if(g_mask[0]!=g[0]||g_mask[1]!=g[1]||g_mask[2]!=g[2]){
 	  		std::cout<<":::: ERROR INVALID MASK ::::"<<std::endl;
 	  		return;
 	  	}
 	  }
 
-  
 
-  std::string cmd = "gzip ";
-  cmd+=ipfilename;
-  system(cmd.c_str());
+  // std::string cmd = "gzip ";
+  // cmd+=ipfilename;
+  // system(cmd.c_str());
 
 	//############### DEFINING VARIABLES ####################################
 
@@ -938,7 +898,7 @@ void avg_corr_roi(){
   double *EX_sq = (double *) malloc( sizeof(double) * g[0] * g[1]* g[2] ) ;
   
 	//#CALCULATING THE MEAN AND STD DEVIATION OF DATA AND CREATING A VALID VOXEL MAPPINGS ################################
- std::cout<<":::: mean std start ::::"<<std::endl;
+  clock_t tStart;
   for (int z = 0; z < g[2]; ++z){
 	for (int y = 0; y < g[1]; ++y)
 	  {
@@ -946,13 +906,19 @@ void avg_corr_roi(){
 		{
 
 		  double temp  = 0,temp2 = 0;
+		  tStart = clock();
 		  for (int t = 0; t < g[3]; ++t)
 		  {
 			temp += (double)image_data[((t*g[2] + z)*g[1]+y)*g[0]+x]/g[3] ;
-			temp2 += (double)image_data[((t*g[2] + z)*g[1]+y)*g[0]+x]*(double)image_data[((t*g[2] + z)*g[1]+y)*g[0]+x]/g[3];
+			temp2 += image_data[((t*g[2] + z)*g[1]+y)*g[0]+x]*image_data[((t*g[2] + z)*g[1]+y)*g[0]+x]/g[3];
 		  }
-		  
+		  time_taken += (double)(clock()-tStart)/CLOCKS_PER_SEC;
 			
+		  // else{
+				// int temp = -1;
+				
+				
+		  // }
 				  
 		  EX[ (x*g[1] +y)*g[2] + z] = temp;
 		  EX_sq[ (x*g[1] +y)*g[2] + z] = sqrt(temp2- temp*temp);
@@ -971,81 +937,89 @@ void avg_corr_roi(){
 
   }
 
- std::cout<<":::: mean std end ::::"<<std::endl;
+
 
 	//################## MAKING A MATRIX OF NORMALIZED DATA###########################################
   int valid_size = valid.size();
   double * Valid_matrix = (double * )malloc( sizeof(double)*valid_size*g[3]);
-  double * roi_result = (double * )malloc( sizeof(double)*ROI_MAX*valid_size);
-  double * roi_result_temp = (double * )malloc( sizeof(double)*ROI_MAX*g[3]);
-  double * roi_coeff = (double * )calloc( ROI_MAX*valid_size, sizeof(double));
-  double * roi_avg = (double * )calloc(ROI_MAX*g[3], sizeof(double));
+  // double * roi_result = (double * )malloc( sizeof(double)*ROI_MAX*valid_size);
+  double * roi_avg = (double * ) calloc(ROI_MAX*g[3], sizeof(double));
   double * roi_var = (double * ) calloc(ROI_MAX, sizeof(double));
   double * roi_tot = (double * ) calloc(ROI_MAX, sizeof(double));
-	
- std::cout<<":::: init start ::::"<<std::endl;
- # pragma omp parallel for shared(roi_avg,roi_tot)
+  double * roi_mean = (double * ) calloc(ROI_MAX, sizeof(double));	
+  
+  // std::cout<<"val "<<roi_avg[0]<<std::endl;
+  tStart = clock();
+  #pragma omp parallel for shared(time_taken,roi_tot,roi_avg)
   for (int i = 0; i < valid.size(); ++i)
   {	
-  	int roi_no = roi_image[(valid[i].z*g[1] +valid[i].y)*g[2] + valid[i].x];
+  	
+  	int roi_no = roi_image[(valid[i].z*g[1] +valid[i].y)*g[0] + valid[i].x];
   	if(roi_no!=0)
-  	  	roi_tot[roi_no-1]++;
-  	double currentdev = EX_sq[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z];
+  		roi_tot[roi_no-1]++;
+	double currentdev = EX_sq[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z];
 	for (int t = 0; t < g[3]; ++t){
 		
 		double tempNormdata;
 		if (currentdev == 0){
 			tempNormdata = 0;
 			image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] = tempNormdata;
-			Valid_matrix[i*g[3]+t] = tempNormdata;
+			Valid_matrix[t*valid_size + i] = tempNormdata;
 
 		}
 		else{
 			tempNormdata = (double)(image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] - EX[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z])/currentdev;
 	  		if(roi_no!=0)
-	  			roi_avg[(roi_no-1)*g[3]+t ] += (double)(image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] - EX[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z]);
+  				roi_avg[(roi_no-1)*g[3]+t ] += image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x];
 	  		image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] = tempNormdata;
-	  		Valid_matrix[i*g[3]+t] = tempNormdata;
+	  		Valid_matrix[t*valid_size + i] = tempNormdata;
 	  		
 		}
 
 	}
-	if(roi_no!=0)
-		roi_coeff[(roi_no-1)*valid_size+i]=EX_sq[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z];
+
+	
 
   }
 
-  # pragma omp parallel for
+  time_taken += (double)(clock()-tStart)/CLOCKS_PER_SEC;
+  tStart = clock();
+
+  // #pragma omp parallel for
   for (int i = 0; i < ROI_MAX; ++i)
   {	
   		double temp  = 0,temp2 = 0;
+  		// std::cout<<i<<":"<<roi_tot[i]<<std::endl;
   		for (int t = 0; t < g[3]; ++t){
   			roi_avg[i*g[3]+t]/=roi_tot[i];
   			temp += (double)roi_avg[i*g[3]+t]/g[3] ;
-			temp2 += (double)roi_avg[i*g[3]+t]*(double)roi_avg[i*g[3]+t]/g[3];
+			temp2 += roi_avg[i*g[3]+t]*roi_avg[i*g[3]+t]/g[3];
   		}
 
+  		roi_mean[i]= temp;
   		roi_var[i] = sqrt(temp2- temp*temp);
 
   }
+  time_taken += (double)(clock()-tStart)/CLOCKS_PER_SEC;
+  
+  #pragma omp parallel for
+  for (int i = 0; i < ROI_MAX; ++i){	
+  		if(roi_var[i]!=0){
+  			for (int t = 0; t < g[3]; ++t){
+  				roi_avg[i*g[3]+t]=(roi_avg[i*g[3]+t]-roi_mean[i])/roi_var[i];
+  				}
+  		}else{
+  			for (int t = 0; t < g[3]; ++t){
+  				roi_avg[i*g[3]+t] = 0;
+  			}
 
-
-  // # pragma omp parallel for
-  for (int i = 0; i < valid.size(); ++i)
-  {	
-  	int roi_no = roi_image[(valid[i].z*g[1] +valid[i].y)*g[2] + valid[i].x];
-  	if(roi_no==0)
-  		continue;
-  	roi_coeff[(roi_no-1)*valid_size+i]/=roi_var[roi_no];
-  	roi_coeff[(roi_no-1)*valid_size+i]/=roi_tot[roi_no];
+  		}	
   }
 
-   std::cout<<":::: init end ::::"<<std::endl;
 
   free(EX_sq);
   // free(roi_var);
   // free(roi_tot);
-  // free(roi_avg);
 	// clock_t tStart = clock();
 	// free(EXY);
 
@@ -1053,150 +1027,45 @@ void avg_corr_roi(){
 	// #######FINDING MATRIX FOR CORRELATION OF COMBINATION########################################
 	free(EX);
 	int dime = g[3];
-	float timeseries = 1/(float)dime;
-	 std::cout<<":::: blas start ::::"<<std::endl;
-	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,ROI_MAX,dime,valid_size,1.0,roi_coeff,valid_size,Valid_matrix,dime,0.0,roi_result_temp,dime);
-	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasTrans,ROI_MAX,valid_size,dime,timeseries,roi_result_temp,dime,Valid_matrix,dime,0.0,roi_result,valid_size);
-	 std::cout<<":::: blas end ::::"<<std::endl;
-	// int n =  8192;
-	// double * roi_chunk = (double * )malloc( sizeof(double)*ROI_MAX*n );
-	// double * roi_chunk2 = (double * )malloc( sizeof(double)*ROI_MAX*n );
-	// double * roi_chunk_res = (double * )malloc( sizeof(double)*ROI_MAX*n );
-	// double * res = (double * )malloc( sizeof(double)*n*n);
-	// double * Valid_matrix_chunk= (double * )malloc( sizeof(double)*g[3]*n);
-	// double * Valid_matrix_chunk_trans= (double * )malloc( sizeof(double)*n*g[3]);
- //  if(res==NULL){
-	//   free(Valid_matrix);
-	//   free(Valid_matrix_chunk);
-	//   free(res);
-	//   std::cout<<"res Allocating failed"<<std::endl;
-	//   exit(0);
-	// }
+	int n =  8192;
+	// double * roi_chunk = (double * )malloc( sizeof(double)*ROI_MAX*n);
+	double * res = (double * )malloc( sizeof(double)*ROI_MAX*valid_size);
 
- //  if(Valid_matrix_chunk==NULL){
-	//   free(Valid_matrix);
-	//   free(Valid_matrix_chunk);
-	//   free(res);
-	//   std::cout<<"valid Allocating failed"<<std::endl;
-	//   exit(0);
-	// }
-   
-	// double timeTk =0;
+		image::geometry<4> g_copy;
+		g_copy.dim[0] = g[0];
+		g_copy.dim[1] = g[1];
+		g_copy.dim[2] = g[2];
+		g_copy.dim[3] = ROI_MAX;
+		image_data_cpy.resize(g_copy);
 
-	// //clock_t tStart = clock();
-
-
- //  for(int starti = 0;starti<valid.size();starti+=n)
-	// for(int startj = starti;startj<valid.size();startj+=n)
-	// {
-
-
-	//   // tStart = clock();
-	 
-	//   // std::cout<<starti<<","<<startj<<std::endl;
-	//   int n2 = min(n,valid.size()-starti);
-	//   int n3 = min(n,valid.size()-startj);
-	//   int n_toget=max(n2,n3);
-
-	//   #pragma omp parallel for collapse(2)
-	//   for (int i = 0; i < n_toget; ++i)
-	//   {
-	// 	for (int j = 0; j < g[3]; ++j)
-	// 	{
-	// 	  //######### AS BOTH THE MATRICES ARE OF DIFFERENT SIZES SO SELECT ACCORDINGLY######################################### 
-	// 	  if(i<n2)
-	// 	  Valid_matrix_chunk[i*g[3] + j]=Valid_matrix[(starti+i)*g[3] + (j)];
-	// 	  if(i<n3)
-	// 	  Valid_matrix_chunk_trans[j*n + i]=Valid_matrix[(startj+i)*g[3] + (j)];
-	// 	}
-	//   }
-	//   #pragma omp parallel for collapse(2)
-	//   for (int i = 0; i < ROI_MAX; ++i)
-	//   {
-	//   	for (int j = 0; j < n2; ++j)
-	//   	{
-	//   		roi_chunk[i*n+j] = roi_coeff[i*valid_size+starti*n+j]; 
-	//   	}
-	//   }
-
-
-	//   double timeseries = 1/float(g[3]);
-
-	//   cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,n2,n3,dime,timeseries,Valid_matrix_chunk,dime,Valid_matrix_chunk_trans,n3,0.0,res,n3);
-	  
-	//   cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,ROI_MAX,n3,n2,1.0,roi_chunk,n3,res,n3,0.0,roi_chunk_res,n3); 
-
-
-	//   for(int i_roi = 0;i_roi<ROI_MAX;i_roi++)
-	// 	  for(int j_roi = 0;j_roi<n3;j_roi++){
-	// 	  	if(startj==0){
-
-	// 	  		roi_result[(i_roi)*valid_size + (starti*n+j_roi) ]=roi_chunk_res[i_roi*n+j_roi];
-	// 	  		// image_data_cpy[((i_roi*g[2]+valid[(starti*n+j_roi)].z)*g[1]+valid[(starti*n+j_roi)].y)*g[0]+valid[(starti*n+j_roi)].x] = roi_chunk_res[i_roi*n+j_roi];
-
-	// 	  	}else{
-	// 	  		roi_result[(i_roi)*valid_size + (starti*n+j_roi) ]+=roi_chunk_res[i_roi*n+j_roi];
-	// 	  		// image_data_cpy[((i_roi*g[2]+valid[(starti*n+j_roi)].z)*g[1]+valid[(starti*n+j_roi)].y)*g[0]+valid[(starti*n+j_roi)].x] += roi_chunk_res[i_roi*n+j_roi];
-	// 	  	}
-
-	// 	  }
-	// 	if(starti!=startj){
-	// 		#pragma omp parallel for collapse(2)
-	// 		for (int i = 0; i < ROI_MAX; ++i)
-	// 		  {
-	// 		  	for (int j = 0; j < n2; ++j)
-	// 		  	{
-	// 		  		roi_chunk2[i*n+j] = roi_coeff[i*valid_size+startj*n+j]; 
-	// 		  	}
-	// 		  }
-	// 		cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,ROI_MAX,n3,n2,1.0,roi_chunk2,n3,res,n3,0.0,roi_chunk_res,n3); 
-	// 		for(int i_roi = 0;i_roi<ROI_MAX;i_roi++)
-	// 		  for(int j_roi = 0;j_roi<n3;j_roi++){
-	// 		  	if(startj==0){
-	// 		  		// image_data_cpy[((i_roi*g[2]+valid[(startj*n+j_roi)].z)*g[1]+valid[(startj*n+j_roi)].y)*g[0]+valid[(startj*n+j_roi)].x] = roi_chunk_res[i_roi*n+j_roi];
-	// 		  		roi_result[(startj*n+i_roi)*valid_size + (j_roi) ]=roi_chunk_res[i_roi*n+j_roi];
-
-	// 		  	}else{
-	// 		  		// image_data_cpy[((i_roi*g[2]+valid[(startj*n+j_roi)].z)*g[1]+valid[(startj*n+j_roi)].y)*g[0]+valid[(startj*n+j_roi)].x] += roi_chunk_res[i_roi*n+j_roi];
-	// 		  		roi_result[(startj*n+i_roi)*valid_size + (j_roi) ]+=roi_chunk_res[i_roi*n+j_roi];
-	// 		  	}
-
-	// 		  }
-
-	// 	}
- // 	}
-
-	// make result 
-	g_copy.dim[0] = g[0];
-	g_copy.dim[1] = g[1];
-	g_copy.dim[2] = g[2];
-	g_copy.dim[3] = ROI_MAX;
-	image_data_cpy.resize(g_copy);
-
- std::cout<<":::: output start ::::"<<std::endl;
 	#pragma omp parallel for collapse(3)
-	for (int x = 0; x < g[0]; ++x)
-	  for (int y = 0; y < g[1]; ++y)
-		 for (int z = 0; z < g[2]; ++z)
-		 	for(int r = 0;r<ROI_MAX;r++)
-				image_data_cpy[((r*g[2]+z)*g[1]+y)*g[0]+x] = 0;
+		for (int x = 0; x < g[0]; ++x)
+		  for (int y = 0; y < g[1]; ++y)
+			 for (int z = 0; z < g[2]; ++z)
+			 	for(int r = 0;r<ROI_MAX;r++)
+					image_data_cpy[((r*g[2]+z)*g[1]+y)*g[0]+x] = 0;
+
+
+	  double timeseries = 1/float(g[3]);
+
+	  tStart = clock();
+	  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,ROI_MAX,valid_size,dime,timeseries,roi_avg,dime,Valid_matrix,valid_size,0.0,res,valid_size);
+	  time_taken += (double)(clock()-tStart)/CLOCKS_PER_SEC;
 
 	#pragma omp parallel for
 	for(int r = 0;r<ROI_MAX;r++)
 		for (int i = 0; i < valid_size; ++i)
-		 	image_data_cpy[((r*g[2]+valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] = roi_result[r*valid_size +i];
+		 	image_data_cpy[((r*g[2]+valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] = res[r*valid_size +i];
 
- 	// save the result
 
-	//image::io::nifti nifti_parser2;
-	cmd = "gzip ";
-	cmd+=ipfilename;
-	system(cmd.c_str());
 	nifti_parser2.load_from_image(image_data_cpy);
-	std::string filename("avg_roi_avg_time_series.nii");
-	filename = ofname +"/"+ filename;
+	std::string filename("avg_roi_time_series.nii");
+	filename = ofname+"/"+ filename;
 	nifti_parser2.save_to_file(filename.c_str());
-	 std::cout<<":::: output end  ::::"<<std::endl;
+	no_of_oper = 2*ROI_MAX*g[3]*valid_size+5*(g[0]*g[1]*g[2]*g[3])+(g[0]*g[1]*g[2]);
+
+
+
 }
 
 void correl()
@@ -1221,20 +1090,12 @@ void correl()
 void getattributes(int argc,char *argv[])
 {
   char tmp;
-  std::string inp(*argv);
-  std::istringstream iss(inp);
-  std::string s;
-  std::vector< std::string > inp_arg;
-  while ( getline( iss, s, ' ' ) ) {
-    inp_arg.push_back(s);
-  }
-
   int i =1;
 
   while(i<argc)
   {
   	char tmp = argv[i][1];
-    std::cout<<tmp<<std::endl;
+   // std::cout<<tmp<<std::endl;
 	switch(tmp)
 	{
 	  /*option h show the help infomation*/
@@ -1363,3 +1224,214 @@ void showhelpinfo()
   std::cout<<"\t -h \t display this message  \n ";
   // 
 }
+/* ###################################################### NON-OPTIMIZED CODE############################################ 
+
+	//DEFINING VARIABLES  
+  image::io::nifti nifti_parser,nifti_parser2;
+  image::basic_image<double,4> image_data;
+  image::basic_image<double,4> image_data_cpy;
+  image::basic_image<int,3> roi_image;
+  std::vector<Valid> valid;
+
+  image_data_cpy = image_data;
+
+	//LOADING THE IMAGE
+  if(nifti_parser.load_from_file(ipfilename));
+	  nifti_parser >> image_data;
+  std::string cmd = "gzip ";
+  cmd+=ipfilename;
+  system(cmd.c_str());
+	// LOADING THE ROI
+  if(nifti_parser2.load_from_file(roifname))
+  	   nifti_parser2 >> roi_image;
+  
+  image::geometry<4> g = image_data.geometry();
+  image::geometry<4> g_copy;
+  image::geometry<3> g_roi;
+
+	//CHECK IF THE GEOMETRY OF THE MASK AND IMAGE IS SAME
+   	g_roi = roi_image.geometry();
+  	if(g_roi[0]!=g[0]||g_roi[1]!=g[1]||g_roi[2]!=g[2]){
+  		std::cout<<":::: ERROR INVALID MASK ::::"<<std::endl;
+  		return;
+  	}
+  cmd = "gzip ";
+  cmd+=roifname;
+  system(cmd.c_str());
+
+   image::basic_image<int,3> mask_image;
+	if(mask&&nifti_parser.load_from_file(maskfilename))
+	  	   nifti_parser >> mask_image;
+	image::geometry<3> g_mask;
+
+
+		//CHECK IF THE GEOMETRY OF THE MASK AND IMAGE IS SAME
+	  if(mask){
+	  	g_mask = mask_image.geometry();
+	  	cmd = "gzip ";
+  		cmd+=maskfilename;
+  		system(cmd.c_str());
+	  	if(g_mask[0]!=g[0]||g_mask[1]!=g[1]||g_mask[2]!=g[2]){
+	  		std::cout<<":::: ERROR INVALID MASK ::::"<<std::endl;
+	  		return;
+	  	}
+	  }
+
+
+	//############### DEFINING VARIABLES ####################################
+
+  double *EX = (double *) malloc( sizeof(double) * g[0] * g[1]* g[2] ) ;
+  double *EX_sq = (double *) malloc( sizeof(double) * g[0] * g[1]* g[2] ) ;
+  
+	//#CALCULATING THE MEAN AND STD DEVIATION OF DATA AND CREATING A VALID VOXEL MAPPINGS ################################
+  for (int z = 0; z < g[2]; ++z){
+	for (int y = 0; y < g[1]; ++y)
+	  {
+		for (int x = 0; x < g[0]; ++x)
+		{
+
+		  double temp  = 0,temp2 = 0;
+		  for (int t = 0; t < g[3]; ++t)
+		  {
+			temp += (double)image_data[((t*g[2] + z)*g[1]+y)*g[0]+x]/g[3] ;
+			temp2 += (double)image_data[((t*g[2] + z)*g[1]+y)*g[0]+x]*(double)image_data[((t*g[2] + z)*g[1]+y)*g[0]+x]/g[3];
+		  }
+		  
+			
+				  
+		  EX[ (x*g[1] +y)*g[2] + z] = temp;
+		  EX_sq[ (x*g[1] +y)*g[2] + z] = sqrt(temp2- temp*temp);
+
+		  if((mask&&mask_image[(z*g[1]+y)*g[0]+x]==1)||(!mask&&EX_sq[ (x*g[1] +y)*g[2] + z] > 1e-2)){
+				Valid tv ;
+				tv.x = x;
+				tv.y = y;
+				tv.z = z;
+				// int temp = valid.size();
+				valid.push_back(tv);
+		  }
+
+		}
+	  } 
+
+  }
+
+ // std::cout<<":::: mean std end ::::"<<std::endl;
+
+	//################## MAKING A MATRIX OF NORMALIZED DATA###########################################
+  int valid_size = valid.size();
+  double * Valid_matrix = (double * )malloc( sizeof(double)*valid_size*g[3]);
+  double * roi_result = (double * )malloc( sizeof(double)*ROI_MAX*valid_size);
+  double * roi_result_temp = (double * )malloc( sizeof(double)*ROI_MAX*g[3]);
+  double * roi_coeff = (double * )calloc( ROI_MAX*valid_size, sizeof(double));
+  double * roi_avg = (double * )calloc(ROI_MAX*g[3], sizeof(double));
+  double * roi_var = (double * ) calloc(ROI_MAX, sizeof(double));
+  double * roi_tot = (double * ) calloc(ROI_MAX, sizeof(double));
+	
+ // std::cout<<":::: init start ::::"<<std::endl;
+ # pragma omp parallel for shared(roi_avg,roi_tot)
+  for (int i = 0; i < valid.size(); ++i)
+  {	
+  	int roi_no = roi_image[(valid[i].z*g[1] +valid[i].y)*g[2] + valid[i].x];
+  	if(roi_no!=0)
+  	  	roi_tot[roi_no-1]++;
+  	double currentdev = EX_sq[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z];
+	for (int t = 0; t < g[3]; ++t){
+		
+		double tempNormdata;
+		if (currentdev == 0){
+			tempNormdata = 0;
+			image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] = tempNormdata;
+			Valid_matrix[i*g[3]+t] = tempNormdata;
+
+		}
+		else{
+			tempNormdata = (double)(image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] - EX[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z])/currentdev;
+	  		if(roi_no!=0)
+	  			roi_avg[(roi_no-1)*g[3]+t ] += (double)(image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] - EX[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z]);
+	  		image_data[((t*g[2] + valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] = tempNormdata;
+	  		Valid_matrix[i*g[3]+t] = tempNormdata;
+	  		
+		}
+
+	}
+	if(roi_no!=0)
+		roi_coeff[(roi_no-1)*valid_size+i]=EX_sq[(valid[i].x*g[1] +valid[i].y)*g[2] + valid[i].z];
+
+  }
+
+  # pragma omp parallel for
+  for (int i = 0; i < ROI_MAX; ++i)
+  {	
+  		double temp  = 0,temp2 = 0;
+  		for (int t = 0; t < g[3]; ++t){
+  			roi_avg[i*g[3]+t]/=roi_tot[i];
+  			temp += (double)roi_avg[i*g[3]+t]/g[3] ;
+			temp2 += (double)roi_avg[i*g[3]+t]*(double)roi_avg[i*g[3]+t]/g[3];
+  		}
+
+  		roi_var[i] = sqrt(temp2- temp*temp);
+
+  }
+
+
+  // # pragma omp parallel for
+  for (int i = 0; i < valid.size(); ++i)
+  {	
+  	int roi_no = roi_image[(valid[i].z*g[1] +valid[i].y)*g[2] + valid[i].x];
+  	if(roi_no==0)
+  		continue;
+  	roi_coeff[(roi_no-1)*valid_size+i]/=roi_var[roi_no];
+  	roi_coeff[(roi_no-1)*valid_size+i]/=roi_tot[roi_no];
+  }
+
+   // std::cout<<":::: init end ::::"<<std::endl;
+
+  free(EX_sq);
+  // free(roi_var);
+  // free(roi_tot);
+  // free(roi_avg);
+	// clock_t tStart = clock();
+	// free(EXY);
+
+
+	// #######FINDING MATRIX FOR CORRELATION OF COMBINATION########################################
+	free(EX);
+	int dime = g[3];
+	float timeseries = 1/(float)dime;
+	 //std::cout<<":::: blas start ::::"<<std::endl;
+	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,ROI_MAX,dime,valid_size,1.0,roi_coeff,valid_size,Valid_matrix,dime,0.0,roi_result_temp,dime);
+	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasTrans,ROI_MAX,valid_size,dime,timeseries,roi_result_temp,dime,Valid_matrix,dime,0.0,roi_result,valid_size);
+
+	// make result 
+	g_copy.dim[0] = g[0];
+	g_copy.dim[1] = g[1];
+	g_copy.dim[2] = g[2];
+	g_copy.dim[3] = ROI_MAX;
+	image_data_cpy.resize(g_copy);
+
+ // std::cout<<":::: output start ::::"<<std::endl;
+	#pragma omp parallel for collapse(3)
+	for (int x = 0; x < g[0]; ++x)
+	  for (int y = 0; y < g[1]; ++y)
+		 for (int z = 0; z < g[2]; ++z)
+		 	for(int r = 0;r<ROI_MAX;r++)
+				image_data_cpy[((r*g[2]+z)*g[1]+y)*g[0]+x] = 0;
+
+	#pragma omp parallel for
+	for(int r = 0;r<ROI_MAX;r++)
+		for (int i = 0; i < valid_size; ++i)
+		 	image_data_cpy[((r*g[2]+valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] = roi_result[r*valid_size +i];
+
+ 	// save the result
+
+	//image::io::nifti nifti_parser2;
+	// cmd = "gzip ";
+	// cmd+=ipfilename;
+	// system(cmd.c_str());
+	nifti_parser2.load_from_image(image_data_cpy);
+	std::string filename("avg_roi_avg_time_series.nii");
+	filename = ofname +"/"+ filename;
+	nifti_parser2.save_to_file(filename.c_str());
+	 //std::cout<<":::: output end  ::::"<<std::endl;
+*/
