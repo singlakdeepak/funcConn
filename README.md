@@ -29,21 +29,23 @@ Use the make command to compile the toolkit
 
 ## RUNNING THE FCONN TOOLKIT 
 
-Usage : fconn -i <fmri.nii/nii.gz> 
+Usage : fconn -i <fmri.nii/nii.gz> -o <project name>  -[r <roi_filename> <N>/R <roi_filename> <N> /s <x> <y> <z>/a] -[f] -[t] -[h]
 ```  
 Compulsory arguments(You have to specify the following):-
 	 -i	path of the input volume
-	 -o	project name(will create a directory with same name with the results in it )
+	 -o	project name (will create a directory with same name with the results in it)
 Only one of the arguments must be present
-  	 -r 	path of the volume containg the desired ROI
-	-s 1	for seed to all voxel mode
-		 -x 	x-coordinate for seed (compulosry in -s mode)
+  	 -r 	path of the volume containing the desired ROI. 
+  	 -R     path of the volume containing the desired ROI.
+	 -s 1	for seed to all voxel mode
+		 -x x-coordinate for seed (compulosry in -s mode)
 		 -y	y-coordinate for seed (compulosry in -s mode)
 		 -z	z-coordinate for seed (compulosry in -s mode)
-	-a 1	for all voxels to all voxels mode
+	 -a 	for all voxels to all voxels mode
 Optional arguments(You may optionally specify the following)
 	-t 	an upper threshold
 	-h	display the help message
+	-f  report FLOPs
 ```
 ## UNDERSTANDING THE OUTPUT
 The toolkit will create a directory named the same as that of the name given as in -o option. Inside the directory there will be:

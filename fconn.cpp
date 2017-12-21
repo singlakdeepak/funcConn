@@ -1382,18 +1382,18 @@ void showhelpinfo()
   std::cout<<"Compulsory arguments(You have to specify the following)\n";
   std::cout<<"\t -i\t\t filename of the input volume \n";
   std::cout<<"\t -o \t\t project name  \n ";
-  std::cout<<" one of the arguments must be present \n";
-  std::cout<<"\t -r <roi_filename> <N>\t\t filename of the volume containg the desired ROI \n";
-  std::cout<<"\t -R <roi_filename> <N> \t\t filename of the volume containg the desired ROI \n";
+  std::cout<<"Only one of the arguments must be present \n";
+  std::cout<<"\t -r <roi_filename> <N>\t\t filename of the volume containing the desired ROI \n";
+  std::cout<<"\t -R <roi_filename> <N> \t\t filename of the volume containing the desired ROI \n";
   std::cout<<"\t -s x y z  \t\t for seed to all voxel mode(no argument) \n";
-  std::cout<<"\t\t x \t\t x-coordinate for seed (compulosry in -s mode if -r options not there)\n";
-  std::cout<<"\t\t y \t\t y-coordinate for seed (compulosry in -s mode if -r options not there)\n";
-  std::cout<<"\t\t z \t\t z-coordinate for seed (compulosry in -s mode if -r options not there)\n";
-  std::cout<<"\t -a \t\t for all voxels to all voxels mode(no argument) \n";
-  std::cout<<"\t -f \t\t report FLOPS \n";
+  std::cout<<"\t\t x \t\t x-coordinate for seed (compulsory in -s mode if -r option's not there)\n";
+  std::cout<<"\t\t y \t\t y-coordinate for seed (compulsory in -s mode if -r option's not there)\n";
+  std::cout<<"\t\t z \t\t z-coordinate for seed (compulspry in -s mode if -r option's not there)\n";
+  std::cout<<"\t -a \t\t for all voxels to all voxels mode(no argument) \n";  
   std::cout<<"Optional arguments(You may optionally specify the following)\n";
   std::cout<<"\t -t \t an upper threshold  \n ";
   std::cout<<"\t -h \t display this message  \n ";
+  std::cout<<"\t -f \t\t report FLOPS \n";
   // 
 }
 /* ###################################################### NON-OPTIMIZED CODE############################################ 
