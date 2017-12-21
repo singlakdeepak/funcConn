@@ -1380,11 +1380,11 @@ void showhelpinfo()
  std::cout<<"Usage :\n fconn -i <fmri.nii/nii.gz> -o <project name>  -[r <roi_filename> <N>/R <roi_filename> <N> /s <x> <y> <z>/a] -[f] -[t] -[h] \n";
   
   std::cout<<"Compulsory arguments(You have to specify the following)\n";
-  std::cout<<"\t -i\t\t filename of the input volume \n";
+  std::cout<<"\t -i\t\t path of the input volume \n";
   std::cout<<"\t -o \t\t project name  \n ";
   std::cout<<"Only one of the arguments must be present \n";
-  std::cout<<"\t -r <roi_filename> <N>\t\t filename of the volume containing the desired ROI \n";
-  std::cout<<"\t -R <roi_filename> <N> \t\t filename of the volume containing the desired ROI \n";
+  std::cout<<"\t -r <roi_filename> <N>\t\t path of the volume containing the desired ROI \n";
+  std::cout<<"\t -R <roi_filename> <N> \t\t path of the volume containing the desired ROI \n";
   std::cout<<"\t -s x y z  \t\t for seed to all voxel mode(no argument) \n";
   std::cout<<"\t\t x \t\t x-coordinate for seed (compulsory in -s mode if -r option's not there)\n";
   std::cout<<"\t\t y \t\t y-coordinate for seed (compulsory in -s mode if -r option's not there)\n";
