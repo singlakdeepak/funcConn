@@ -182,8 +182,8 @@ def pearson_corr_Ankita(in_file, atlas_file):
     from os.path import join as opj
     sub_id = in_file.split('/')[-1].split('.')[0]
     coff_matrix_dir = opj(os.getcwd(),sub_id)
-    if not os.path.exists(coff_matrix_dir):
-        os.mkdir(coff_matrix_dir)
+    if os.path.exists(coff_matrix_dir):
+        shutil.rmtree(coff_matrix_dir)
     atlasObject = nib.load(atlas_file)
     atlas = atlasObject.get_data()
     N_ROIs = int(np.max(atlas) - np.min(atlas))
