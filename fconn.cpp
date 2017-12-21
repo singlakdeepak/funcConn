@@ -5,8 +5,8 @@
 
 	}
 #else
-    #include "mkl.h"
-    #include "mkl_cblas.h"
+    // #include "mkl.h"
+    // #include "mkl_cblas.h"
 #endif
 
 
@@ -139,18 +139,47 @@ void seed_correl(){
 
   image_data_cpy = image_data;
 
+  std::string t_ipfilename,t_maskfilename;
+  t_ipfilename = ipfilename;
+  t_maskfilename = maskfilename;
+
+  if(ipfilename.find(".gz")!=std::string::npos){
+
+  		t_ipfilename = t_ipfilename.substr(0,(t_ipfilename.length()-3));
+
+  }
+  if(mask && maskfilename.find(".gz")!=std::string::npos){
+
+  		t_maskfilename = t_maskfilename.substr(0,(t_maskfilename.length()-3));
+
+  }
+
 	//LOADING THE IMAGE
-  if(nifti_parser.load_from_file(ipfilename));
+  if(nifti_parser.load_from_file(t_ipfilename));
 	  nifti_parser >> image_data;
 
 	// LOADING THE MASK
-  if(mask&&nifti_parser2.load_from_file(maskfilename))
+  if(mask&&nifti_parser2.load_from_file(t_maskfilename))
   	   nifti_parser2 >> mask_image;
 
 
-  std::string cmd = "gzip ";
-  cmd+=ipfilename;
-  system(cmd.c_str());
+if(ipfilename.find(".gz")!=std::string::npos){
+
+		  std::string cmd = "rm ";
+  		  cmd+=t_ipfilename;
+  		  system(cmd.c_str());
+
+  		
+
+  }
+  if(mask && maskfilename.find(".gz")!=std::string::npos){
+
+  	  	  std::string cmd = "rm ";
+  		  cmd+=t_maskfilename;
+  		  system(cmd.c_str());
+
+  }
+
 
   
   
@@ -165,9 +194,6 @@ void seed_correl(){
   		std::cout<<":::: ERROR INVALID MASK ::::"<<std::endl;
   		return;
   	}
-  	cmd = "gzip ";
-  	cmd+=maskfilename;
-  	system(cmd.c_str());
   }
 
 
@@ -357,19 +383,48 @@ void all_pair_corr(){
   std::vector<Valid> valid;
 
   image_data_cpy = image_data;
+  std::string t_ipfilename,t_maskfilename;
+  t_ipfilename = ipfilename;
+  t_maskfilename = maskfilename;
+
+  if(ipfilename.find(".gz")!=std::string::npos){
+
+  		t_ipfilename = t_ipfilename.substr(0,(t_ipfilename.length()-3));
+
+  }
+  if(mask && maskfilename.find(".gz")!=std::string::npos){
+
+  		t_maskfilename = t_maskfilename.substr(0,(t_maskfilename.length()-3));
+
+  }
 
 	//LOADING THE IMAGE
-  if(nifti_parser.load_from_file(ipfilename));
+  if(nifti_parser.load_from_file(t_ipfilename));
 	  nifti_parser >> image_data;
 
-  std::string cmd = "gzip ";
-  cmd+=ipfilename;
-  system(cmd.c_str());
-
 	// LOADING THE MASK
-  if(mask&&nifti_parser2.load_from_file(maskfilename))
+  if(mask&&nifti_parser2.load_from_file(t_maskfilename))
   	   nifti_parser2 >> mask_image;
-  
+ 
+ if(ipfilename.find(".gz")!=std::string::npos){
+
+		  std::string cmd = "rm ";
+  		  cmd+=t_ipfilename;
+  		  system(cmd.c_str());
+
+  		
+
+  }
+  if(mask && maskfilename.find(".gz")!=std::string::npos){
+
+  	  	  std::string cmd = "rm ";
+  		  cmd+=t_maskfilename;
+  		  system(cmd.c_str());
+
+  }
+
+
+
   image::geometry<4> g = image_data.geometry();
   image::geometry<4> g_copy;
   image::geometry<3> g_mask;
@@ -377,9 +432,6 @@ void all_pair_corr(){
 	//CHECK IF THE GEOMETRY OF THE MASK AND IMAGE IS SAME
   if(mask){
   	g_mask = mask_image.geometry();
-  	cmd = "gzip ";
-  	cmd+=maskfilename;
-  	system(cmd.c_str());
   	if(g_mask[0]!=g[0]||g_mask[1]!=g[1]||g_mask[2]!=g[2]){
   		std::cout<<":::: ERROR INVALID MASK ::::"<<std::endl;
   		return;
@@ -613,26 +665,55 @@ void avg_roi_time_corr(){
   std::vector<Valid> valid;
 
   image_data_cpy = image_data;
+  std::string t_ipfilename,t_maskfilename,t_roifname;
+  t_ipfilename = ipfilename;
+  t_maskfilename = maskfilename;
+  t_roifname = roifname;
+
+  if(ipfilename.find(".gz")!=std::string::npos){
+
+  		t_ipfilename = t_ipfilename.substr(0,(t_ipfilename.length()-3));
+
+  }
+  if(roifname.find(".gz")!=std::string::npos){
+
+  		t_roifname = t_roifname.substr(0,(t_roifname.length()-3));
+
+  }
+  if(mask && maskfilename.find(".gz")!=std::string::npos){
+
+  		t_maskfilename = t_maskfilename.substr(0,(t_maskfilename.length()-3));
+
+  }
 
 	//LOADING THE IMAGE
-  if(nifti_parser.load_from_file(ipfilename));
+  if(nifti_parser.load_from_file(t_ipfilename));
 	  nifti_parser >> image_data;
+ 
+   if(ipfilename.find(".gz")!=std::string::npos){
 
-	try{  
-		std::string cmd = "gzip ";
-	  	cmd+=ipfilename;
-	  	system(cmd.c_str());
-	}catch(...){
+			  std::string cmd = "rm ";
+	  		  cmd+=t_ipfilename;
+	  		  system(cmd.c_str());
 
-			std::cout<<"Gzip problem caught"<<std::endl;
-	}
-	std::cout<<ipfilename<<std::endl;
+	  		
+
+	  }
 
 	// LOADING THE ROI
-  if(nifti_parser2.load_from_file(roifname))
+  if(nifti_parser2.load_from_file(t_roifname))
   	   nifti_parser2 >> roi_image;
 
-	std::cout<<roifname<<std::endl;  
+  	if(roifname.find(".gz")!=std::string::npos){
+
+			  std::string cmd = "rm ";
+	  		  cmd+=t_roifname;
+	  		  system(cmd.c_str());
+
+	  		
+
+	  }
+	// std::cout<<roifname<<std::endl;  
   image::geometry<4> g = image_data.geometry();
   //image::geometry<4> g_copy;
   image::geometry<3> g_roi;
@@ -640,38 +721,31 @@ void avg_roi_time_corr(){
 	//CHECK IF THE GEOMETRY OF THE MASK AND IMAGE IS SAME
    	g_roi = roi_image.geometry();
    	
-   	try{
-	   	std::string cmd = "gzip ";
-	  	cmd+=roifname;
-	  	system(cmd.c_str());
-  	}catch(...){
-
-			std::cout<<"Gzip problem caught"<<std::endl;
-	}
 
   	if(g_roi[0]!=g[0]||g_roi[1]!=g[1]||g_roi[2]!=g[2]){
   		std::cout<<":::: ERROR INVALID MASK ::::"<<std::endl;
   		return;
   	}
   image::basic_image<int,3> mask_image;
-	if(mask&&nifti_parser.load_from_file(maskfilename))
+	if(mask&&nifti_parser.load_from_file(t_maskfilename))
 	  	   nifti_parser >> mask_image;
 	image::geometry<3> g_mask;
+
+	 
+	  if(mask && maskfilename.find(".gz")!=std::string::npos){
+
+	  	  	  std::string cmd = "rm ";
+	  		  cmd+=t_maskfilename;
+	  		  system(cmd.c_str());
+
+	  }
+
 
 
 		//CHECK IF THE GEOMETRY OF THE MASK AND IMAGE IS SAME
 	  if(mask){
 	  	g_mask = mask_image.geometry();
-	  	
-	  	try{
-		  	std::string cmd = "gzip ";
-	  		cmd+=maskfilename;
-	  		system(cmd.c_str());
-	  	}catch(...){
-
-			std::cout<<"Gzip problem caught"<<std::endl;
-		}
-
+  	
 	  	if(g_mask[0]!=g[0]||g_mask[1]!=g[1]||g_mask[2]!=g[2]){
 	  		std::cout<<":::: ERROR INVALID MASK ::::"<<std::endl;
 	  		return;
@@ -872,26 +946,55 @@ void avg_corr_roi(){
   std::vector<Valid> valid;
 
   image_data_cpy = image_data;
+  std::string t_ipfilename,t_maskfilename,t_roifname;
+  t_ipfilename = ipfilename;
+  t_maskfilename = maskfilename;
+  t_roifname = roifname;
+
+  if(ipfilename.find(".gz")!=std::string::npos){
+
+  		t_ipfilename = t_ipfilename.substr(0,(t_ipfilename.length()-3));
+
+  }
+  if(roifname.find(".gz")!=std::string::npos){
+
+  		t_roifname = t_roifname.substr(0,(t_roifname.length()-3));
+
+  }
+  if(mask && maskfilename.find(".gz")!=std::string::npos){
+
+  		t_maskfilename = t_maskfilename.substr(0,(t_maskfilename.length()-3));
+
+  }
 
 	//LOADING THE IMAGE
-  if(nifti_parser.load_from_file(ipfilename));
+  if(nifti_parser.load_from_file(t_ipfilename));
 	  nifti_parser >> image_data;
+ 
+   if(ipfilename.find(".gz")!=std::string::npos){
 
-	try{
-		std::string cmd = "gzip ";
-	  	cmd+=ipfilename;
-	  	system(cmd.c_str());
-	}catch(...){
+			  std::string cmd = "rm ";
+	  		  cmd+=t_ipfilename;
+	  		  system(cmd.c_str());
 
-			std::cout<<"Gzip problem caught"<<std::endl;
-	}
-	//std::cout<<ipfilename<<std::endl;
+	  		
+
+	  }
 
 	// LOADING THE ROI
-  if(nifti_parser.load_from_file(roifname))
-  	   nifti_parser >> roi_image;
+  if(nifti_parser2.load_from_file(t_roifname))
+  	   nifti_parser2 >> roi_image;
 
-	//std::cout<<roifname<<std::endl;  
+  	if(roifname.find(".gz")!=std::string::npos){
+
+			  std::string cmd = "rm ";
+	  		  cmd+=t_roifname;
+	  		  system(cmd.c_str());
+
+	  		
+
+	  }
+	// std::cout<<roifname<<std::endl;  
   image::geometry<4> g = image_data.geometry();
   //image::geometry<4> g_copy;
   image::geometry<3> g_roi;
@@ -899,35 +1002,31 @@ void avg_corr_roi(){
 	//CHECK IF THE GEOMETRY OF THE MASK AND IMAGE IS SAME
    	g_roi = roi_image.geometry();
    	
-   	try{
-	   	std::string cmd = "gzip ";
-	  	cmd+=roifname;
-	  	system(cmd.c_str());
-  	}catch(...){
 
-			std::cout<<"Gzip problem caught"<<std::endl;
-	}
   	if(g_roi[0]!=g[0]||g_roi[1]!=g[1]||g_roi[2]!=g[2]){
   		std::cout<<":::: ERROR INVALID MASK ::::"<<std::endl;
   		return;
   	}
   image::basic_image<int,3> mask_image;
-	if(mask&&nifti_parser.load_from_file(maskfilename))
+	if(mask&&nifti_parser.load_from_file(t_maskfilename))
 	  	   nifti_parser >> mask_image;
 	image::geometry<3> g_mask;
+
+	 
+	  if(mask && maskfilename.find(".gz")!=std::string::npos){
+
+	  	  	  std::string cmd = "rm ";
+	  		  cmd+=t_maskfilename;
+	  		  system(cmd.c_str());
+
+	  }
+
 
 
 		//CHECK IF THE GEOMETRY OF THE MASK AND IMAGE IS SAME
 	  if(mask){
 	  	g_mask = mask_image.geometry();
-		try{ 
-		  	std::string cmd = "gzip ";
-	  		cmd+=maskfilename;
-	  		system(cmd.c_str());
-	  	}catch(...){
-
-			std::cout<<"Gzip problem caught"<<std::endl;
-		}
+  	
 	  	if(g_mask[0]!=g[0]||g_mask[1]!=g[1]||g_mask[2]!=g[2]){
 	  		std::cout<<":::: ERROR INVALID MASK ::::"<<std::endl;
 	  		return;
@@ -1165,10 +1264,10 @@ void getattributes(int argc,char *argv[])
 			try
 			{
 				gzip = true;
-				std::string command = "gunzip ";
+				std::string command = "gunzip -k ";
 				command += ipfilename;
 				system(command.c_str());
-				ipfilename = ipfilename.substr(0,(ipfilename.length()-3));
+				// ipfilename = ipfilename.substr(0,(ipfilename.length()-3));
 			}catch(...){
 
 				std::cout<<"Gunzip problem caught"<<std::endl;
@@ -1187,10 +1286,10 @@ void getattributes(int argc,char *argv[])
 		if(roifname.find(".gz")!=std::string::npos){
 			try{
 				gzip = true;
-				std::string command = "gunzip ";
+				std::string command = "gunzip -k ";
 				command += roifname;
 				system(command.c_str());
-				roifname = roifname.substr(0,(roifname.length()-3));
+				// roifname = roifname.substr(0,(roifname.length()-3));
 			}catch(...){
 
 				std::cout<<"Gunzip problem caught"<<std::endl;
@@ -1207,10 +1306,10 @@ void getattributes(int argc,char *argv[])
 		if(roifname.find(".gz")!=std::string::npos){
 			try{
 				gzip = true;
-				std::string command = "gunzip ";
+				std::string command = "gunzip -k ";
 				command += roifname;
 				system(command.c_str());
-				roifname = roifname.substr(0,(roifname.length()-3));
+				// roifname = roifname.substr(0,(roifname.length()-3));
 			}catch(...){
 
 				std::cout<<"Gunzip problem caught"<<std::endl;
@@ -1250,10 +1349,10 @@ void getattributes(int argc,char *argv[])
 				if(maskfilename.find(".gz")!=std::string::npos){
 					try{
 						gzip = true;
-						std::string command = "gunzip ";
+						std::string command = "gunzip -k ";
 						command += maskfilename;
 						system(command.c_str());
-						maskfilename = maskfilename.substr(0,(maskfilename.length()-3));
+						// maskfilename = maskfilename.substr(0,(maskfilename.length()-3));
 					}catch(...){
 
 						std::cout<<"Gunzip problem caught"<<std::endl;
