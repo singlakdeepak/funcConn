@@ -176,7 +176,7 @@ if(ipfilename.find(".gz")!=std::string::npos){
 
   	  	  std::string cmd = "rm ";
   		  cmd+=t_maskfilename;
-  		  system(cmd.c_str());
+  		 // system(cmd.c_str());
 
   }
 
@@ -419,7 +419,7 @@ void all_pair_corr(){
 
   	  	  std::string cmd = "rm ";
   		  cmd+=t_maskfilename;
-  		  system(cmd.c_str());
+  		  //system(cmd.c_str());
 
   }
 
@@ -708,7 +708,7 @@ void avg_roi_time_corr(){
 
 			  std::string cmd = "rm ";
 	  		  cmd+=t_roifname;
-	  		  system(cmd.c_str());
+	  		  //system(cmd.c_str());
 
 	  		
 
@@ -736,7 +736,7 @@ void avg_roi_time_corr(){
 
 	  	  	  std::string cmd = "rm ";
 	  		  cmd+=t_maskfilename;
-	  		  system(cmd.c_str());
+	  		  //system(cmd.c_str());
 
 	  }
 
@@ -989,7 +989,7 @@ void avg_corr_roi(){
 
 			  std::string cmd = "rm ";
 	  		  cmd+=t_roifname;
-	  		  system(cmd.c_str());
+	  		  //system(cmd.c_str());
 
 	  		
 
@@ -1017,7 +1017,7 @@ void avg_corr_roi(){
 
 	  	  	  std::string cmd = "rm ";
 	  		  cmd+=t_maskfilename;
-	  		  system(cmd.c_str());
+	  		  //system(cmd.c_str());
 
 	  }
 

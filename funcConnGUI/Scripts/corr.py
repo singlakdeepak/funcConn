@@ -191,7 +191,7 @@ def pearson_corr_Ankita(in_file, atlas_file):
     # Please change it here accordingly. I shall automate it after 
     # coming back.
     args = ("/home/deepak/Desktop/funcConn/./fconn.o", "-i", in_file, 
-            "-r", atlas_file, str(N_ROIs), "-o", coff_matrix_dir)
+            "-R", atlas_file, str(N_ROIs), "-o", coff_matrix_dir)
 
     popen = subprocess.Popen(args, stdout=subprocess.PIPE)
     popen.wait()
