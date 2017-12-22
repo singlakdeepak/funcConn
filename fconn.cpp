@@ -4,9 +4,14 @@
 		#include <cblas.h>
 
 	}
+#elif BUILD2
+	extern "C" {
+
+		#include <nvblas.h>
+	} 
 #else
-    // #include "mkl.h"
-    // #include "mkl_cblas.h"
+    #include "mkl.h"
+    #include "mkl_cblas.h"
 #endif
 
 
