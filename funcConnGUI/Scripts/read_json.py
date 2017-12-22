@@ -543,6 +543,10 @@ def call_stat_Analysis_bw_grps(Files_for_stats_dict,
 
 if __name__ == '__main__':
 
+    # Kabir : Build a command line system for this
+    QtMode = False
+    print("Executing from Qt:", QtMode)
+
     start = timeit.default_timer()
     JSONFile = str(sys.argv[1])
     # JSONFile = '/home1/ee3140506/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
@@ -573,6 +577,17 @@ if __name__ == '__main__':
     CorrROImapFiles = {}
     transformedROIsDict = {}
     func2stdDict = {}
+
+    #Kabir : Where is outputDir getting created (im guessing in Qt)? What if it's not there(if running from cmd line)?
+    if not (os.path.exists(OUTPUT_DIR)):
+        os.mkdir(OUTPUT_DIR)
+
+    #Kabir : If running from command line I need JSON file copied to output dir along with the functional files
+    if not (os.path.exists(OUTPUT_DIR+'/'+JSONFile)):
+        os.system("cp "+JSONFile+" "+OUTPUT_DIR+"/")
+
+
+
     if not (os.path.exists(TEMP_DIR_FOR_STORAGE)):
         os.mkdir(TEMP_DIR_FOR_STORAGE)
 
@@ -591,6 +606,12 @@ if __name__ == '__main__':
     
     if (ProcessingWay==0):
         FunctionaltxtFiles = AnalysisParams['FilesInfo']['FunctionalFilePaths']
+
+        #Kabir Copying functional file to output folder in non-Qt mode
+        if not QtMode:
+            for funcfile in FunctionaltxtFiles:
+                os.system("cp "+funcfile+" "+OUTPUT_DIR+"/")
+
         StructuraltxtFiles = AnalysisParams['FilesInfo']['StructuralFilePaths']
 
         for i in range(Ngroups):
@@ -636,6 +657,11 @@ if __name__ == '__main__':
         Functional and Structural Files.
         '''
         FunctionaltxtFiles = AnalysisParams['FilesInfo']['FunctionalFilePaths']
+
+        if not QtMode:
+            for funcfile in FunctionaltxtFiles:
+                os.system("cp "+funcfile+" "+OUTPUT_DIR+"/")
+
         StructuraltxtFiles = AnalysisParams['FilesInfo']['StructuralFilePaths']
         for i in range(Ngroups):
             ProcName = 'CorrCalc_group%s'%i
