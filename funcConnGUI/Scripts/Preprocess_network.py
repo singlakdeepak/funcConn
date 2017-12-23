@@ -767,10 +767,8 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
 
 def ROI_transformation(name = 'registration'):
     register = Workflow(name=name)
-    inputnode = Node(interface = util.IdentityInterface(fields=['source_files',
-                                                                'ROI_File',
-                                                                'func2std']))
-    outputnode = Node(interface= util.IdentityInterface(fields = ['transformed_ROI']))
+    inputnode = Node(name = 'inputspec', interface = util.IdentityInterface(fields=['source_files','ROI_File','func2std']))
+    outputnode = Node(name = 'outputspec', interface= util.IdentityInterface(fields = ['transformed_ROI']))
     meanfunc = MapNode(interface=fsl.ExtractROI(t_size=1),
                              iterfield=['in_file', 't_min'],
                              name = 'meanfunc')

@@ -27,6 +27,7 @@ from nipype.interfaces import fsl
 import corr
 import ttest
 from os.path import join as opj
+import ipdb;
 threads = 8
 def get_TR(in_file):
     import nibabel
@@ -309,9 +310,10 @@ def run_Preprocessing(AnalysisParams,
             ProcessedFuncouts = [opj(each, 'filtered_func_data.nii.gz') for each in FeatFiles]
             func2std_DATASINK = [opj(each, 'reg/example_func2standard.mat') for each in FeatFiles]
             ROI_REG_DATASINK = OUTPUT_DIR + '/tmp/%s/datasink_transformedROI/'%RegistrationName
+            ipdb.set_trace()
             Reg_WorkFlow = parallelPreproc.ROI_transformation(name = RegistrationName)
             Reg_WorkFlow.inputs.inputspec.source_files = ProcessedFuncouts
-            Reg_WorkFlow.inputs.inputspec.ROI_File = ROI_File
+            Reg_WorkFlow.inputs.inputspec.ROI_File = ROIFile
             Reg_WorkFlow.inputs.inputspec.func2std = func2std_DATASINK
             Reg_WorkFlow.base_dir = TEMP_DIR_FOR_STORAGE
             Reg_WorkFlow.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
@@ -643,6 +645,7 @@ if __name__ == '__main__':
                                                     Group= i)
                 print('Preprocessed Files are: ', Preprocessed_Files)
                 CorrROImapFiles[ProcName] = Preprocessed_Files
+        ipdb.set_trace()
 
         # for j in range(len(Preprocessed_Files)):
         #     args = ("../../fconn.o", "-i", ProcessedFileName, "-o", dst + 'sub%d'%j, "-r", ROIFile)
@@ -730,7 +733,10 @@ if __name__ == '__main__':
         file.write("Total time taken for Correlation calculation: %ss \n"%(stop2 - stop1))
         Totaltime += stop2 - stop1
 
+
+        ipdb.set_trace()
         stop2 = timeit.default_timer()
+
 
 
         doAnalysiswtGrps = AnalysisParams['Stats']['Analysis within Groups']
