@@ -14,6 +14,12 @@
     #include "mkl_cblas.h"
 #endif
 
+bool measure = false;
+// #ifdef MAT
+// 	measure = false;
+// #else
+// 	measure = true;
+// #endif
 
 #include <omp.h>
 #include <iostream>
@@ -65,6 +71,18 @@ int main (int argc,char *argv[])
   {
 	showhelpinfo();
 	exit(1);
+  }
+  
+  if (flops==true)
+  {
+  		if (measure==true)
+  		{
+  			std::cout<<"Measuring flops for all ops"<<std::endl;
+  		}
+  		else
+  		{
+  			std::cout<<"Measuring flops for only Dgemm"<<std::endl;
+  		}
   }
   
  // std::cout<<" 1"<<std::endl;
@@ -361,8 +379,15 @@ if(ipfilename.find(".gz")!=std::string::npos){
 	int dime = g[3];
 	float timeseries = 1/(float)dime;
 	// std::cout<<m<<std::endl;
-	cblas_dgemv(CblasRowMajor,CblasNoTrans,m,dime,timeseries,Valid_matrix,dime,seed,1,0.0,Corr,1);
-	 
+	// cblas_dgemv(CblasRowMajor,CblasNoTrans,m,dime,timeseries,Valid_matrix,dime,seed,1,0.0,Corr,1);
+	#ifdef BUILD2
+	  	std::cout<<"DEPRECATED RUN ON CEREBRUM....."<<std::endl;
+	  	exit(0);
+	  #else
+	    cblas_dgemv(CblasRowMajor,CblasNoTrans,m,dime,timeseries,Valid_matrix,dime,seed,1,0.0,Corr,1);
+	  #endif
+
+
 	for (int i = 0; i < valid.size(); ++i)
 		image_data_cpy[((valid[i].z)*g[1]+valid[i].y)*g[0]+valid[i].x] = Corr[i];
 
@@ -470,7 +495,11 @@ void all_pair_corr(){
 			temp += (double)image_data[((t*g[2] + z)*g[1]+y)*g[0]+x]/g[3] ;
 			temp2 += (double)image_data[((t*g[2] + z)*g[1]+y)*g[0]+x]*(double)image_data[((t*g[2] + z)*g[1]+y)*g[0]+x]/g[3];
 		  }
-		  time_taken+=(double)(clock()-tStart)/CLOCKS_PER_SEC;
+		  if (measure)
+		  {
+		  	time_taken+=(double)(clock()-tStart)/CLOCKS_PER_SEC;	
+		  }
+		  
 
 		  if(!mask){
 			  if(temp > max(20,thresh)){
@@ -536,7 +565,11 @@ void all_pair_corr(){
 
 	}
   }
-  time_taken+=(double)(clock()-tStart)/CLOCKS_PER_SEC;
+  if (measure)
+  {
+  	time_taken+=(double)(clock()-tStart)/CLOCKS_PER_SEC;	
+  }
+  
 	free(EX_sq);
 	// clock_t tStart = clock();
 	// free(EXY);
@@ -597,14 +630,17 @@ void all_pair_corr(){
 
 	  tStart = clock();
 	  // cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,ROI_MAX,valid_size,dime,timeseries,roi_avg,dime,Valid_matrix,valid_size,0.0,res,valid_size);
-	  // #ifdef BUILD2
-	  // 	dgemm_('y','y',ROI_MAX,valid_size,dime,timeseries,roi_avg,ROI_MAX,Valid_matrix,valid_size,0.0,res,ROI_MAX);
-	  // #else
-	  // cblas_dgemm(CblasColMajor,CblasTrans,CblasTrans,ROI_MAX,valid_size,dime,timeseries,roi_avg,ROI_MAX,Valid_matrix,valid_size,0.0,res,ROI_MAX);
-	  // #endif
+	  #ifdef BUILD2
+	  	 char trans = 'T';
+	  	 double gamma = 0.0;
+	  	dgemm_(&trans,&trans,&n,&n,&dime,&timeseries,Valid_matrix_chunk,&dime,Valid_matrix_chunk_trans,&n,&gamma,res,&n);
+	  #else
+	    cblas_dgemm(CblasColMajor,CblasTrans,CblasTrans,n,n,dime,timeseries,Valid_matrix_chunk,dime,Valid_matrix_chunk_trans,n,0.0,res,n);
+	  #endif
 
 	  // cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,n2,n3,dime,timeseries,Valid_matrix_chunk,dime,Valid_matrix_chunk_trans,n3,0.0,res,n3);
-	  cblas_dgemm(CblasColMajor,CblasTrans,CblasTrans,n2,n3,dime,timeseries,Valid_matrix_chunk,n2,Valid_matrix_chunk_trans,n3,0.0,res,n2);
+	  // cblas_dgemm(CblasColMajor,CblasTrans,CblasTrans,n2,n3,dime,timeseries,Valid_matrix_chunk,n2,Valid_matrix_chunk_trans,n3,0.0,res,n2);
+	  // cblas_dgemm(CblasColMajor,CblasTrans,CblasTrans,n,n,dime,timeseries,Valid_matrix_chunk,dime,Valid_matrix_chunk_trans,n,0.0,res,n); FINALLY
 	  time_taken+=(double)(clock()-tStart)/CLOCKS_PER_SEC;
 	  //std::cout<<"Time taken:  for CORRELATION "<< ((double)(clock() - tStart)/CLOCKS_PER_SEC)<<std::endl;
 	  //timeTk += (double)(clock() - tStart)/CLOCKS_PER_SEC ;
@@ -622,7 +658,8 @@ void all_pair_corr(){
 		std::ofstream f(s1,std::ios::binary|std::ios::app);
 		for (int resj = 0; resj < n3; ++resj){
 		   // f<< res[resi*n+resj]<<'\n';
-		   double tmp = res[resj*n+resi];
+		   // double tmp = res[resi*n+resj];
+			double tmp = res[resj*n+resi];
 		  f.write(reinterpret_cast<char *>(&tmp),sizeof(double));
 
 		}
@@ -645,6 +682,7 @@ void all_pair_corr(){
 		  filename+=type;
 		  std::ofstream f(s1,std::ios::binary|std::ios::app);
 		  for (int resi = 0; resi < n2; ++resi){
+		  	// double tmp = res[resi*n+resj];
 		  	double tmp = res[resj*n+resi];
 		  	f.write(reinterpret_cast<char *>(&tmp),sizeof(double));
 		  }
@@ -790,7 +828,11 @@ void avg_roi_time_corr(){
 			temp += (double)image_data[((t*g[2] + z)*g[1]+y)*g[0]+x]/g[3] ;
 			temp2 += image_data[((t*g[2] + z)*g[1]+y)*g[0]+x]*image_data[((t*g[2] + z)*g[1]+y)*g[0]+x]/g[3];
 		  }
-		  time_taken += (double)(clock()-tStart)/CLOCKS_PER_SEC;
+		  if (measure)
+		  {
+		  	time_taken += (double)(clock()-tStart)/CLOCKS_PER_SEC;	
+		  }
+		  
 			
 		  // else{
 				// int temp = -1;
@@ -814,7 +856,7 @@ void avg_roi_time_corr(){
 	  } 
 
   }
-std::cout<<"time taken :"<<time_taken<<std::endl;
+std::cout<<"time taken 1:"<<std::endl;
 
 
 	//################## MAKING A MATRIX OF NORMALIZED DATA###########################################
@@ -828,7 +870,7 @@ std::cout<<"time taken :"<<time_taken<<std::endl;
   
   // std::cout<<"val "<<roi_avg[0]<<std::endl;
   tStart = clock();
-  #pragma omp parallel for shared(time_taken,roi_tot,roi_avg)
+  #pragma omp parallel for shared(roi_tot,roi_avg)
   for (int i = 0; i < valid.size(); ++i)
   {	
   	
@@ -859,9 +901,13 @@ std::cout<<"time taken :"<<time_taken<<std::endl;
 	
 
   }
-
-  time_taken += (double)(clock()-tStart)/CLOCKS_PER_SEC;
-  std::cout<<"time taken :"<<time_taken<<std::endl;
+  if (measure)
+  {
+  	time_taken += (double)(clock()-tStart)/CLOCKS_PER_SEC;
+  	std::cout<<"time taken 2:"<<time_taken<<std::endl;	
+  }
+  
+  
   tStart = clock();
 
   // #pragma omp parallel for
@@ -879,8 +925,12 @@ std::cout<<"time taken :"<<time_taken<<std::endl;
   		// roi_var[i] = sqrt(temp2- temp*temp);
 
   }
+  if (measure)
+  {
+
   time_taken += (double)(clock()-tStart)/CLOCKS_PER_SEC;
-  std::cout<<"time taken :"<<time_taken<<std::endl;
+  std::cout<<"time taken 3:"<<time_taken<<std::endl;	
+  }
   // #pragma omp parallel for
   // for (int i = 0; i < ROI_MAX; ++i){	
   // 		if(roi_var[i]!=0){
@@ -933,9 +983,13 @@ std::cout<<"time taken :"<<time_taken<<std::endl;
 
 	  // cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,ROI_MAX,valid_size,dime,timeseries,roi_avg,dime,Valid_matrix,valid_size,0.0,res,valid_size);
 	  #ifdef BUILD2
-	  	dgemm_('y','y',ROI_MAX,valid_size,dime,timeseries,roi_avg,ROI_MAX,Valid_matrix,valid_size,0.0,res,ROI_MAX);
+	  	char trans = 'T';
+	  	double gamma = 0.0;
+	  	int valid_size_int = (int) valid_size;
+	  	dgemm(&trans,&trans,&ROI_MAX,&valid_size_int,&dime,&timeseries,roi_avg,&ROI_MAX,Valid_matrix,&valid_size_int,&gamma,res,&ROI_MAX);
 	  #else
 	  cblas_dgemm(CblasColMajor,CblasTrans,CblasTrans,ROI_MAX,valid_size,dime,timeseries,roi_avg,ROI_MAX,Valid_matrix,valid_size,0.0,res,ROI_MAX);
+	  // cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,ROI_MAX,valid_size,dime,timeseries,roi_avg,dime,Valid_matrix,valid_size,0.0,res,valid_size);
 	  #endif
 	  time_taken += (double)(clock()-tStart)/CLOCKS_PER_SEC;
 	  std::cout<<"time taken :"<<time_taken<<std::endl;
@@ -949,7 +1003,16 @@ std::cout<<"time taken :"<<time_taken<<std::endl;
 	std::string filename("avg_roi_time_series.nii");
 	filename = ofname+"/"+ filename;
 	nifti_parser2.save_to_file(filename.c_str());
-	no_of_oper = 2*ROI_MAX*g[3]*valid_size+5*(g[0]*g[1]*g[2]*g[3])+(g[0]*g[1]*g[2]);
+
+	if (measure)
+	{
+		no_of_oper = 2*ROI_MAX*g[3]*valid_size+5*(g[0]*g[1]*g[2]*g[3])+(g[0]*g[1]*g[2]);	
+	}
+	else
+	{
+		no_of_oper = 2*ROI_MAX*g[3]*valid_size;
+	}
+	
 	std::cout<<"ROI_MAX, g[3], valid_size "<<ROI_MAX<<" "<<g[3]<<" "<<valid_size<<std::endl;
 	std::cout<<"no_of_oper :"<<no_of_oper<<std::endl;
 	std::cout<<"time taken :"<<time_taken<<std::endl;
@@ -1079,7 +1142,11 @@ void avg_corr_roi(){
 			temp += (double)image_data[((t*g[2] + z)*g[1]+y)*g[0]+x]/g[3] ;
 			temp2 += image_data[((t*g[2] + z)*g[1]+y)*g[0]+x]*image_data[((t*g[2] + z)*g[1]+y)*g[0]+x]/g[3];
 		  }
-		  time_taken += (double)(clock()-tStart)/CLOCKS_PER_SEC;
+		  if (measure)
+		  {
+		  	time_taken += (double)(clock()-tStart)/CLOCKS_PER_SEC;	
+		  }
+		  
 			
 		  // else{
 				// int temp = -1;
@@ -1117,7 +1184,7 @@ void avg_corr_roi(){
   
   // std::cout<<"val "<<roi_avg[0]<<std::endl;
   tStart = clock();
-  #pragma omp parallel for shared(time_taken,roi_tot,roi_avg)
+  #pragma omp parallel for shared(roi_tot,roi_avg)
   for (int i = 0; i < valid.size(); ++i)
   {	
   	
@@ -1148,9 +1215,12 @@ void avg_corr_roi(){
 	
 
   }
+  if (measure)
+  {
 
   time_taken += (double)(clock()-tStart)/CLOCKS_PER_SEC;
-  std::cout<<"time taken :"<<time_taken<<std::endl;
+  std::cout<<"time taken :"<<time_taken<<std::endl;	
+  }
   tStart = clock();
 
   // #pragma omp parallel for
@@ -1168,8 +1238,12 @@ void avg_corr_roi(){
   		roi_var[i] = sqrt(temp2- temp*temp);
 
   }
+  if (measure)
+  {
+
   time_taken += (double)(clock()-tStart)/CLOCKS_PER_SEC;
-  std::cout<<"time taken :"<<time_taken<<std::endl;
+  std::cout<<"time taken :"<<time_taken<<std::endl;	
+  }
   #pragma omp parallel for
   for (int i = 0; i < ROI_MAX; ++i){	
   		if(roi_var[i]!=0){
@@ -1185,7 +1259,7 @@ void avg_corr_roi(){
   }
 
 
-  free(EX_sq);
+  // free(EX_sq);
   // free(roi_var);
   // free(roi_tot);
 	// clock_t tStart = clock();
@@ -1193,7 +1267,7 @@ void avg_corr_roi(){
 
 
 	// #######FINDING MATRIX FOR CORRELATION OF COMBINATION########################################
-	free(EX);
+	// free(EX);
 	int dime = g[3];
 	int n =  8192;
 	// double * roi_chunk = (double * )malloc( sizeof(double)*ROI_MAX*n);
@@ -1219,7 +1293,11 @@ void avg_corr_roi(){
 	  tStart = clock();
 	  //cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,ROI_MAX,valid_size,dime,timeseries,roi_avg,dime,Valid_matrix,valid_size,0.0,res,valid_size);
 	  #ifdef BUILD2
-	  	dgemm_('y','y',ROI_MAX,valid_size,dime,timeseries,roi_avg,ROI_MAX,Valid_matrix,valid_size,0.0,res,ROI_MAX);
+	  	char trans = 'T';
+	  	double gamma = 0.0;
+	  	// std::cout<<"Start of dgemm"<<std::endl;
+	  	dgemm(&trans,&trans,&ROI_MAX,&valid_size,&dime,&timeseries,roi_avg,&ROI_MAX,Valid_matrix,&valid_size,&gamma,res,&ROI_MAX);
+	 	// std::cout<<"End of dgemm"<<std::endl; 
 	  #else
 	  cblas_dgemm(CblasColMajor,CblasTrans,CblasTrans,ROI_MAX,valid_size,dime,timeseries,roi_avg,ROI_MAX,Valid_matrix,valid_size,0.0,res,ROI_MAX);
 	  #endif
@@ -1235,7 +1313,16 @@ void avg_corr_roi(){
 	std::string filename("avg_roi_time_series.nii");
 	filename = ofname+"/"+ filename;
 	nifti_parser2.save_to_file(filename.c_str());
-	no_of_oper = 2*ROI_MAX*g[3]*valid_size+5*(g[0]*g[1]*g[2]*g[3])+(g[0]*g[1]*g[2]);
+
+	if (measure)
+	{
+		no_of_oper = 2*ROI_MAX*g[3]*valid_size+5*(g[0]*g[1]*g[2]*g[3])+(g[0]*g[1]*g[2]);	
+	}
+	else
+	{
+		no_of_oper = 2*ROI_MAX*g[3]*valid_size;
+	}
+	
 	std::cout<<"NO OF OPER :"<<no_of_oper<<std::endl;
 	std::cout<<"time taken :"<<time_taken<<std::endl;
 
