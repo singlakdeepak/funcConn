@@ -791,35 +791,36 @@ if __name__ == '__main__':
         ipdb.set_trace()
         stop2 = timeit.default_timer()
 
+        #Kabir : Adding support for not doing Ttest
+        if (AnalysisParams['Ttest']):
+            doAnalysiswtGrps = AnalysisParams['Stats']['Analysis within Groups']
+            doAnalysisbwGrps = AnalysisParams['Stats']['Analysis between Groups']
+            doNormalFisher = AnalysisParams['Stats']['doNormalFisher']
+            doSeparateFDR = AnalysisParams['Stats']['Separate FDR']
+            # if doAnalysiswtGrps:
+                # Do Something. The Function is yet to be defined.
 
+            # You can club the bw groups and wt groups correlations together 
+            # because mean and std are already calculated in that case.
+            if ((Ngroups==2)and doAnalysisbwGrps):
+                Gr1grGr2 = AnalysisParams['Stats']['Gr1>Gr2']
+                call_stat_Analysis_bw_grps(Corr_calculated_Files,[1],
+                                            OUTPUT_DIR, 
+                                            mask_file,
+                                            Gr1grGr2= Gr1grGr2)
+            elif ((Ngroups > 2) and doAnalysisbwGrps):
+                combinations = AnalysisParams['Stats']['Combinations']
+                call_stat_Analysis_bw_grps(Corr_calculated_Files, 
+                                    combinations, 
+                                    OUTPUT_DIR, 
+                                    mask_file)
+            if doAnalysiswtGrps:
+                call_stat_Analysis_wt_grps(Corr_calculated_Files,OUTPUT_DIR,mask_file)
 
-        doAnalysiswtGrps = AnalysisParams['Stats']['Analysis within Groups']
-        doAnalysisbwGrps = AnalysisParams['Stats']['Analysis between Groups']
-        doNormalFisher = AnalysisParams['Stats']['doNormalFisher']
-        doSeparateFDR = AnalysisParams['Stats']['Separate FDR']
-        # if doAnalysiswtGrps:
-            # Do Something. The Function is yet to be defined.
-
-        # You can club the bw groups and wt groups correlations together 
-        # because mean and std are already calculated in that case.
-        if ((Ngroups==2)and doAnalysisbwGrps):
-            Gr1grGr2 = AnalysisParams['Stats']['Gr1>Gr2']
-            call_stat_Analysis_bw_grps(Corr_calculated_Files,[1],
-                                        OUTPUT_DIR, 
-                                        mask_file,
-                                        Gr1grGr2= Gr1grGr2)
-        elif ((Ngroups > 2) and doAnalysisbwGrps):
-            combinations = AnalysisParams['Stats']['Combinations']
-            call_stat_Analysis_bw_grps(Corr_calculated_Files, 
-                                combinations, 
-                                OUTPUT_DIR, 
-                                mask_file)
-        if doAnalysiswtGrps:
-            call_stat_Analysis_wt_grps(Corr_calculated_Files,OUTPUT_DIR,mask_file)
-
-        stop = timeit.default_timer()
-        file.write("Total time taken for calculating statistics: %ss \n" %(stop - stop2))
-        Totaltime += stop - stop2
+            stop = timeit.default_timer()
+            file.write("Total time taken for calculating statistics: %ss \n" %(stop - stop2))
+            Totaltime += stop - stop2
+        
 
     print("Total time taken for running the program: ", Totaltime)
     file.write("Total time taken for running the program: %ss \n" %(Totaltime))

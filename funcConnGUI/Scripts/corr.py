@@ -31,7 +31,13 @@ def pearsonr_with_roi_mean_w_reg(in_file, atlas_file):
         brain_data = nib.load(in_file)
         brain = brain_data.get_data()
         brain_affine = brain_data.affine
+
+        #Kabir : Hardcoding for num of volumes reqd. Need to accept this From the user/JSON file. Add options : first k volumes, mid k volumes, last k volumes.
+        brain = brain[:,:,:,-175:]
+
         x_dim, y_dim, z_dim, num_volumes = brain.shape
+
+        print("No of volumes ",num_volumes)
         
         # Initialize a matrix of ROI time series and voxel time series
 
@@ -114,6 +120,10 @@ def pearsonr_with_roi_mean(in_file, atlas_file, mask_file):
         brain_data = nib.load(in_file)
         brain = brain_data.get_data()
         brain_affine = brain_data.affine
+
+        #Kabir : Hardcoding for num of volumes reqd. Need to accept this From the user/JSON file. Add options : first k volumes, mid k volumes, last k volumes.
+        brain = brain[:,:,:,-175:]
+
         x_dim, y_dim, z_dim, num_volumes = brain.shape
         
         # Initialize a matrix of ROI time series and voxel time series
