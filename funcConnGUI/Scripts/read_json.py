@@ -585,13 +585,67 @@ if __name__ == '__main__':
         os.mkdir(OUTPUT_DIR)
 
     #Kabir : If running from command line I need JSON file copied to output dir along with the functional files
+    ipdb.set_trace()
     if not (os.path.exists(OUTPUT_DIR+'/'+JSONFile)):
+        print("Copying JSON File")
         os.system("cp "+JSONFile+" "+OUTPUT_DIR+"/")
 
 
 
     if not (os.path.exists(TEMP_DIR_FOR_STORAGE)):
         os.mkdir(TEMP_DIR_FOR_STORAGE)
+
+
+    #Kabir : Providing facility for only calculating correlations if required
+    ##WARNING : copy pasted code : fix later
+
+    if not QtMode:
+        Only_Corr = AnalysisParams['Only_Corr']
+        if Only_Corr:
+            mask_not_provided = AnalysisParams['MaskNotProvided']
+            if  mask_not_provided:
+                print("Function not supported yet. Please provide mask")
+                sys.exit()
+            else:
+                mask_file = AnalysisParams['UseMaskFile']
+
+            stop2 = timeit.default_timer()
+
+
+            doAnalysiswtGrps = AnalysisParams['Stats']['Analysis within Groups']
+            doAnalysisbwGrps = AnalysisParams['Stats']['Analysis between Groups']
+            doNormalFisher = AnalysisParams['Stats']['doNormalFisher']
+            doSeparateFDR = AnalysisParams['Stats']['Separate FDR']
+
+            Corr_calculated_Files = AnalysisParams['Corr_calculated_Files']
+            # if doAnalysiswtGrps:
+                # Do Something. The Function is yet to be defined.
+
+            # You can club the bw groups and wt groups correlations together 
+            # because mean and std are already calculated in that case.
+            if ((Ngroups==2)and doAnalysisbwGrps):
+                Gr1grGr2 = AnalysisParams['Stats']['Gr1>Gr2']
+                call_stat_Analysis_bw_grps(Corr_calculated_Files,[1],
+                                            OUTPUT_DIR, 
+                                            mask_file,
+                                            Gr1grGr2= Gr1grGr2)
+            elif ((Ngroups > 2) and doAnalysisbwGrps):
+                combinations = AnalysisParams['Stats']['Combinations']
+                call_stat_Analysis_bw_grps(Corr_calculated_Files, 
+                                    combinations, 
+                                    OUTPUT_DIR, 
+                                    mask_file)
+            if doAnalysiswtGrps:
+                call_stat_Analysis_wt_grps(Corr_calculated_Files,OUTPUT_DIR,mask_file)
+
+            file = open(opj(OUTPUT_DIR,'timesREADME.txt'),'w')
+            stop = timeit.default_timer()
+            file.write("Total time taken for calculating statistics: %ss \n" %(stop - stop2))
+            # Totaltime += stop - stop2
+            print("Total time taken for running the program: ", stop-stop2)
+
+            sys.exit()
+
 
     mask_not_provided = AnalysisParams['MaskNotProvided']
     if  mask_not_provided:
