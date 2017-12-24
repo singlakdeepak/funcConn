@@ -568,6 +568,7 @@ void all_pair_corr(){
   if (measure)
   {
   	time_taken+=(double)(clock()-tStart)/CLOCKS_PER_SEC;	
+  	std::cout<<"Time taken"<<time_taken<<std::endl;
   }
   
 	free(EX_sq);
@@ -699,7 +700,15 @@ void all_pair_corr(){
 
 
 	long long valid_size = valid.size();
-	no_of_oper = 5*(g[0]*g[1]*g[2]*g[3])+(g[0]*g[1]*g[2]) + valid_size*valid_size*2*g[3];
+	if (measure)
+	{
+		no_of_oper = 5*(g[0]*g[1]*g[2]*g[3])+(g[0]*g[1]*g[2]) + valid_size*valid_size*2*g[3];
+	}
+	else
+	{
+		no_of_oper = valid_size*valid_size*2*g[3];
+	}
+	
 	//std::cout<<"Time taken:  for CORRELATION "<< timeTk<<std::endl;
 	std::cout<<"NO OF OPER :"<<no_of_oper<<std::endl;
 	std::cout<<"time taken :"<<time_taken<<std::endl;
