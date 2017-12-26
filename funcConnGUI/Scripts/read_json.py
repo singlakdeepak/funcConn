@@ -310,7 +310,7 @@ def run_Preprocessing(AnalysisParams,
             ProcessedFuncouts = [opj(each, 'filtered_func_data.nii.gz') for each in FeatFiles]
             func2std_DATASINK = [opj(each, 'reg/example_func2standard.mat') for each in FeatFiles]
             ROI_REG_DATASINK = OUTPUT_DIR + '/tmp/%s/datasink_transformedROI/'%RegistrationName
-            ipdb.set_trace()
+            # ipdb.set_trace()
             Reg_WorkFlow = parallelPreproc.ROI_transformation(name = RegistrationName)
             Reg_WorkFlow.inputs.inputspec.source_files = ProcessedFuncouts
             Reg_WorkFlow.inputs.inputspec.ROI_File = ROIFile
@@ -585,7 +585,7 @@ if __name__ == '__main__':
         os.mkdir(OUTPUT_DIR)
 
     #Kabir : If running from command line I need JSON file copied to output dir along with the functional files
-    ipdb.set_trace()
+    # ipdb.set_trace()
     if not (os.path.exists(OUTPUT_DIR+'/'+JSONFile)):
         print("Copying JSON File")
         os.system("cp "+JSONFile+" "+OUTPUT_DIR+"/")
@@ -617,7 +617,19 @@ if __name__ == '__main__':
             doNormalFisher = AnalysisParams['Stats']['doNormalFisher']
             doSeparateFDR = AnalysisParams['Stats']['Separate FDR']
 
-            Corr_calculated_Files = AnalysisParams['Corr_calculated_Files']
+            #Corr_calculated_Files = AnalysisParams['Corr_calculated_Files']
+            Corr_Files = AnalysisParams['Corr_Files']
+            Corr_calculated_Files = {}
+            for i in range(Ngroups):
+                ProcName = 'CorrCalc_group%s'%i
+                with open(Corr_Files[i]) as file:
+                    Corr_subs_in_this_group = [line.strip('\n') for line in file]
+                print('Corr Folders in this group: ',Corr_subs_in_this_group)
+                Corr_calculated_Files[ProcName] = Corr_subs_in_this_group
+
+
+            for corrfile in Corr_Files:
+                os.system("cp "+corrfile+" "+OUTPUT_DIR+"/")
             # if doAnalysiswtGrps:
                 # Do Something. The Function is yet to be defined.
 
@@ -699,7 +711,7 @@ if __name__ == '__main__':
                                                     Group= i)
                 print('Preprocessed Files are: ', Preprocessed_Files)
                 CorrROImapFiles[ProcName] = Preprocessed_Files
-        ipdb.set_trace()
+        # ipdb.set_trace()
 
         # for j in range(len(Preprocessed_Files)):
         #     args = ("../../fconn.o", "-i", ProcessedFileName, "-o", dst + 'sub%d'%j, "-r", ROIFile)
@@ -740,6 +752,12 @@ if __name__ == '__main__':
         the standard space. So, every ROI has to be registered to the functional image. 
         '''
         FeatFiles = AnalysisParams['FeatFilesInfo']['FeatFilePaths']
+
+        #Kabir Copying functional file to output folder in non-Qt mode
+        if not QtMode:
+            for featfile in FeatFiles:
+                os.system("cp "+featfile+" "+OUTPUT_DIR+"/")
+
         for i in range(Ngroups):
             ProcName = 'CorrCalc_group%s'%i
             with open(FeatFiles[i]) as file:
@@ -788,7 +806,7 @@ if __name__ == '__main__':
         Totaltime += stop2 - stop1
 
 
-        ipdb.set_trace()
+        # ipdb.set_trace()
         stop2 = timeit.default_timer()
 
         #Kabir : Adding support for not doing Ttest
