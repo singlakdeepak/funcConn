@@ -21,10 +21,8 @@ A user can also preprocess the data if he wants. All the preprocessing methods h
 Ascending, Descending or Interleaved order. You can also provide a Slice Time Correction file in the same format as that of FSL. 
 
 ### Motion Correction
-This option corrects the motion of the brain during the scan and calls FSL's MCFLIRT command at the backend.
+This option corrects the motion of the brain during the scan and calls FSL&rsquo;s MCFLIRT command at the backend.
     * BET Brain Extraction
     * Spatial Smoothing using SUSAN
     * Temporal filtering with both High Pass as well as low pass or BandPass
     * Intensity Normalization
- 
-
