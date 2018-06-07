@@ -22,7 +22,7 @@ Ascending, Descending or Interleaved order. You can also provide a Slice Time Co
 
 ### Motion Correction
 This option corrects the motion of the brain during the scan and calls FSL&rsquo;s MCFLIRT command at the backend.
-    * BET Brain Extraction
-    * Spatial Smoothing using SUSAN
-    * Temporal filtering with both High Pass as well as low pass or BandPass
-    * Intensity Normalization
+* BET Brain Extraction
+* Spatial Smoothing using SUSAN
+* Temporal filtering with both High Pass as well as low pass or BandPass
+* Intensity Normalization
