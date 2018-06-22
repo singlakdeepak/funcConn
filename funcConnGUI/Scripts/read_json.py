@@ -306,20 +306,30 @@ def run_Preprocessing(AnalysisParams,
             return ProcessedFilesDIRADDRESSES, ROIsinkouts, func2stdsinkouts
         
         else:
-
+            '''
+            In case the GSR is to be applied when Feat folders are there, applyGSR key should be true o/w
+            false. 
+            The GSR applied inputs will be found in the registration sub-directory in the temp directory. 
+            There will be a datasink specifically for these files from where the user can access them. 
+            '''
+            applyGSR = AnalysisParams['applyGSR']
             no_subjects = len(FeatFiles)
             ProcessedFuncouts = [opj(each, 'filtered_func_data.nii.gz') for each in FeatFiles]
+            MaskFiles = [opj(each, 'mask.nii.gz') for each in FeatFiles]
             if os.path.exists(opj(FeatFiles[0], 'reg/example_func2standard.mat')):
                 func2std_DATASINK = [opj(each, 'reg/example_func2standard.mat') for each in FeatFiles]
             else :
                 func2std_DATASINK = [opj(each, 'reg/example2standard_3mm.mat') for each in FeatFiles]
 
             ROI_REG_DATASINK = OUTPUT_DIR + '/tmp/%s/datasink_transformedROI/'%RegistrationName
+            GSR_APPLIED_IP = OUTPUT_DIR + '/tmp/%s/datasink_GSR_applied_ips/'%RegistrationName
             # ipdb.set_trace()
-            Reg_WorkFlow = parallelPreproc.ROI_transformation(name = RegistrationName)
+            Reg_WorkFlow = parallelPreproc.ROI_transformation(name = RegistrationName, applyGSR = applyGSR)
             Reg_WorkFlow.inputs.inputspec.source_files = ProcessedFuncouts
             Reg_WorkFlow.inputs.inputspec.ROI_File = ROIFile
             Reg_WorkFlow.inputs.inputspec.func2std = func2std_DATASINK
+            if applyGSR:
+                Reg_WorkFlow.inputs.inputspec.mask_files = MaskFiles
             Reg_WorkFlow.base_dir = TEMP_DIR_FOR_STORAGE
             Reg_WorkFlow.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
             regoutputs = Reg_WorkFlow.run('MultiProc', plugin_args={'n_procs': threads})
@@ -330,6 +340,15 @@ def run_Preprocessing(AnalysisParams,
                 transROIfile = transROIfile[0][1][0][1]
             ROIsinkouts=[]
             ROIsinkouts += [transROIfile[i][0] for i in range(no_subjects)]
+
+            if applyGSR:
+                GSRsink =  []
+                GSRsink +=[each for each in os.listdir(GSR_APPLIED_IP) if each.endswith('.json')]
+                with open(GSR_APPLIED_IP + GSRsink[0]) as JSON:
+                    gsrappliedip = json.load(JSON)
+                    gsrappliedip = gsrappliedip[0][1][0][1]
+                GSRsinkouts = []
+                GSRsinkouts += [gsrappliedip[i][0] for i in range(no_subjects)]
             return ProcessedFuncouts, ROIsinkouts, func2std_DATASINK
 
     return ProcessedFilesDIRADDRESSES

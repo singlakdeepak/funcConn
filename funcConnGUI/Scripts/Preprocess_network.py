@@ -765,10 +765,9 @@ def create_parallelfeat_preproc(name='featpreproc', highpass= True,
 
     return featpreproc
 
-def ROI_transformation(name = 'registration'):
+def ROI_transformation(name = 'registration', applyGSR = False):
     register = Workflow(name=name)
-    inputnode = Node(name = 'inputspec', interface = util.IdentityInterface(fields=['source_files','ROI_File','func2std']))
-    outputnode = Node(name = 'outputspec', interface= util.IdentityInterface(fields = ['transformed_ROI']))
+    inputnode = Node(name = 'inputspec', interface = util.IdentityInterface(fields=['source_files','mask_files','ROI_File','func2std']))
     meanfunc = MapNode(interface=fsl.ExtractROI(t_size=1),
                              iterfield=['in_file', 't_min'],
                              name = 'meanfunc')
@@ -777,8 +776,22 @@ def ROI_transformation(name = 'registration'):
                       name = 'inv_mat')
     transform_ROI = MapNode(fsl.ApplyXFM(interp='nearestneighbour'), 
                       iterfield = ['in_matrix_file','reference'],
-                      name='transform_ROI')
-    register.connect(inputnode, 'source_files', meanfunc, 'in_file')
+                      name='transform_ROI')    
+    if applyGSR:
+        GSR_node = MapNode(util.Function(function=global_sig_regression, 
+                                    input_names=['in_file','mask_file'],
+                                    output_names=['glb_reg_file_name']),
+                          iterfield=['in_file','mask_file'],
+                          name = 'gsr')
+        datasink_GSR_applied_ips = Node(interface=DataSink(), name="datasink_GSR_applied_ips")
+        outputnode = Node(name = 'outputspec', interface= util.IdentityInterface(fields = ['transformed_ROI','GSR_applied_inputs']))
+        featpreproc.connect(inputnode,'source_files', GSR_node, 'in_file')
+        featpreproc.connect(inputnode, 'mask_files', GSR_node, 'mask_file')
+        featpreproc.connect(GSR_node, 'glb_reg_file_name', meanfunc,'in_file')
+    else:
+        outputnode = Node(name = 'outputspec', interface= util.IdentityInterface(fields = ['transformed_ROI']))
+        register.connect(inputnode, 'source_files', meanfunc, 'in_file')
+    
     register.connect(inputnode, ('source_files', pickmiddle), meanfunc, 't_min')
     transform_ROI.inputs.padding_size = 0
     register.connect(inputnode,'func2std', inv_mat, 'in_file')
@@ -793,6 +806,9 @@ def ROI_transformation(name = 'registration'):
     """
     register.connect(transform_ROI, 'out_file', outputnode, 'transformed_ROI')
     register.connect(outputnode, 'transformed_ROI', datasink_transformedROI, 'out_file')
+    if applyGSR:
+        register.connect(GSR_node, 'glb_reg_file_name', outputnode, 'GSR_applied_inputs')
+        register.connect(outputnode, 'GSR_applied_inputs', datasink_GSR_applied_ips, 'out_file')    
     return register
 
 
