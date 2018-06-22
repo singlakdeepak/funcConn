@@ -198,6 +198,7 @@ def run_Preprocessing(AnalysisParams,
         MotionCorrection = AnalysisParams['Motion Correction']
         SliceTimeCorrect = AnalysisParams['Slice Time Correct']
         Intensity_Norm = AnalysisParams['Intensity Normalization']
+        import ipdb; ipdb.set_trace()
         MelodicICA = AnalysisParams['Melodic ICA']
         applyGSR = AnalysisParams['applyGSR']
         FeatProcessName = 'featpreproc_group%s'%Group
@@ -308,7 +309,11 @@ def run_Preprocessing(AnalysisParams,
 
             no_subjects = len(FeatFiles)
             ProcessedFuncouts = [opj(each, 'filtered_func_data.nii.gz') for each in FeatFiles]
-            func2std_DATASINK = [opj(each, 'reg/example_func2standard.mat') for each in FeatFiles]
+            if os.path.exists(opj(FeatFiles[0], 'reg/example_func2standard.mat')):
+                func2std_DATASINK = [opj(each, 'reg/example_func2standard.mat') for each in FeatFiles]
+            else :
+                func2std_DATASINK = [opj(each, 'reg/example2standard_3mm.mat') for each in FeatFiles]
+
             ROI_REG_DATASINK = OUTPUT_DIR + '/tmp/%s/datasink_transformedROI/'%RegistrationName
             # ipdb.set_trace()
             Reg_WorkFlow = parallelPreproc.ROI_transformation(name = RegistrationName)
