@@ -623,64 +623,64 @@ if __name__ == '__main__':
     #Kabir : Providing facility for only calculating correlations if required
     ##WARNING : copy pasted code : fix later
 
-    if not QtMode:
-        Only_Corr = AnalysisParams['Only_Corr']
-        if Only_Corr:
-            mask_not_provided = AnalysisParams['MaskNotProvided']
-            if  mask_not_provided:
-                print("Function not supported yet. Please provide mask")
-                sys.exit()
-            else:
-                mask_file = AnalysisParams['UseMaskFile']
+    # if not QtMode:
+    #     Only_Corr = AnalysisParams['Only_Corr']
+    #     if Only_Corr:
+    #         mask_not_provided = AnalysisParams['MaskNotProvided']
+    #         if  mask_not_provided:
+    #             print("Function not supported yet. Please provide mask")
+    #             sys.exit()
+    #         else:
+    #             mask_file = AnalysisParams['UseMaskFile']
 
-            stop2 = timeit.default_timer()
-
-
-            doAnalysiswtGrps = AnalysisParams['Stats']['Analysis within Groups']
-            doAnalysisbwGrps = AnalysisParams['Stats']['Analysis between Groups']
-            doNormalFisher = AnalysisParams['Stats']['doNormalFisher']
-            doSeparateFDR = AnalysisParams['Stats']['Separate FDR']
-
-            #Corr_calculated_Files = AnalysisParams['Corr_calculated_Files']
-            Corr_Files = AnalysisParams['Corr_Files']
-            Corr_calculated_Files = {}
-            for i in range(Ngroups):
-                ProcName = 'CorrCalc_group%s'%i
-                with open(Corr_Files[i]) as file:
-                    Corr_subs_in_this_group = [line.strip('\n') for line in file]
-                print('Corr Folders in this group: ',Corr_subs_in_this_group)
-                Corr_calculated_Files[ProcName] = Corr_subs_in_this_group
+    #         stop2 = timeit.default_timer()
 
 
-            for corrfile in Corr_Files:
-                os.system("cp "+corrfile+" "+OUTPUT_DIR+"/")
-            # if doAnalysiswtGrps:
-                # Do Something. The Function is yet to be defined.
+    #         doAnalysiswtGrps = AnalysisParams['Stats']['Analysis within Groups']
+    #         doAnalysisbwGrps = AnalysisParams['Stats']['Analysis between Groups']
+    #         doNormalFisher = AnalysisParams['Stats']['doNormalFisher']
+    #         doSeparateFDR = AnalysisParams['Stats']['Separate FDR']
 
-            # You can club the bw groups and wt groups correlations together 
-            # because mean and std are already calculated in that case.
-            if ((Ngroups==2)and doAnalysisbwGrps):
-                Gr1grGr2 = AnalysisParams['Stats']['Gr1>Gr2']
-                call_stat_Analysis_bw_grps(Corr_calculated_Files,[1],
-                                            OUTPUT_DIR, 
-                                            mask_file,
-                                            Gr1grGr2= Gr1grGr2)
-            elif ((Ngroups > 2) and doAnalysisbwGrps):
-                combinations = AnalysisParams['Stats']['Combinations']
-                call_stat_Analysis_bw_grps(Corr_calculated_Files, 
-                                    combinations, 
-                                    OUTPUT_DIR, 
-                                    mask_file)
-            if doAnalysiswtGrps:
-                call_stat_Analysis_wt_grps(Corr_calculated_Files,OUTPUT_DIR,mask_file)
+    #         #Corr_calculated_Files = AnalysisParams['Corr_calculated_Files']
+    #         Corr_Files = AnalysisParams['Corr_Files']
+    #         Corr_calculated_Files = {}
+    #         for i in range(Ngroups):
+    #             ProcName = 'CorrCalc_group%s'%i
+    #             with open(Corr_Files[i]) as file:
+    #                 Corr_subs_in_this_group = [line.strip('\n') for line in file]
+    #             print('Corr Folders in this group: ',Corr_subs_in_this_group)
+    #             Corr_calculated_Files[ProcName] = Corr_subs_in_this_group
 
-            file = open(opj(OUTPUT_DIR,'timesREADME.txt'),'w')
-            stop = timeit.default_timer()
-            file.write("Total time taken for calculating statistics: %ss \n" %(stop - stop2))
-            # Totaltime += stop - stop2
-            print("Total time taken for running the program: ", stop-stop2)
 
-            sys.exit()
+    #         for corrfile in Corr_Files:
+    #             os.system("cp "+corrfile+" "+OUTPUT_DIR+"/")
+    #         # if doAnalysiswtGrps:
+    #             # Do Something. The Function is yet to be defined.
+
+    #         # You can club the bw groups and wt groups correlations together 
+    #         # because mean and std are already calculated in that case.
+    #         if ((Ngroups==2)and doAnalysisbwGrps):
+    #             Gr1grGr2 = AnalysisParams['Stats']['Gr1>Gr2']
+    #             call_stat_Analysis_bw_grps(Corr_calculated_Files,[1],
+    #                                         OUTPUT_DIR, 
+    #                                         mask_file,
+    #                                         Gr1grGr2= Gr1grGr2)
+    #         elif ((Ngroups > 2) and doAnalysisbwGrps):
+    #             combinations = AnalysisParams['Stats']['Combinations']
+    #             call_stat_Analysis_bw_grps(Corr_calculated_Files, 
+    #                                 combinations, 
+    #                                 OUTPUT_DIR, 
+    #                                 mask_file)
+    #         if doAnalysiswtGrps:
+    #             call_stat_Analysis_wt_grps(Corr_calculated_Files,OUTPUT_DIR,mask_file)
+
+    #         file = open(opj(OUTPUT_DIR,'timesREADME.txt'),'w')
+    #         stop = timeit.default_timer()
+    #         file.write("Total time taken for calculating statistics: %ss \n" %(stop - stop2))
+    #         # Totaltime += stop - stop2
+    #         print("Total time taken for running the program: ", stop-stop2)
+
+    #         sys.exit()
 
 
     mask_not_provided = AnalysisParams['MaskNotProvided']
@@ -700,9 +700,9 @@ if __name__ == '__main__':
         FunctionaltxtFiles = AnalysisParams['FilesInfo']['FunctionalFilePaths']
 
         #Kabir Copying functional file to output folder in non-Qt mode
-        if not QtMode:
-            for funcfile in FunctionaltxtFiles:
-                os.system("cp "+funcfile+" "+OUTPUT_DIR+"/")
+        # if not QtMode:
+        #     for funcfile in FunctionaltxtFiles:
+        #         os.system("cp "+funcfile+" "+OUTPUT_DIR+"/")
 
         StructuraltxtFiles = AnalysisParams['FilesInfo']['StructuralFilePaths']
 
@@ -770,17 +770,18 @@ if __name__ == '__main__':
     elif (ProcessingWay ==2):
         '''
         Already Preprocessed with the use of FSL. I assume it has a general structure 
-        and preprocessed functional files are present in folders. 
+        and preprocessed functional files and mask files are present in folders. 
         <FEATFolder>/filtered_func_data.nii.gz
+        <FeatFolder>/mask.nii.gz
         Here I also assume that the preprocessed functional image isn't registered to 
         the standard space. So, every ROI has to be registered to the functional image. 
         '''
         FeatFiles = AnalysisParams['FeatFilesInfo']['FeatFilePaths']
 
         #Kabir Copying functional file to output folder in non-Qt mode
-        if not QtMode:
-            for featfile in FeatFiles:
-                os.system("cp "+featfile+" "+OUTPUT_DIR+"/")
+        # if not QtMode:
+        #     for featfile in FeatFiles:
+        #         os.system("cp "+featfile+" "+OUTPUT_DIR+"/")
 
         for i in range(Ngroups):
             ProcName = 'CorrCalc_group%s'%i

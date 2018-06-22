@@ -27,7 +27,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->checkBox_preprocFeat->setChecked(false);
     ui->checkBox_ROICorrs->setChecked(false);
     ui->checkBox_GSR->setChecked(false);
-
+    ui->checkBox_GSR_2->setChecked(false);
     ui->spinBox->setRange(1,5);
 
     // Values set randomly for now. These are no of the threads which will
@@ -44,11 +44,12 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->radioButton_NormFischer->setChecked(true);
     ui->radioButton_reg_n->setChecked(true);
     ui->radioButton_Ank_Corr->setChecked(true);
-
+    ui->checkBox_doStats->setChecked(true);
     ui->radioButton_SepFDRcorrect->setChecked(true);
     ui->lineEdit_highpass->hide();
     ui->lineEdit_lowpass->hide();
     ui->label_BET_Correct->hide();
+    ui->checkBox_GSR_2->hide();
     ui->lineEdit_BET_correct_value->hide();
     ui->checkBox_RobustBET->setChecked(false);
     ui->checkBox_RobustBET->hide();
@@ -585,15 +586,20 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
     }
     else {
         json["Registration"] = ui->radioButton_reg_y->isChecked();
+        json["applyGSR"] = ui->checkBox_GSR_2->isChecked();
     }
 
-    bool doStats = true;
-    json["doStats"] = doStats;
+    bool doCorr = true;
+    json["doCorr"] = doCorr;
     json["CorrFunction"] = ui->radioButton_Ank_Corr->isChecked();
-    if (doStats){
-        QJsonObject StatsObj;
-        writeStats(StatsObj);
-        json["Stats"] = StatsObj;
+    if (doCorr){
+        bool doStats = ui->checkBox_doStats->isChecked();
+        json["doStats"] = doStats;
+        if (doStats){
+            QJsonObject StatsObj;
+            writeStats(StatsObj);
+            json["Stats"] = StatsObj;
+        }
     }
 }
 
@@ -671,13 +677,16 @@ void MainWindow::on_radioButton_Unprocessed_clicked()
     ProcessingWay = 0;
     ui->tabWidget->setTabEnabled(1,true);
     ui->tabWidget->setTabEnabled(2,true);
+    ui->checkBox_GSR_2->hide();
 }
 
 void MainWindow::on_radioButton_PreprocwtFSL_clicked()
 {
     ProcessingWay = 1;
     ui->tabWidget->setTabEnabled(1,false);
-    ui->tabWidget->setTabEnabled(2,false);
+    ui->tabWidget->setTabEnabled(2,true);
+
+    ui->checkBox_GSR_2->hide();
 }
 
 void MainWindow::on_radioButton_PreprocwFSL_clicked()
@@ -685,6 +694,8 @@ void MainWindow::on_radioButton_PreprocwFSL_clicked()
     ProcessingWay = 2;
     ui->tabWidget->setTabEnabled(1,false);
     ui->tabWidget->setTabEnabled(2,true);
+
+    ui->checkBox_GSR_2->show();
 }
 
 void MainWindow::on_checkBox_HighPass_clicked(bool checked)
@@ -761,4 +772,9 @@ void MainWindow::on_checkBox_BET_clicked(bool checked)
         ui->lineEdit_BET_correct_value->hide();
         ui->checkBox_RobustBET->hide();
     }
+}
+
+void MainWindow::on_checkBox_doStats_clicked(bool checked)
+{
+    ui->tabWidget->setTabEnabled(3,checked);
 }
