@@ -16,3 +16,9 @@ I shall explain all the fields in order.
 * **Mask for Brain**: In case a common mask is to be applied to all the functional files provided, please specify it here. Otherwise, this field can be kept empty.
 * **Threads**: Specify the number of threads or number of files that you want to process at a time. Please choose it according to your computer&rsquo;s configurations.
 * **Correlations File**: Please specify the correlations file here if only the statistics are to be done. Otherwise, please keep this field empty.
+
+The window for choosing the 4-D data looks like this.
+
+![Dialog1](images/Dialog1.png)
+
+You can choose the group number from the upper dropdown bar. Now, you can either load a text file containing functional files paths or input them in the window itself with every line corresponding to one file. Once you are done, tick the checkbox (Functional Files/ Structural Files) and then click on **Check and Save**. After loading the files for all the groups, exit the window by clicking on "Okay". If a warning appears, you might have missed something or put a wrong address. The wrong address will get displayed. 
