@@ -1,9 +1,10 @@
 # Functional Connectivity GUI & Statistics Calculation
 
 ## ABOUT
-This directory contains the graphical user interface for the toolkit on **Region of Interest based Functional Connectivity Analysis**. The main window looks like this
+This directory contains the graphical user interface for the toolkit on **Region of Interest based Functional Connectivity Analysis**. The main window looks like this.
 ![MainWindow](docs/images/MainWindow.png)
 
+For more information about the fields in the main window, please look into [this file](docs/MainWindow.md).
 ## GUI Architecture
 
 * Made in **Qt Creator**
