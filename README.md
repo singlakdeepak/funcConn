@@ -25,7 +25,7 @@ Before instaling this one must have the following softwares downloaded and confi
 
 
 ## COMPILATION
-Use the make command to compile the correlation analysis. In order to use the complete toolkit, you will need to work in the [funcConnGUI](funcConnGUI) folder. You can even view an example json [here](funcConnGUI/docs/examples/funcAnalysisDesign.json) which can be used to run the entire tool.
+Use the make command to compile the correlation analysis. In order to use the complete toolkit, you will need to see the [funcConnGUI](funcConnGUI) folder and read the important instructions written in it. You can even view an example json [here](funcConnGUI/docs/examples/funcAnalysisDesign.json) which can be used to run the entire tool. 
 
 ## RUNNING THE FCONN TOOLKIT 
 
