@@ -35,118 +35,6 @@ def get_TR(in_file):
     return f.get_header()['dim'][0]
 
 
-def __run_Preprocessing(AnalysisParams,FunctionalFiles,StructuralFiles = None,Group = 0):
-    '''
-    This function has been deprecated because it was being used for registering the functional 
-    images first. Rather registration shouldn't be done now. 
-    '''
-    ReferenceFile = AnalysisParams['ReferSummary']['ReferImgPath']
-    B0unwarping = AnalysisParams['B0 Unwarping']
-    BETextract = AnalysisParams['BET Brain Extract']
-    if BETextract:
-        BETextractvalue = AnalysisParams['BET Correction Value']
-    else:
-        BETextractvalue = 0
-    FWHM = AnalysisParams['FWHM']
-    TemporalFilt = AnalysisParams['Temporal Filtering']
-    HPsigma = AnalysisParams['High Pass Value (in sigma)']
-    LPsigma = AnalysisParams['Low Pass Value (in sigma)']
-    MotionCorrection = AnalysisParams['Motion Correction']
-    Registration = AnalysisParams['Registration']
-    SliceTimeCorrect = AnalysisParams['Slice Time Correct']
-    Intensity_Norm = AnalysisParams['Intensity Normalization']
-    MelodicICA = AnalysisParams['Melodic ICA']
-    # PerfusionSubtract = AnalysisParams['Perfusion Subtraction']
-    OUTPUT_DIR = AnalysisParams['OutputInfo']['OutDirectory']
-    TEMP_DIR_FOR_STORAGE = OUTPUT_DIR + '/tmp'
-    FeatProcessName = 'featpreproc_group%s'%Group
-    RegistrationName = 'registration_group%s'%Group
-    RESULTS_FEAT_DATASINK = OUTPUT_DIR + '/tmp/%s/datasink/'%FeatProcessName
-    TR = AnalysisParams['Repetition Time']
-    print('Using Repetition time: %s'%TR)
-
-
-    if TemporalFilt:
-        preproc = parallelPreproc.create_parallelfeat_preproc(name = FeatProcessName,
-                                    highpass= TemporalFilt, 
-                                    Intensity_Norm = Intensity_Norm,
-                                    BETextract = BETextract,
-                                    BETvalue = BETextractvalue,
-                                    MotionCorrection = MotionCorrection,                                                
-                                    SliceTimeCorrect = SliceTimeCorrect,
-                                    time_repeat = TR)
-
-        preproc.inputs.inputspec.highpass = (HPsigma,LPsigma)                                                                                                                                                                                                                                                                                                                                                       
-        preproc.inputs.inputspec.func = FunctionalFiles
-        preproc.inputs.inputspec.fwhm = FWHM
-        preproc.base_dir = TEMP_DIR_FOR_STORAGE
-        preproc.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
-        preproc.write_graph(graph2use='colored', format='png', simple_form=True)
-        preproc.run('MultiProc', plugin_args={'n_procs': threads})          
-    else:
-        preproc = parallelPreproc.create_parallelfeat_preproc(name = FeatProcessName,
-                                    highpass= TemporalFilt, 
-                                    Intensity_Norm = Intensity_Norm,
-                                    BETextract = BETextract,
-                                    BETvalue = BETextractvalue,
-                                    MotionCorrection = MotionCorrection, 
-                                    SliceTimeCorrect = SliceTimeCorrect,
-                                    time_repeat = TR)
-        preproc.inputs.inputspec.func = FunctionalFiles
-        preproc.inputs.inputspec.fwhm = FWHM
-        preproc.base_dir = TEMP_DIR_FOR_STORAGE
-        preproc.write_graph(graph2use='colored', format='png', simple_form=True)
-        preproc.run('MultiProc', plugin_args={'n_procs': threads})
-
-    datasink_results=[]
-    datasink_results += [each for each in os.listdir(RESULTS_FEAT_DATASINK) if each.endswith('.json')]
-    with open(RESULTS_FEAT_DATASINK + datasink_results[0]) as JSON:
-        datafile = json.load(JSON)
-        datafile =datafile[0][1][0][1]
-    no_subjects = len(datafile)
-    datasinkouts = []
-    datasinkouts += [datafile[i][0] for i in range(no_subjects)]
-
-    ProcessedFilesDIRADDRESSES = []
-    dst = OUTPUT_DIR + '/Preprocessing_group%s/'%Group
-    if not (os.path.exists(dst)):
-        os.mkdir(dst)
-    else:
-        shutil.rmtree(dst)
-        os.mkdir(dst)
-
-    if Registration:
-        datasinkouts_afterreg = []
-        RESULTS_REG_DATASINK = OUTPUT_DIR + '/tmp/%s/datasink/'%RegistrationName
-        Reg_WorkFlow = parallelPreproc.reg_workflow(no_subjects,name = RegistrationName)
-        # if (no_subjects ==1):
-        #     Reg_WorkFlow.inputs.inputspec.source_files = datasinkouts[0]
-        #     Reg_WorkFlow.inputs.inputspec.anatomical_images = StructuralFiles[0]
-        # else:        
-        Reg_WorkFlow.inputs.inputspec.source_files = datasinkouts
-        Reg_WorkFlow.inputs.inputspec.anatomical_images = StructuralFiles
-        Reg_WorkFlow.inputs.inputspec.target_image = ReferenceFile
-        Reg_WorkFlow.base_dir = TEMP_DIR_FOR_STORAGE
-        Reg_WorkFlow.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
-        regoutputs = Reg_WorkFlow.run('MultiProc', plugin_args={'n_procs': threads})
-        datasink_results=[]
-        datasink_results += [each for each in os.listdir(RESULTS_REG_DATASINK) if each.endswith('.json')]
-        with open(RESULTS_REG_DATASINK + datasink_results[0]) as JSON:
-            datafile = json.load(JSON)
-
-            datafile = datafile[0][1][0][1]
-
-        datasinkouts=[]
-        # if (no_subjects==1):
-        #     datasinkouts +=[datafile[0]]
-        # else:
-        datasinkouts += [datafile[i][0] for i in range(no_subjects)]
-
-    for j in range(no_subjects):
-        ProcessedFiles_Address = '%sProcessedFile_sub%s.nii.gz'%(dst,j)
-        ProcessedFilesDIRADDRESSES += [ProcessedFiles_Address]
-        shutil.copy(datasinkouts[j],ProcessedFiles_Address)
-    return ProcessedFilesDIRADDRESSES
 
 def remove(path):
     """
@@ -193,12 +81,12 @@ def run_Preprocessing(AnalysisParams,
             doRobustBET = False
         FWHM = AnalysisParams['FWHM']
         TemporalFilt = AnalysisParams['Temporal Filtering']
-        HPsigma = AnalysisParams['High Pass Value (in sigma)']
-        LPsigma = AnalysisParams['Low Pass Value (in sigma)']
-        MotionCorrection = AnalysisParams['Motion Correction']
-        SliceTimeCorrect = AnalysisParams['Slice Time Correct']
+        HPsigma = AnalysisParams['FilteringParams']['High Pass Value (in sigma)']
+        LPsigma = AnalysisParams['FilteringParams']['Low Pass Value (in sigma)']
+        MotionCorrection = AnalysisParams['Motion Correction']['type']
+        SliceTimeCorrect = AnalysisParams['Slice Time Correct']['type']
         Intensity_Norm = AnalysisParams['Intensity Normalization']
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         MelodicICA = AnalysisParams['Melodic ICA']
         applyGSR = AnalysisParams['applyGSR']
         FeatProcessName = 'featpreproc_group%s'%Group
@@ -801,7 +689,7 @@ if __name__ == '__main__':
     stop1 = timeit.default_timer()
     file.write("Total time take for Preprocessing: %ss \n"%(stop1 - start))
     Totaltime += stop1 - start
-    if (AnalysisParams['doStats']):
+    if (AnalysisParams['doCorr']):
 
         stop1 = timeit.default_timer()
         if Registration:
@@ -835,7 +723,7 @@ if __name__ == '__main__':
         stop2 = timeit.default_timer()
 
         #Kabir : Adding support for not doing Ttest
-        if (AnalysisParams['Ttest']):
+        if (AnalysisParams['doStats']):
             doAnalysiswtGrps = AnalysisParams['Stats']['Analysis within Groups']
             doAnalysisbwGrps = AnalysisParams['Stats']['Analysis between Groups']
             doNormalFisher = AnalysisParams['Stats']['doNormalFisher']

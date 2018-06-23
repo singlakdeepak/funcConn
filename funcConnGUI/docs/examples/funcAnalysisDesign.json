@@ -1,0 +1,71 @@
+{
+    "Analysis Name": "funcAnalysis",
+    "AnalysisParams": {
+        "B0 Unwarping": false,
+        "BET Brain Extract": true,
+        "BETParams": {
+            "BET Correction Value": 0.30000001192092896,
+            "Info": "To do Brain Extraction, the key #BET Brain Extract should be true. BET Correction Value can range between 0 and 1. doRobustBET uses recursive brain extraction which may vary in various cases.",
+            "doRobustBET": true
+        },
+        "CorrFunction": false,
+        "FSLDirectory": "/usr/share/fsl/5.0",
+        "FWHM": 4,
+        "FilesInfo": {
+            "FunctionalFilePaths": [
+                "/home/deepak/Desktop/funcAnalysis/funcAnalysis_Group_1_FunctionalFiles.txt",
+                "/home/deepak/Desktop/funcAnalysis/funcAnalysis_Group_2_FunctionalFiles.txt"
+            ],
+            "Info": "This is for case 0 and case 1. We shall require the list of functional files. In case the corresponding structural files are also present, please also provide them for proper registration.",
+            "StructuralFilePaths": [
+            ]
+        },
+        "FilteringParams": {
+            "High Pass Value (in sigma)": 5,
+            "Info": "High pass value and low pass value are required for temporal filtering. These are written in units of sigma. In case you don't want to apply high pass or low pass, simply replace the values with -1.",
+            "Low Pass Value (in sigma)": -1
+        },
+        "Intensity Normalization": false,
+        "MaskNotProvided": true,
+        "Melodic ICA": false,
+        "Motion Correction": {
+            "Info": "The motion Correction can be of two types: #0 : None, #1 : MCFlirt",
+            "Type": 1
+        },
+        "No of Groups": 2,
+        "OutputInfo": {
+            "Info": "This tells the output directory where files are to be saved.",
+            "OutDirectory": "/home/deepak/Desktop/funcAnalysis",
+            "Save 4D ROI wise Corrs": true,
+            "Save preprocessed .feat": true
+        },
+        "ProcessingType": {
+            "Info": "The inputs can be of 3 types: #0 : Unprocessed #1 : Preprocessed without FSL #2 : Preprocessed with FSL",
+            "ProcessingWay": 0
+        },
+        "ROIFilePath": "/home/deepak/Desktop/Full_brain_atlas_thr0-2mm/fullbrain_atlas_thr0-2mm.nii.gz",
+        "ReferSummary": {
+            "Info": "It tells the path of the file used for reference.",
+            "ReferImgPath": "/home/deepak/Desktop/Full_brain_atlas_thr0-2mm/fullbrain_atlas_thr0-2mm.nii.gz"
+        },
+        "Registration": true,
+        "Repetition Time": 2,
+        "Slice Time Correct": {
+            "Info": "The Slice Time Correction can be of 5 types: #0 : None, #1 : Regular Up, #2 : Regular Down, #3 : Interleaved, #4 : Use Slice Order File, #5 : Use Slice timings File.",
+            "Type": 1
+        },
+        "Stats": {
+            "Analysis between Groups": true,
+            "Analysis within Groups": false,
+            "Gr1>Gr2": true,
+            "Separate FDR": true,
+            "doNormalFisher": true
+        },
+        "Temporal Filtering": true,
+        "applyGSR": true,
+        "doCorr": true,
+        "doStats": true
+    },
+    "No of threads": 4,
+    "WorkingDir": "/home/deepak/Desktop/funcConn/build-funcConnGUI-Desktop_Qt_5_7_0_GCC_64bit-Debug"
+}

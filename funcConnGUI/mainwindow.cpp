@@ -323,7 +323,7 @@ void MainWindow::on_help_ROIFile_clicked()
 
 void MainWindow::on_lineEdit_AnalysisName_textEdited(const QString &arg1)
 {
-    ui->lineEdit_OutDir->setText(OutDir + arg1);
+    ui->lineEdit_OutDir->setText(OutDir +"/"+ arg1);
 
 }
 
@@ -512,7 +512,8 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
 
     else{
         QJsonObject FilesInfo;
-        FilesInfo["Info"] = QString("This is for case 0 and case 1. We shall require the list of both structural and functional files.");
+        FilesInfo["Info"] = QString("This is for case 0 and case 1. We shall require the list of functional files. In case the corresponding structural"
+                                    " files are also present, please also provide them for proper registration.");
         QJsonArray StructuralArray;
         QJsonArray FunctionalArray;
         for (int i=1 ; i<=FunctionalFileNames.size() ; i++)
@@ -547,11 +548,13 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
     json["FSLDirectory"] = ui->lineEdit_FSLDIR->text();
 
     if (ProcessingWay == 0){
-        json["Info"] = QString("The motion Correction can be of two types:"
+        QJsonObject MotionCrt;
+        MotionCrt["Info"] = QString("The motion Correction can be of two types:"
                                " #0 : None, "
                                "#1 : MCFlirt"
-                               ""
-                               "The Slice Time Correction can be of 5 types: "
+                               );
+        QJsonObject SliceCorrect;
+        SliceCorrect["Info"]= QString("The Slice Time Correction can be of 5 types: "
                                "#0 : None, "
                                "#1 : Regular Up, "
                                "#2 : Regular Down, "
@@ -559,12 +562,16 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
                                "#4 : Use Slice Order File, "
                                "#5 : Use Slice timings File.");
         json["Registration"] = ui->radioButton_reg_y->isChecked();
-        json["Motion Correction"] = ui->comboBox_MCorrect->currentIndex();
+        MotionCrt["Type"] = ui->comboBox_MCorrect->currentIndex();
+        json["Motion Correction"] = MotionCrt;
         json["B0 Unwarping"] = ui->checkBox_B0->isChecked();
-        json["Slice Time Correct"] = ui->comboBox_STimeCorrect->currentIndex();
+        SliceCorrect["Type"] = ui->comboBox_STimeCorrect->currentIndex();
+        json["Slice Time Correct"] = SliceCorrect;
         json["BET Brain Extract"] = ui->checkBox_BET->isChecked();
         if (ui->checkBox_BET->isChecked()){
             QJsonObject BET;
+            BET["Info"] = QString("To do Brain Extraction, the key #BET Brain Extract should be true. BET Correction Value can range between 0 and 1. "
+                                  "doRobustBET uses recursive brain extraction which may vary in various cases.");
             BET["BET Correction Value"] = ui->lineEdit_BET_correct_value->text().toFloat();
             BET["doRobustBET"] = ui->checkBox_RobustBET->isChecked();
             json["BETParams"] = BET;
@@ -573,10 +580,13 @@ void MainWindow::writeReferImgpath(QJsonObject &json) const
         json["FWHM"] = ui->doubleSpinBox_FWHM->value();
         json["Intensity Normalization"] = ui->checkBox_IntensityNorm->isChecked();
         json["Temporal Filtering"] = (ui->checkBox_HighPass->isChecked())||(ui->checkBox_LowPass->isChecked());
+        QJsonObject tempfilt;
+        tempfilt["Info"] = QString("High pass value and low pass value are required for temporal filtering. These are written in units of sigma. In case "
+                                   "you don't want to apply high pass or low pass, simply replace the values with -1.");
+        tempfilt["High Pass Value (in sigma)"] = ui->checkBox_HighPass->isChecked() ? ui->lineEdit_highpass->text().toFloat()/(2*ui->lineEdit_TR->text().toFloat()) : float(-1);
 
-        json["High Pass Value (in sigma)"] = ui->checkBox_HighPass->isChecked() ? ui->lineEdit_highpass->text().toFloat()/(2*ui->lineEdit_TR->text().toFloat()) : float(-1);
-
-        json["Low Pass Value (in sigma)"] = ui->checkBox_LowPass->isChecked() ? ui->lineEdit_lowpass->text().toFloat()/(2*ui->lineEdit_TR->text().toFloat()) : float(-1);
+        tempfilt["Low Pass Value (in sigma)"] = ui->checkBox_LowPass->isChecked() ? ui->lineEdit_lowpass->text().toFloat()/(2*ui->lineEdit_TR->text().toFloat()) : float(-1);
+        json["FilteringParams"] = tempfilt;
         json["applyGSR"] = ui->checkBox_GSR->isChecked();
 
         json["Melodic ICA"] = ui->checkBox_MelodicICA->isChecked();
