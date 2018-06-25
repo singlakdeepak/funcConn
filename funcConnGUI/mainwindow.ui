@@ -24,7 +24,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -797,22 +797,7 @@
           <height>22</height>
          </rect>
         </property>
-        <layout class="QHBoxLayout" name="horizontalLayout">
-         <item>
-          <widget class="QRadioButton" name="radioButton_wt_Groups">
-           <property name="text">
-            <string>Within Groups</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QRadioButton" name="radioButton_bw_Groups">
-           <property name="text">
-            <string>Between Groups</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
+        <layout class="QHBoxLayout" name="horizontalLayout"/>
        </widget>
        <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
@@ -899,6 +884,32 @@
          </item>
         </layout>
        </widget>
+       <widget class="QWidget" name="">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>70</y>
+          <width>371</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_26">
+         <item>
+          <widget class="QCheckBox" name="checkBox_wt_groups">
+           <property name="text">
+            <string>Within Groups</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="checkBox_bw_groups">
+           <property name="text">
+            <string>Between Groups</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
        <zorder>layoutWidget</zorder>
        <zorder>layoutWidget</zorder>
        <zorder>layoutWidget</zorder>
@@ -907,6 +918,8 @@
        <zorder>layoutWidget</zorder>
        <zorder>layoutWidget</zorder>
        <zorder>label_15</zorder>
+       <zorder>checkBox_wt_groups</zorder>
+       <zorder>checkBox_bw_groups</zorder>
       </widget>
      </widget>
     </item>

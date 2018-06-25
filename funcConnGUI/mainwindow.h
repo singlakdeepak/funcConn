@@ -45,12 +45,6 @@ private slots:
 
     void on_lineEdit_AnalysisName_textEdited(const QString &arg1);
 
-    void on_radioButton_bw_Groups_clicked(bool checked);
-
-
-
-    void on_radioButton_wt_Groups_clicked(bool checked);
-
     void on_chooseCombsButton_clicked();
 
     void on_spinBox_valueChanged(int arg1);
@@ -84,6 +78,10 @@ private slots:
 
     void runProgram(QString JSONFile);
     void on_checkBox_doStats_clicked(bool checked);
+
+
+
+    void on_checkBox_bw_groups_clicked(bool checked);
 
 private:
     QJsonArray combinations;

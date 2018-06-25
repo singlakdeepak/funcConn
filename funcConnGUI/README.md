@@ -5,6 +5,7 @@ This directory contains the graphical user interface for the toolkit on **Region
 ![MainWindow](docs/images/MainWindow.png)
 
 For more information about the fields in the main window, please look into [this file](docs/MainWindow.md).
+
 ## GUI Architecture
 
 * Made in **Qt Creator**
@@ -21,3 +22,9 @@ For more information about the fields in the main window, please look into [this
 
 ## Preprocessing of fMRI data
 A user can also preprocess the data if he wants. All the preprocessing methods have been explained in detail [here](docs/Preprocessing.md).
+
+## Registration and Correlations
+In order to read more about it, please see [this file](docs/RegCorr.md).
+
+## Statistics
+This window allows for making changes in the statistical analysis. Please see the [following file](docs/stats.md).

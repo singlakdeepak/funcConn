@@ -1,5 +1,6 @@
 # Main Window 
 Here&rsquo;s the main window again.
+
 ![MainWindow](images/MainWindow.png)
 
 I shall explain all the fields in order.

@@ -35,7 +35,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->spinBox_threads->setRange(1,12);
     ui->spinBox_threads->setValue(4);
 
-    ui->radioButton_wt_Groups->setChecked(true);
+
+    ui->checkBox_wt_groups->setChecked(true);
+    ui->checkBox_bw_groups->setChecked(false);
+    ui->checkBox_bw_groups->hide();
     ui->chooseCombsButton->hide();
     ui->label_Hypothesis->hide();
     ui->radioButton_G1_gr_G2->hide();
@@ -327,35 +330,11 @@ void MainWindow::on_lineEdit_AnalysisName_textEdited(const QString &arg1)
 
 }
 
-void MainWindow::on_radioButton_bw_Groups_clicked(bool checked)
-{
-
-    if (checked){
-        if (spinBoxValue == 2){
-
-            ui->label_Hypothesis->show();
-            ui->radioButton_G1_gr_G2->show();
-            ui->radioButton_G2_gr_G1->show();
-        }
-        else{
-            ui->checkBox_AllCombs->show();
-            ui->checkBox_AllCombs->setChecked(true);
-        }
-     }
-}
 
 
 
-void MainWindow::on_radioButton_wt_Groups_clicked(bool checked)
-{
-    if (checked){
-        ui->chooseCombsButton->hide();
-        ui->checkBox_AllCombs->hide();
-        ui->label_Hypothesis->hide();
-        ui->radioButton_G1_gr_G2->hide();
-        ui->radioButton_G2_gr_G1->hide();
-    }
-}
+
+
 
 void MainWindow::on_chooseCombsButton_clicked()
 {
@@ -390,21 +369,19 @@ void MainWindow::on_chooseCombsButton_clicked()
 
 void MainWindow::on_spinBox_valueChanged(int arg1)
 {
-    bool check_bw_groups = ui->radioButton_bw_Groups->isChecked();
+    bool check_bw_groups = ui->checkBox_bw_groups->isChecked();
     spinBoxValue = arg1;
     FeatFileNames.clear();
     FunctionalFileNames.clear();
     StructuralFileNames.clear();
     if (arg1==1){
-        ui->radioButton_wt_Groups->setChecked(true);
-        ui->radioButton_bw_Groups->hide();
-        ui->checkBox_AllCombs->hide();
-        ui->label_Hypothesis->hide();
-        ui->radioButton_G1_gr_G2->hide();
-        ui->radioButton_G2_gr_G1->hide();
+        ui->checkBox_wt_groups->setChecked(true);
+        ui->checkBox_bw_groups->hide();
+        on_checkBox_bw_groups_clicked(false);
     }
     else if (arg1==2){
-        ui->radioButton_bw_Groups->show();
+        ui->checkBox_bw_groups->show();
+        on_checkBox_bw_groups_clicked(check_bw_groups);
         ui->checkBox_AllCombs->hide();
         ui->chooseCombsButton->hide();
         if (check_bw_groups){
@@ -415,13 +392,14 @@ void MainWindow::on_spinBox_valueChanged(int arg1)
         }
     }
     else {
-        ui->radioButton_bw_Groups->show();
-        ui->label_Hypothesis->hide();
-        ui->radioButton_G1_gr_G2->hide();
-        ui->radioButton_G2_gr_G1->hide();
+        ui->checkBox_bw_groups->show();
+        on_checkBox_bw_groups_clicked(check_bw_groups);
         if (check_bw_groups){
             ui->checkBox_AllCombs->show();
             ui->checkBox_AllCombs->setChecked(true);
+            ui->label_Hypothesis->hide();
+            ui->radioButton_G1_gr_G2->hide();
+            ui->radioButton_G2_gr_G1->hide();
         }
 
     }
@@ -439,12 +417,10 @@ void MainWindow::on_checkBox_AllCombs_clicked(bool checked)
 
 void MainWindow::writeStats(QJsonObject &json) const
 {
-    if (ui->radioButton_wt_Groups->isChecked()){
+    if (ui->checkBox_wt_groups->isChecked()){
         json["Analysis within Groups"] = true;
-        json["Analysis between Groups"] = false;
     }
-    if (ui->radioButton_bw_Groups->isChecked()){
-        json["Analysis within Groups"] = false;
+    if (ui->checkBox_bw_groups->isChecked()){
         json["Analysis between Groups"] = true;
         if (spinBoxValue ==2)
             json["Gr1>Gr2"] = ui->radioButton_G1_gr_G2->isChecked();
@@ -787,4 +763,31 @@ void MainWindow::on_checkBox_BET_clicked(bool checked)
 void MainWindow::on_checkBox_doStats_clicked(bool checked)
 {
     ui->tabWidget->setTabEnabled(3,checked);
+}
+
+
+
+void MainWindow::on_checkBox_bw_groups_clicked(bool checked)
+{
+
+    if (checked){
+        if (spinBoxValue == 2){
+
+            ui->label_Hypothesis->show();
+            ui->radioButton_G1_gr_G2->show();
+            ui->radioButton_G2_gr_G1->show();
+        }
+        else{
+            ui->checkBox_AllCombs->show();
+            ui->checkBox_AllCombs->setChecked(true);
+        }
+     }
+    else
+    {
+        ui->chooseCombsButton->hide();
+        ui->checkBox_AllCombs->hide();
+        ui->label_Hypothesis->hide();
+        ui->radioButton_G1_gr_G2->hide();
+        ui->radioButton_G2_gr_G1->hide();
+    }
 }
