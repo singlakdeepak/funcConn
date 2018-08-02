@@ -785,9 +785,9 @@ def ROI_transformation(name = 'registration', applyGSR = False):
                           name = 'gsr')
         datasink_GSR_applied_ips = Node(interface=DataSink(), name="datasink_GSR_applied_ips")
         outputnode = Node(name = 'outputspec', interface= util.IdentityInterface(fields = ['transformed_ROI','GSR_applied_inputs']))
-        featpreproc.connect(inputnode,'source_files', GSR_node, 'in_file')
-        featpreproc.connect(inputnode, 'mask_files', GSR_node, 'mask_file')
-        featpreproc.connect(GSR_node, 'glb_reg_file_name', meanfunc,'in_file')
+        register.connect(inputnode,'source_files', GSR_node, 'in_file')
+        register.connect(inputnode, 'mask_files', GSR_node, 'mask_file')
+        register.connect(GSR_node, 'glb_reg_file_name', meanfunc,'in_file')
     else:
         outputnode = Node(name = 'outputspec', interface= util.IdentityInterface(fields = ['transformed_ROI']))
         register.connect(inputnode, 'source_files', meanfunc, 'in_file')
