@@ -237,6 +237,7 @@ def run_Preprocessing(AnalysisParams,
                     gsrappliedip = gsrappliedip[0][1][0][1]
                 GSRsinkouts = []
                 GSRsinkouts += [gsrappliedip[i][0] for i in range(no_subjects)]
+                return ProcessedFuncouts, GSRsinkouts, func2std_DATASINK
             return ProcessedFuncouts, ROIsinkouts, func2std_DATASINK
 
     return ProcessedFilesDIRADDRESSES
