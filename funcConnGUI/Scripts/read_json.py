@@ -27,7 +27,7 @@ from nipype.interfaces import fsl
 import corr
 import ttest
 from os.path import join as opj
-import ipdb;
+#import ipdb;
 threads = 8
 def get_TR(in_file):
     import nibabel
