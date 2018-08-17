@@ -33,7 +33,7 @@ def pearsonr_with_roi_mean_w_reg(in_file, atlas_file):
         brain_affine = brain_data.affine
 
         #Kabir : Hardcoding for num of volumes reqd. Need to accept this From the user/JSON file. Add options : first k volumes, mid k volumes, last k volumes.
-        brain = brain[:,:,:,-175:]
+        # brain = brain[:,:,:,-175:]
 
         x_dim, y_dim, z_dim, num_volumes = brain.shape
 
@@ -200,7 +200,7 @@ def pearson_corr_Ankita(in_file, atlas_file):
     # The directory for calling fconn.o needs to be changed later
     # Please change it here accordingly. I shall automate it after 
     # coming back.
-    args = ("/home/deepak/Desktop/Kabir/Code/funcConn/./fconn.o", "-i", in_file, 
+    args = ("../.././fconn.o", "-i", in_file, 
             "-R", atlas_file, str(N_ROIs), "-o", coff_matrix_dir)
 
     popen = subprocess.Popen(args, stdout=subprocess.PIPE)

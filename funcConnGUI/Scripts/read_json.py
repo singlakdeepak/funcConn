@@ -83,8 +83,8 @@ def run_Preprocessing(AnalysisParams,
         TemporalFilt = AnalysisParams['Temporal Filtering']
         HPsigma = AnalysisParams['FilteringParams']['High Pass Value (in sigma)']
         LPsigma = AnalysisParams['FilteringParams']['Low Pass Value (in sigma)']
-        MotionCorrection = AnalysisParams['Motion Correction']['type']
-        SliceTimeCorrect = AnalysisParams['Slice Time Correct']['type']
+        MotionCorrection = AnalysisParams['Motion Correction']['Type']
+        SliceTimeCorrect = AnalysisParams['Slice Time Correct']['Type']
         Intensity_Norm = AnalysisParams['Intensity Normalization']
         # import ipdb; ipdb.set_trace()
         MelodicICA = AnalysisParams['Melodic ICA']
@@ -109,7 +109,7 @@ def run_Preprocessing(AnalysisParams,
             preproc.inputs.inputspec.fwhm = FWHM
             preproc.base_dir = TEMP_DIR_FOR_STORAGE
             preproc.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
-            preproc.write_graph(graph2use='colored', format='png', simple_form=True)
+            # preproc.write_graph(graph2use='colored', format='png', simple_form=True)
             preproc.run('MultiProc', plugin_args={'n_procs': threads})          
         else:
             preproc = parallelPreproc.create_parallelfeat_preproc(name = FeatProcessName,
@@ -125,7 +125,7 @@ def run_Preprocessing(AnalysisParams,
             preproc.inputs.inputspec.func = FunctionalFiles
             preproc.inputs.inputspec.fwhm = FWHM
             preproc.base_dir = TEMP_DIR_FOR_STORAGE
-            preproc.write_graph(graph2use='colored', format='png', simple_form=True)
+            # preproc.write_graph(graph2use='colored', format='png', simple_form=True)
             preproc.run('MultiProc', plugin_args={'n_procs': threads})
 
         datasink_results=[]
