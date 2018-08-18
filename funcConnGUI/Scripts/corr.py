@@ -8,7 +8,7 @@ from nipype.pipeline.engine import Workflow, Node, MapNode
 from nipype.interfaces import fsl
 import os
 
-def pearsonr_with_roi_mean_w_reg(in_file, atlas_file):
+def pearsonr_with_roi_mean_w_reg(in_file, atlas_file, WorkingDir):
     import nibabel as nib
     import numpy as np
     from os.path import join as opj
@@ -121,9 +121,6 @@ def pearsonr_with_roi_mean(in_file, atlas_file, mask_file):
         brain = brain_data.get_data()
         brain_affine = brain_data.affine
 
-        #Kabir : Hardcoding for num of volumes reqd. Need to accept this From the user/JSON file. Add options : first k volumes, mid k volumes, last k volumes.
-        brain = brain[:,:,:,-175:]
-
         x_dim, y_dim, z_dim, num_volumes = brain.shape
         
         # Initialize a matrix of ROI time series and voxel time series
@@ -184,12 +181,13 @@ def pearsonr_with_roi_mean(in_file, atlas_file, mask_file):
     return coff_matrix_file, coff_matrix_file_in_nii
 
 
-def pearson_corr_Ankita(in_file, atlas_file):
+def pearson_corr_Ankita(in_file, atlas_file, WorkingDir):
     import subprocess
     import nibabel as nib
     import os
     import numpy as np
     from os.path import join as opj
+    from nipype.interfaces.fsl.utils import CopyGeom
     sub_id = in_file.split('/')[-1].split('.')[0]
     coff_matrix_dir = opj(os.getcwd(),sub_id)
     if os.path.exists(coff_matrix_dir):
@@ -200,15 +198,23 @@ def pearson_corr_Ankita(in_file, atlas_file):
     # The directory for calling fconn.o needs to be changed later
     # Please change it here accordingly. I shall automate it after 
     # coming back.
-    args = ("../.././fconn.o", "-i", in_file, 
-            "-R", atlas_file, str(N_ROIs), "-o", coff_matrix_dir)
-
+    Geomcpy = CopyGeom()
+    Geomcpy.inputs.in_file = in_file
+    Geomcpy.inputs.dest_file = atlas_file
+    Geomcpy.inputs.ignore_dims = True
+    Geomcpy.run()
+    corr_script_path = opj(WorkingDir, "fconn.o")
+    if os.path.exists(corr_script_path):
+        args = (corr_script_path, "-i", in_file, 
+            "-r", atlas_file, str(N_ROIs), "-o", coff_matrix_dir)
+    else:
+        return
     popen = subprocess.Popen(args, stdout=subprocess.PIPE)
     popen.wait()
     output = popen.stdout.read()
     print(output)
     coff_matrix_file = opj(coff_matrix_dir, 
-                            'avg_roi_time_series.nii')
+                            'avg_roi_time_series.nii.gz')
     return coff_matrix_file
 
 
@@ -249,14 +255,15 @@ def build_correlation_wf(Registration = True,
                                                                    'atlas_files',
                                                                    'func2std',
                                                                    'reference',
-                                                                   'mask_file']),
+                                                                   'mask_file',
+                                                                   'WorkingDir']),
                                                             name='inputspec')
         outputnode = Node(interface=util.IdentityInterface(fields=['pearsonCorr_files']),
                              name='outputspec')
         
         if use_Ankita_Function:
             coff_matrix = MapNode(util.Function(function=pearson_corr_Ankita,
-                                    input_names=['in_file','atlas_file'],
+                                    input_names=['in_file','atlas_file','WorkingDir'],
                                     output_names=['coff_matrix_file']),
 				iterfield = ['in_file','atlas_file'],
                           name = 'coff_matrix')
@@ -275,7 +282,7 @@ def build_correlation_wf(Registration = True,
             
         else:
             coff_matrix = MapNode(util.Function(function=pearsonr_with_roi_mean_w_reg, 
-                                    input_names=['in_file','atlas_file'],
+                                    input_names=['in_file','atlas_file', 'WorkingDir'],
                                     output_names=['coff_matrix_file']),
                           iterfield=['in_file','atlas_file'],
                           name = 'coff_matrix')
@@ -295,6 +302,8 @@ def build_correlation_wf(Registration = True,
 
         corr_wf.connect(inputnode, 'in_files', coff_matrix, 'in_file')
         corr_wf.connect(inputnode, 'atlas_files', coff_matrix, 'atlas_file')
+        corr_wf.connect(inputnode, 'WorkingDir', coff_matrix, 'WorkingDir')
+        
         corr_wf.connect(coff_matrix,'coff_matrix_file', transform_corr, 'in_file')
         corr_wf.connect(inputnode, 'func2std', transform_corr, 'in_matrix_file')
         corr_wf.connect(inputnode, 'reference', transform_corr, 'reference')
@@ -310,14 +319,15 @@ def build_correlation_wf(Registration = True,
 
         inputnode = Node(interface=util.IdentityInterface(fields=['in_files', 
                                                                    'atlas_file',
-                                                                   'mask_file']),
+                                                                   'mask_file',
+                                                                   'WorkingDir']),
                             name='inputspec')
         outputnode = Node(interface=util.IdentityInterface(fields=['pearsonCorr_files', 
                                                                     'pearsonCorr_files_in_nii']),
                              name='outputspec')
         if use_Ankita_Function:
             coff_matrix = MapNode(util.Function(function=pearson_corr_Ankita,
-                                    input_names=['in_file','atlas_file'],
+                                    input_names=['in_file','atlas_file', 'WorkingDir'],
                                     output_names=['coff_matrix_file']),
                                 iterfield = ['in_file'],
                           name = 'coff_matrix')
@@ -334,6 +344,7 @@ def build_correlation_wf(Registration = True,
 
             corr_wf.connect(inputnode, 'in_files', coff_matrix, 'in_file')
             corr_wf.connect(inputnode, 'atlas_file', coff_matrix, 'atlas_file')
+            corr_wf.connect(inputnode, 'WorkingDir', coff_matrix, 'WorkingDir')
             corr_wf.connect(coff_matrix,'coff_matrix_file',  maskCorrFile, 'in_file')
             corr_wf.connect(inputnode, 'mask_file', maskCorrFile, 'in_file2')
 

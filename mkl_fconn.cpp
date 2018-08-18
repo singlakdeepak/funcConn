@@ -604,9 +604,16 @@ void avg_roi_time_corr(){
 	//CHECK IF THE GEOMETRY OF THE MASK AND IMAGE IS SAME
    	g_roi = roi_image.geometry();
   	if(g_roi[0]!=g[0]||g_roi[1]!=g[1]||g_roi[2]!=g[2]){
-  		std::cout<<":::: ERROR INVALID MASK ::::"<<std::endl;
-  		return;
+  		// std::cout<<int(g_roi[0])<<std::endl;
+  		// std::cout<<int(g_roi[1])<<std::endl;
+  		// std::cout<<int(g_roi[2])<<std::endl;
+  		// std::cout<<int(g[0])<<std::endl;
+  		// std::cout<<int(g[1])<<std::endl;
+  		// std::cout<<int(g[2])<<std::endl;
+  		std::cout<<":::: ERROR: INVALID ROI HEADER ::::"<<std::endl;
+  		// return;
   	}
+
   image::basic_image<int,3> mask_image;
 	if(mask&&nifti_parser.load_from_file(maskfilename))
 	  	   nifti_parser >> mask_image;
@@ -772,6 +779,9 @@ void avg_roi_time_corr(){
 	nifti_parser2.save_to_file(filename.c_str());
 	cmd = "gzip ";
 	cmd += filename;
+	system(cmd.c_str());
+	cmd = "gzip ";
+	cmd += roifname;
 	system(cmd.c_str());
 	no_of_oper = 2*ROI_MAX*g[3]*valid_size+5*(g[0]*g[1]*g[2]*g[3])+(g[0]*g[1]*g[2]);
 }
@@ -1040,8 +1050,8 @@ void avg_corr_roi(){
 	//CHECK IF THE GEOMETRY OF THE MASK AND IMAGE IS SAME
    	g_roi = roi_image.geometry();
   	if(g_roi[0]!=g[0]||g_roi[1]!=g[1]||g_roi[2]!=g[2]){
-  		std::cout<<":::: ERROR INVALID MASK ::::"<<std::endl;
-  		return;
+  		std::cout<<":::: ERROR: INVALID ROI HEADER ::::"<<std::endl;
+  		// return;
   	}
 
    image::basic_image<int,3> mask_image;

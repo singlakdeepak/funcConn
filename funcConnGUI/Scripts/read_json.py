@@ -245,13 +245,14 @@ def run_Preprocessing(AnalysisParams,
 def call_corr_wf_with_reg(Files_for_corr_dict, atlas_files_dict,
                     func2stdDict,
                      mask_file, reference,
-                     TEMP_DIR_FOR_STORAGE, 
+                     TEMP_DIR_FOR_STORAGE,
+                     WorkingDir, 
                      use_Ankita_Function = False):
     Corr_calculated_Files = {}
     for group, files in Files_for_corr_dict.items():
         datasink_dest = TEMP_DIR_FOR_STORAGE + '/' + group + '/datasink/'
 
-        corr_wf = corr.build_correlation_wf(Registration = True,
+        corr_wf = corr.build_correlation_wf( Registration = True,
                                 use_Ankita_Function= use_Ankita_Function, 
                                 name = group)
         corr_wf.inputs.inputspec.in_files = files
@@ -264,6 +265,7 @@ def call_corr_wf_with_reg(Files_for_corr_dict, atlas_files_dict,
         corr_wf.inputs.inputspec.reference = reference
 
         corr_wf.inputs.inputspec.mask_file = mask_file
+        corr_wf.inputs.inputspec.WorkingDir = WorkingDir
         corr_wf.base_dir = TEMP_DIR_FOR_STORAGE
         corr_wf.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
         corr_wf.run('MultiProc', plugin_args = {'n_procs': threads})
@@ -284,17 +286,19 @@ def call_corr_wf(Files_for_corr_dict,
             atlas_file, 
             mask_file, 
             TEMP_DIR_FOR_STORAGE,
+            WorkingDir,
             use_Ankita_Function = False):
     Corr_calculated_Files = {}
     for group, files in Files_for_corr_dict.items():
         datasink_dest = TEMP_DIR_FOR_STORAGE + '/' + group + '/datasink/'
 
-        corr_wf = corr.build_correlation_wf(Registration = False, 
+        corr_wf = corr.build_correlation_wf(WorkingDir, Registration = False, 
                                             use_Ankita_Function= use_Ankita_Function,
                                             name = group)
         corr_wf.inputs.inputspec.in_files = files
         corr_wf.inputs.inputspec.atlas_file = atlas_file
         corr_wf.inputs.inputspec.mask_file = mask_file
+        corr_wf.inputs.inputspec.WorkingDir = WorkingDir
         corr_wf.base_dir = TEMP_DIR_FOR_STORAGE
         corr_wf.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
         corr_wf.run('MultiProc', plugin_args = {'n_procs': threads})
@@ -700,6 +704,7 @@ if __name__ == '__main__':
                                                 mask_file,
                                                 ReferenceFile,
                                                 TEMP_DIR_FOR_STORAGE,
+                                                WorkingDir,
                                                 use_Ankita_Function = 
                                                     AnalysisParams['CorrFunction'])
         else:
@@ -707,6 +712,7 @@ if __name__ == '__main__':
                                                 ROIFile,
                                                 mask_file, 
                                                 TEMP_DIR_FOR_STORAGE,
+                                                WorkingDir,
                                                 use_Ankita_Function = 
                                                     AnalysisParams['CorrFunction'])
         # if not savePreprocessing:
