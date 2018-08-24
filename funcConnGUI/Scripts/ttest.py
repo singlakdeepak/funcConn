@@ -116,7 +116,7 @@ def calc_mean_and_std_if_npy(ROICorrMaps, n_subjects, ddof =1, applyFisher = Fal
     Function to be used if the file is given in the format 
     No of ROIs versus All brain voxels in the ROI mapped.
     '''
-    print(ROICorrMaps)
+    # print(ROICorrMaps)
     initialize = np.load(ROICorrMaps[0])
     initialize = ma.masked_array(initialize)
     if applyFisher:
@@ -139,6 +139,35 @@ def calc_mean_and_std_if_npy(ROICorrMaps, n_subjects, ddof =1, applyFisher = Fal
     Sample_mean_Array /= n_subjects
     Sample_std_Array = np.sqrt((np.abs(Sample_std_Array - n_subjects*np.square(Sample_mean_Array)))/(n_subjects - ddof))
     return Sample_mean_Array,Sample_std_Array
+
+def calc_difference_if_npy(ROICorrMapsA,
+                            ROICorrMapsB, n_subs,
+                            ddof = 1, 
+                            applyFisher = False):
+    initialize = np.load(ROICorrMapsA[0])
+    initialize2 = np.load(ROICorrMapsB[0])
+    initialize = ma.masked_array(initialize - initialize2)
+    del initialize2
+    if applyFisher:
+        initialize = np.arctanh(initialize)
+    Sample_mean_Array = ma.masked_array(initialize, 
+                                        fill_value = 0)
+    Sample_std_Array = ma.masked_array(np.square(initialize), 
+                                       fill_value = 0)        
+    del initialize
+    print('Done subject ', 0)
+    for count in range(1,n_subs):
+        Corr_data1 = np.load(ROICorrMapsA[count])
+        Corr_data2 = np.load(ROICorrMapsB[count])
+        Corr_data1 -= Corr_data2
+        if applyFisher:
+            Corr_data1 = np.arctanh(Corr_data1)
+        Sample_mean_Array += Corr_data1
+        Sample_std_Array += np.square(Corr_data1)
+        print('Done subject ', count + 1)                                                                                                                                                                                               
+    Sample_mean_Array /= n_subs
+    Sample_std_Array = np.sqrt((np.abs(Sample_std_Array/n_subs - np.square(Sample_mean_Array)))/n_subs)
+    return Sample_mean_Array, Sample_std_Array
 
 def _ttest_1samp(Sample_mean_Array, Sample_std_Array, n_subjects, PopMean = 0.0):
     ttest_1samp_for_all = div0((Sample_mean_Array - PopMean) \
@@ -341,7 +370,31 @@ def ttest_ind_samples_if_npy(ROICorrMapsA, ROICorrMapsB,
                 Sample_mean_ArrayB, Sample_var_ArrayB, n_subjectsB,
                 equal_var = equal_var, sign = sign)
 
-
+def paired_ttest_if_npy(ROICorrMapsA, ROICorrMapsB,
+                        save_pval_in_log_fmt = True,
+                        applyFisher = False):
+    '''
+    Calculates the Paired T-test for a group of subjects tested under 
+    2 different conditions. The number of subjects in both the lists,
+    ROICorrMapsA and ROICorrMapsB should be same.  
+    '''
+    n_subjectsA = len(ROICorrMapsA)
+    n_subjectsB = len(ROICorrMapsB)
+    assert(n_subjectsA > 0)
+    assert(n_subjectsA == n_subjectsB)
+    Sample_mean_Array, Standard_err_Array = calc_difference_if_npy(
+                            ROICorrMapsA,
+                            ROICorrMapsB, 
+                            n_subjectsA,
+                            ddof = 1, 
+                            applyFisher = applyFisher)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        paired_ttest = Sample_mean_ArrayA/Standard_err_Array
+    df = n_subjectsA - 1
+    pvalues = special.betainc(0.5*df, 0.5, df/(df + paired_ttest*paired_ttest)).reshape(paired_ttest.shape)
+    return Sample_mean_Array, \
+                paired_ttest, \
+                pvalues     
 
 def fdrcorrect_worker2(A,B,args):
     return fdrcorrect_worker(A,B,*args)

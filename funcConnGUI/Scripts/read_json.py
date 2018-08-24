@@ -20,6 +20,7 @@ import sys
 import json
 import Preprocess_network as parallelPreproc
 import timeit
+import time
 import os
 import shutil
 import subprocess
@@ -52,7 +53,7 @@ def remove(path):
         except OSError:
             print("Unable to remove file: %s"%path)
 
-def run_Preprocessing(AnalysisParams,
+def run_Preprocessing(AnalysisParams, WorkingDir,
                         FunctionalFiles = None,
                         StructuralFiles = None,
                         FeatFiles = None,
@@ -68,6 +69,9 @@ def run_Preprocessing(AnalysisParams,
     TEMP_DIR_FOR_STORAGE = OUTPUT_DIR + '/tmp'
     RegistrationName = 'registration_group%s'%Group
     TR = AnalysisParams['Repetition Time']
+    Schedule_jobs = AnalysisParams['Schedule_jobs']
+    # WorkingDir = AnalysisParams['WorkingDir']
+    template_nipype_job = opj(WorkingDir, 'mytemplate.sh')
     print('Using Repetition time: %s'%TR)
 
     if doPreprocessing:
@@ -110,7 +114,12 @@ def run_Preprocessing(AnalysisParams,
             preproc.base_dir = TEMP_DIR_FOR_STORAGE
             preproc.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
             # preproc.write_graph(graph2use='colored', format='png', simple_form=True)
-            preproc.run('MultiProc', plugin_args={'n_procs': threads})          
+            if Schedule_jobs:
+                preproc.run('PBSGraph', plugin_args={'template':template_nipype_job,
+                                        # 'qsub_args': '-q many' ,
+                                        'dont_resubmit_completed_jobs': True})          
+            else:
+                preproc.run('MultiProc', plugin_args={'n_procs': threads})
         else:
             preproc = parallelPreproc.create_parallelfeat_preproc(name = FeatProcessName,
                                         highpass= TemporalFilt, 
@@ -126,10 +135,19 @@ def run_Preprocessing(AnalysisParams,
             preproc.inputs.inputspec.fwhm = FWHM
             preproc.base_dir = TEMP_DIR_FOR_STORAGE
             # preproc.write_graph(graph2use='colored', format='png', simple_form=True)
-            preproc.run('MultiProc', plugin_args={'n_procs': threads})
-
+            if Schedule_jobs:
+                preproc.run('PBSGraph', plugin_args={'template': template_nipype_job,
+                                            # 'qsub_args': '-q many' ,
+                                            'dont_resubmit_completed_jobs': True})          
+            else:
+                preproc.run('MultiProc', plugin_args={'n_procs': threads})
         datasink_results=[]
-        datasink_results += [each for each in os.listdir(RESULTS_FEAT_DATASINK) if each.endswith('.json')]
+        while not os.path.exists(RESULTS_FEAT_DATASINK):
+            time.sleep(0.1)
+        while (len(datasink_results)==0):
+            time.sleep(0.1)
+            datasink_results += [each for each in os.listdir(RESULTS_FEAT_DATASINK) if each.endswith('.json')]
+
         with open(RESULTS_FEAT_DATASINK + datasink_results[0]) as JSON:
             datafile = json.load(JSON)
             datafile =datafile[0][1][0][1]
@@ -164,17 +182,34 @@ def run_Preprocessing(AnalysisParams,
                 Reg_WorkFlow.inputs.inputspec.anatomical_images = StructuralFiles
             else:
                 Reg_WorkFlow = parallelPreproc.reg_workflow_wo_Anat(no_subjects,
-                                                            name = RegistrationName)              
+                                                            name = RegistrationName)
+            if not doPreprocessing:              
+                ProcessedFilesDIRADDRESSES = FunctionalFiles
             Reg_WorkFlow.inputs.inputspec.source_files = ProcessedFilesDIRADDRESSES
             Reg_WorkFlow.inputs.inputspec.target_image = ReferenceFile
             Reg_WorkFlow.inputs.inputspec.ROI_File = ROIFile
             Reg_WorkFlow.base_dir = TEMP_DIR_FOR_STORAGE
             Reg_WorkFlow.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
-            regoutputs = Reg_WorkFlow.run('MultiProc', plugin_args={'n_procs': threads})
+            if Schedule_jobs:
+                Reg_WorkFlow.run('PBSGraph', plugin_args={'template':template_nipype_job,
+                                                    # 'qsub_args': '-q many' ,
+                                                    'dont_resubmit_completed_jobs': True})
+
+            else:
+                Reg_WorkFlow.run('MultiProc', plugin_args={'n_procs': threads})
             ROIsink_results=[]
-            ROIsink_results += [each for each in os.listdir(ROI_REG_DATASINK) if each.endswith('.json')]
+            while not os.path.exists(ROI_REG_DATASINK):
+                time.sleep(0.1)
+            while (len(ROIsink_results)==0):
+                time.sleep(0.1)
+                ROIsink_results += [each for each in os.listdir(ROI_REG_DATASINK) if each.endswith('.json')]
+
             func2std_results = []
-            func2std_results += [each for each in os.listdir(func2std_DATASINK) if each.endswith('.json')]
+            while not os.path.exists(func2std_DATASINK):
+                time.sleep(0.1)
+            while (len(func2std_results)==0):
+                time.sleep(0.1)
+                func2std_results += [each for each in os.listdir(func2std_DATASINK) if each.endswith('.json')]
 
             with open(opj(ROI_REG_DATASINK, ROIsink_results[0])) as JSON:
                 transROIfile = json.load(JSON)
@@ -220,9 +255,19 @@ def run_Preprocessing(AnalysisParams,
                 Reg_WorkFlow.inputs.inputspec.mask_files = MaskFiles
             Reg_WorkFlow.base_dir = TEMP_DIR_FOR_STORAGE
             Reg_WorkFlow.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
-            regoutputs = Reg_WorkFlow.run('MultiProc', plugin_args={'n_procs': threads})
+            if Schedule_jobs:
+                Reg_WorkFlow.run('PBSGraph', plugin_args={'template':template_nipype_job,
+                                                    # 'qsub_args': '-q many' ,
+                                                    'dont_resubmit_completed_jobs': True})
+            else:
+                Reg_WorkFlow.run('MultiProc', plugin_args={'n_procs': threads})
             ROIsink_results=[]
-            ROIsink_results += [each for each in os.listdir(ROI_REG_DATASINK) if each.endswith('.json')]            
+            # ROIsink_results += [each for each in os.listdir(ROI_REG_DATASINK) if each.endswith('.json')]
+            while not os.path.exists(ROI_REG_DATASINK):
+                time.sleep(0.1)
+            while (len(ROIsink_results)==0):
+                time.sleep(0.1)
+                ROIsink_results += [each for each in os.listdir(ROI_REG_DATASINK) if each.endswith('.json')]           
             with open(ROI_REG_DATASINK + ROIsink_results[0]) as JSON:
                 transROIfile = json.load(JSON)
                 transROIfile = transROIfile[0][1][0][1]
@@ -247,8 +292,10 @@ def call_corr_wf_with_reg(Files_for_corr_dict, atlas_files_dict,
                      mask_file, reference,
                      TEMP_DIR_FOR_STORAGE,
                      WorkingDir, 
-                     use_Ankita_Function = False):
+                     use_Ankita_Function = False,
+                     Schedule_jobs = False):
     Corr_calculated_Files = {}
+    template_nipype_job = opj(WorkingDir, 'mytemplate.sh')
     for group, files in Files_for_corr_dict.items():
         datasink_dest = TEMP_DIR_FOR_STORAGE + '/' + group + '/datasink/'
 
@@ -269,8 +316,19 @@ def call_corr_wf_with_reg(Files_for_corr_dict, atlas_files_dict,
         corr_wf.base_dir = TEMP_DIR_FOR_STORAGE
         corr_wf.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
         corr_wf.run('MultiProc', plugin_args = {'n_procs': threads})
+        if Schedule_jobs:
+            corr_wf.run('PBSGraph', plugin_args={'template':template_nipype_job,
+                                            # 'qsub_args': '-q many' ,
+                                            'dont_resubmit_completed_jobs': True})
+        else:
+            corr_wf.run('MultiProc', plugin_args={'n_procs': threads})
         datasink_results=[]
-        datasink_results += [each for each in os.listdir(datasink_dest) if each.endswith('.json')]
+        while not os.path.exists(datasink_dest):
+            time.sleep(0.1)
+        while (len(datasink_results)==0):
+            time.sleep(0.1)
+            datasink_results += [each for each in os.listdir(datasink_dest) if each.endswith('.json')]
+        
         with open(datasink_dest + datasink_results[0]) as JSON:
             datafile = json.load(JSON)
 
@@ -287,8 +345,10 @@ def call_corr_wf(Files_for_corr_dict,
             mask_file, 
             TEMP_DIR_FOR_STORAGE,
             WorkingDir,
-            use_Ankita_Function = False):
+            use_Ankita_Function = False,
+            Schedule_jobs = False):
     Corr_calculated_Files = {}
+    template_nipype_job = opj(WorkingDir,'mytemplate.sh')
     for group, files in Files_for_corr_dict.items():
         datasink_dest = TEMP_DIR_FOR_STORAGE + '/' + group + '/datasink/'
 
@@ -301,9 +361,18 @@ def call_corr_wf(Files_for_corr_dict,
         corr_wf.inputs.inputspec.WorkingDir = WorkingDir
         corr_wf.base_dir = TEMP_DIR_FOR_STORAGE
         corr_wf.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
-        corr_wf.run('MultiProc', plugin_args = {'n_procs': threads})
+        if Schedule_jobs:
+            corr_wf.run('PBSGraph', plugin_args={'template':template_nipype_job,
+                                                # 'qsub_args': '-q many' ,
+                                                'dont_resubmit_completed_jobs': True})
+        else:
+            corr_wf.run('MultiProc', plugin_args={'n_procs': threads})
         datasink_results=[]
-        datasink_results += [each for each in os.listdir(datasink_dest) if each.endswith('.json')]
+        while not os.path.exists(datasink_dest):
+            time.sleep(0.1)
+        while (len(datasink_results)==0):
+            time.sleep(0.1)
+            datasink_results += [each for each in os.listdir(datasink_dest) if each.endswith('.json')]
         with open(datasink_dest + datasink_results[0]) as JSON:
             datafile = json.load(JSON)
 
@@ -319,6 +388,7 @@ def call_corr_wf(Files_for_corr_dict,
 def call_stat_Analysis_wt_grps(Files_for_stats_dict,
                                 destination,
                                 mask_file,
+                                applyFisher = True,
                                 applyFDR = True):
     total_groups = len(Files_for_stats_dict)
     for i in range(total_groups):
@@ -328,7 +398,7 @@ def call_stat_Analysis_wt_grps(Files_for_stats_dict,
         MeanGr1, (Tvals, Pvals) = ttest.ttest_1samp_ROIs_if_npy(
                                             Files_for_stats_dict[ProcName],
                                             save_pval_in_log_fmt = False,
-                                            applyFisher = True)
+                                            applyFisher = applyFisher)
         Tvals = ttest.convert_ma_to_np(Tvals)
         np.save(opj(destination,'Tvals_group_%s.npy'%i),
                                              Tvals)
@@ -372,8 +442,14 @@ def call_stat_Analysis_bw_grps(Files_for_stats_dict,
                         combinations_reqd, 
                         destination, 
                         mask_file,
+                        applyFisher = True,
+                        AnalysisType = 0,
                         Gr1grGr2= True, 
                         applyFDR = True):
+    '''
+    AnalysisType : 0 - It represents the Student's Normal T-test
+    AnalysisType : 1 - It represents the Paired T-test
+    '''
     tell_combs = len(combinations_reqd)
     total_groups = len(Files_for_stats_dict)
     previous = 0
@@ -387,13 +463,31 @@ def call_stat_Analysis_bw_grps(Files_for_stats_dict,
                 FileNamesForSaving = []
                 ProcName1 = 'CorrCalc_group%s'%previous
                 ProcName2 = 'CorrCalc_group%s'%(previous + i + 1)
-                MeanGr1 , MeanGr2, (Tvals, Pvals) = ttest.ttest_ind_samples_if_npy(
+                if (AnalysisType == 0):
+                    MeanGr1 , MeanGr2, (Tvals, Pvals) = ttest.ttest_ind_samples_if_npy(
                                                                 Files_for_stats_dict[ProcName1],
                                                                 Files_for_stats_dict[ProcName2],
                                                                 save_pval_in_log_fmt = False,
                                                                 equal_var= False, 
-                                                                applyFisher = True,
+                                                                applyFisher = applyFisher,
                                                                 Gr1grGr2= Gr1grGr2)
+                    if Gr1grGr2: sign = 1
+                    else: sign = -1
+
+                    NumpyFileList.append((MeanGr1-MeanGr2)*sign)
+                    FileNamesForSaving.append(opj(destination,'Corr_difference_group_{}_group_{}.nii.gz'.format(
+                                            previous,
+                                            previous + i + 1)))
+                    Pvalues_in_log = ttest.convert_pvals_to_log_fmt(Pvals,
+                                            Sample_mean_ArrayA = MeanGr1,
+                                            Sample_mean_ArrayB = MeanGr2)
+                else:
+                    MeanGr1 , Tvals, Pvals = ttest.paired_ttest_if_npy(Files_for_stats_dict[ProcName1], 
+                                                    Files_for_stats_dict[ProcName2],
+                                                    save_pval_in_log_fmt = False,
+                                                    applyFisher = applyFisher)
+                    Pvalues_in_log = ttest.convert_pvals_to_log_fmt(Pvals,
+                                            Sample_mean_ArrayA = MeanGr1)
                 Tvals = ttest.convert_ma_to_np(Tvals)
                 np.save(opj(destination,'Tvals_group_{}_group_{}.npy'.format(
                                             previous,
@@ -403,25 +497,15 @@ def call_stat_Analysis_bw_grps(Files_for_stats_dict,
                 FileNamesForSaving.append(opj(destination,'Tvals_group_{}_group_{}.nii.gz'.format(
                                             previous,
                                             previous + i + 1)))
-                if Gr1grGr2: sign = 1
-                else: sign = -1
-
-                NumpyFileList.append((MeanGr1-MeanGr2)*sign)
-                FileNamesForSaving.append(opj(destination,'Corr_difference_group_{}_group_{}.nii.gz'.format(
-                                            previous,
-                                            previous + i + 1)))                
+               
 
 
                 np.save(opj(destination,'Pvals_Normal_group_{}_group_{}.npy'.format(
                                             previous,
                                             previous + i + 1)),
                                              ttest.convert_ma_to_np(Pvals))
-               
 
 
-                Pvalues_in_log = ttest.convert_pvals_to_log_fmt(Pvals,
-                                            Sample_mean_ArrayA = MeanGr1,
-                                            Sample_mean_ArrayB = MeanGr2)
                 np.save(opj(destination,'Pvals_group_{}_group_{}.npy'.format(
                                             previous,
                                             previous + i + 1)),
@@ -437,10 +521,13 @@ def call_stat_Analysis_bw_grps(Files_for_stats_dict,
                                             previous,
                                             previous + i + 1)),
                                             FDRCorrected)
-
-                    Qvals_in_log = ttest.convert_pvals_to_log_fmt(FDRCorrected,
+                    if (AnalysisType == 0):
+                        Qvals_in_log = ttest.convert_pvals_to_log_fmt(FDRCorrected,
                                             Sample_mean_ArrayA = MeanGr1,
                                             Sample_mean_ArrayB = MeanGr2)
+                    else:
+                        Qvals_in_log = ttest.convert_pvals_to_log_fmt(FDRCorrected,
+                                            Sample_mean_ArrayA = MeanGr1)
                     rejected, Qvals_in_log = ttest.convert_ma_to_np(rejected),\
                                                  ttest.convert_ma_to_np(Qvals_in_log)
 
@@ -468,8 +555,6 @@ if __name__ == '__main__':
 
     start = timeit.default_timer()
     JSONFile = str(sys.argv[1])
-    # JSONFile = '/home1/ee3140506/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
-    # JSONFile = '/home/deepak/Desktop/FConnectivityAnalysis/FConnectivityAnalysisDesign.json'
     print("Name of JSON: ", JSONFile)
     with open(JSONFile) as JSON:
         try :
@@ -610,7 +695,7 @@ if __name__ == '__main__':
                     with open(StructuraltxtFiles[i]) as file:
                         StructuralFiles_in_this_group = [line.strip('\n') for line in file]
                 else: StructuralFiles_in_this_group = None
-                Preprocessed_Files, transformedROIs, func2stdtransforms = run_Preprocessing(AnalysisParams, 
+                Preprocessed_Files, transformedROIs, func2stdtransforms = run_Preprocessing(AnalysisParams, WorkingDir,
                                                                             FunctionalFiles = FunctionalFiles_in_this_group, 
                                                                             StructuralFiles = StructuralFiles_in_this_group,
                                                                             savePreprocessing = save_Preprocessed_Files,
@@ -621,21 +706,13 @@ if __name__ == '__main__':
                 func2stdDict[ProcName] = func2stdtransforms
             else: 
                 StructuralFiles_in_this_group = None
-                Preprocessed_Files = run_Preprocessing(AnalysisParams, 
+                Preprocessed_Files = run_Preprocessing(AnalysisParams, WorkingDir,
                                                     FunctionalFiles = FunctionalFiles_in_this_group, 
                                                     StructuralFiles = StructuralFiles_in_this_group,
                                                     savePreprocessing = save_Preprocessed_Files,
                                                     Group= i)
                 print('Preprocessed Files are: ', Preprocessed_Files)
                 CorrROImapFiles[ProcName] = Preprocessed_Files
-        # ipdb.set_trace()
-
-        # for j in range(len(Preprocessed_Files)):
-        #     args = ("../../fconn.o", "-i", ProcessedFileName, "-o", dst + 'sub%d'%j, "-r", ROIFile)
-        #     popen = subprocess.Popen(args, stdout=subprocess.PIPE)
-        #     popen.wait()
-        #     output = popen.stdout.read()
-        #     print(output)
 
     elif (ProcessingWay == 1):
         '''
@@ -644,9 +721,9 @@ if __name__ == '__main__':
         '''
         FunctionaltxtFiles = AnalysisParams['FilesInfo']['FunctionalFilePaths']
 
-        if not QtMode:
-            for funcfile in FunctionaltxtFiles:
-                os.system("cp "+funcfile+" "+OUTPUT_DIR+"/")
+        # if not QtMode:
+        #     for funcfile in FunctionaltxtFiles:
+        #         os.system("cp "+funcfile+" "+OUTPUT_DIR+"/")
 
         StructuraltxtFiles = AnalysisParams['FilesInfo']['StructuralFilePaths']
         for i in range(Ngroups):
@@ -656,8 +733,17 @@ if __name__ == '__main__':
                 FunctionalFiles_in_this_group = [line.strip('\n') for line in file]
             if (len(StructuraltxtFiles)!=0):
                 with open(StructuraltxtFiles[i]) as file:
-                    StructuralFiles_in_this_group = [line.strip('\n') for line in file]        
+                    StructuralFiles_in_this_group = [line.strip('\n') for line in file]
+            else: StructuralFiles_in_this_group = None       
             print('Functional Files in this group: ',FunctionalFiles_in_this_group)
+            if Registration:
+                Preprocessed_Files, transformedROIs, func2stdtransforms = run_Preprocessing(AnalysisParams, WorkingDir,
+                                                                            FunctionalFiles = FunctionalFiles_in_this_group, 
+                                                                            StructuralFiles = StructuralFiles_in_this_group,
+                                                                            doPreprocessing = False,
+                                                                            Group= i)
+                transformedROIsDict[ProcName] = transformedROIs
+                func2stdDict[ProcName] = func2stdtransforms 
             CorrROImapFiles[ProcName] = FunctionalFiles_in_this_group
 
     elif (ProcessingWay ==2):
@@ -681,7 +767,7 @@ if __name__ == '__main__':
             with open(FeatFiles[i]) as file:
                 Feat_subs_in_this_group = [line.strip('\n') for line in file]
             print('Feat Folders in this group: ',Feat_subs_in_this_group)
-            Preprocessed_Files, transformedROIs, func2stdtransforms = run_Preprocessing(AnalysisParams, 
+            Preprocessed_Files, transformedROIs, func2stdtransforms = run_Preprocessing(AnalysisParams, WorkingDir,
                                                     FeatFiles = Feat_subs_in_this_group,
                                                     doPreprocessing = False,
                                                     Group= i)
@@ -706,7 +792,8 @@ if __name__ == '__main__':
                                                 TEMP_DIR_FOR_STORAGE,
                                                 WorkingDir,
                                                 use_Ankita_Function = 
-                                                    AnalysisParams['CorrFunction'])
+                                                    AnalysisParams['CorrFunction'],
+                                                    Schedule_jobs = AnalysisParams['Schedule_jobs'])
         else:
             Corr_calculated_Files = call_corr_wf(CorrROImapFiles, 
                                                 ROIFile,
@@ -714,7 +801,8 @@ if __name__ == '__main__':
                                                 TEMP_DIR_FOR_STORAGE,
                                                 WorkingDir,
                                                 use_Ankita_Function = 
-                                                    AnalysisParams['CorrFunction'])
+                                                    AnalysisParams['CorrFunction'],
+                                                Schedule_jobs = AnalysisParams['Schedule_jobs'])
         # if not savePreprocessing:
         #     folders = [opj(TEMP_DIR_FOR_STORAGE + '/%s'%RegistrationName, 
         #                 folder) for folder in os.listdir(TEMP_DIR_FOR_STORAGE + '/%s'%RegistrationName)]
@@ -735,9 +823,7 @@ if __name__ == '__main__':
             doAnalysisbwGrps = AnalysisParams['Stats']['Analysis between Groups']
             doNormalFisher = AnalysisParams['Stats']['doNormalFisher']
             doSeparateFDR = AnalysisParams['Stats']['Separate FDR']
-            # if doAnalysiswtGrps:
-                # Do Something. The Function is yet to be defined.
-
+            AnalysisType = AnalysisParams['Stats']['AnalysisType']
             # You can club the bw groups and wt groups correlations together 
             # because mean and std are already calculated in that case.
             if ((Ngroups==2)and doAnalysisbwGrps):
@@ -745,15 +831,22 @@ if __name__ == '__main__':
                 call_stat_Analysis_bw_grps(Corr_calculated_Files,[1],
                                             OUTPUT_DIR, 
                                             mask_file,
+                                            applyFisher = doNormalFisher,
+                                            AnalysisType = AnalysisType,
                                             Gr1grGr2= Gr1grGr2)
             elif ((Ngroups > 2) and doAnalysisbwGrps):
                 combinations = AnalysisParams['Stats']['Combinations']
                 call_stat_Analysis_bw_grps(Corr_calculated_Files, 
                                     combinations, 
                                     OUTPUT_DIR, 
-                                    mask_file)
+                                    mask_file,
+                                    applyFisher = doNormalFisher,
+                                    AnalysisType = AnalysisType)
             if doAnalysiswtGrps:
-                call_stat_Analysis_wt_grps(Corr_calculated_Files,OUTPUT_DIR,mask_file)
+                call_stat_Analysis_wt_grps(Corr_calculated_Files,
+                                            OUTPUT_DIR,
+                                            mask_file, 
+                                            applyFisher = doNormalFisher)
 
             stop = timeit.default_timer()
             file.write("Total time taken for calculating statistics: %ss \n" %(stop - stop2))
