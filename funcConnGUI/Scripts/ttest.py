@@ -389,7 +389,7 @@ def paired_ttest_if_npy(ROICorrMapsA, ROICorrMapsB,
                             ddof = 1, 
                             applyFisher = applyFisher)
     with np.errstate(divide='ignore', invalid='ignore'):
-        paired_ttest = Sample_mean_ArrayA/Standard_err_Array
+        paired_ttest = Sample_mean_Array/Standard_err_Array
     df = n_subjectsA - 1
     pvalues = special.betainc(0.5*df, 0.5, df/(df + paired_ttest*paired_ttest)).reshape(paired_ttest.shape)
     return Sample_mean_Array, \

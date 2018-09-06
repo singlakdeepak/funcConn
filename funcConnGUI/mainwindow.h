@@ -83,6 +83,10 @@ private slots:
 
     void on_checkBox_bw_groups_clicked(bool checked);
 
+    void on_pushButton_Save1_clicked();
+
+    void on_pushButton_Save_clicked();
+
 private:
     QJsonArray combinations;
     QString CommonDir = getenv("PWD");

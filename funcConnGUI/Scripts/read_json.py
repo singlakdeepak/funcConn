@@ -1,19 +1,9 @@
 '''
 Author: Deepak Singla (singlakdeepak5@gmail.com)
 
-The registration currently is being done just after preprocessing. 
-It has to be changed and the registration of ROI to each functional
-file is required. It can be done by inverse matrix of func2std.
-After calculating the correlations for each subject, register them to 
-standard and then mask it so that statistics can be calculated properly.
-
 TODO
-1. The reg procedure can be kept as it is, just the inverse matrix is 
-needed and then apply inverse matrix to ROI for each subject.
-2. After the corrs are calculated, now func2std can be done. But here I need
-the corr files in the form of brains rather than matrices. Changes will be required 
-in corr function because I pick up the brain voxels according to the mask. 
-
+The AnalysisType button needs to be added ( 0 : Student t test, 1: Paired t test)
+The option to Schedule jobs and giving custom job submission script.
 '''
 import numpy as np
 import sys
@@ -28,7 +18,7 @@ from nipype.interfaces import fsl
 import corr
 import ttest
 from os.path import join as opj
-#import ipdb;
+
 threads = 8
 def get_TR(in_file):
     import nibabel

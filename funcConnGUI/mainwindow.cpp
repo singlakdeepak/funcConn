@@ -428,6 +428,7 @@ void MainWindow::writeStats(QJsonObject &json) const
             json["Combinations"] = combinations;
         }
     }
+    json["AnalysisType"] = ui->comboBox_StatType->currentIndex();
     /*
      * Fisher Types are :
      * False: MaxMinFisher,
@@ -647,7 +648,6 @@ void MainWindow::on_pushButton_Go_clicked()
 
         runProgram(JSONFile);
 
-
 //        QString cmd_qt = QString("python %1 %2").arg("read_json.py").arg(JSONFile);
 
 //        const char* cmd = cmd_qt.toLatin1().constData();
@@ -790,4 +790,41 @@ void MainWindow::on_checkBox_bw_groups_clicked(bool checked)
         ui->radioButton_G1_gr_G2->hide();
         ui->radioButton_G2_gr_G1->hide();
     }
+}
+
+void MainWindow::on_pushButton_Save1_clicked()
+{
+    int lenFuncFiles= FunctionalFileNames.size();
+    int lenFeatFiles = FeatFileNames.size();
+//    if (((lenFuncFiles!=spinBoxValue)||(lenStructFiles!=spinBoxValue)) && (lenFeatFiles != spinBoxValue)){
+    if ((lenFuncFiles!=spinBoxValue) && (lenFeatFiles != spinBoxValue)){
+        QMessageBox::warning(this,"Title","You haven't specified the complete 4D data files.");
+    }
+    OutChosenPath = ui->lineEdit_OutDir->text();
+    QString JSONFile= OutChosenPath + QString( "/"+ui->lineEdit_AnalysisName->text()+"Design.json");
+    if (!QDir(OutChosenPath).exists()){
+        QDir dir;
+        bool created = dir.mkdir(OutChosenPath);
+        if (!created){
+            QMessageBox::warning(this,"Help","Not able to create Directory: "+ OutChosenPath);
+            return;
+            }
+
+    }
+
+
+    QFile saveFile( JSONFile);
+    if (!saveFile.open(QIODevice::WriteOnly)) {
+        qWarning("Couldn't open save file.");
+    }
+    QJsonObject Object;
+    writeAnalysisName(Object);
+    QJsonDocument saveDoc(Object);
+    saveFile.write(saveDoc.toJson());
+    saveFile.close();
+}
+
+void MainWindow::on_pushButton_Save_clicked()
+{
+    on_pushButton_Save1_clicked();
 }

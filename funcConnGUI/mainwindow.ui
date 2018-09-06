@@ -24,7 +24,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -347,6 +347,13 @@
         </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_5">
+          <item>
+           <widget class="QPushButton" name="pushButton_Save1">
+            <property name="text">
+             <string>Save</string>
+            </property>
+           </widget>
+          </item>
           <item>
            <widget class="QPushButton" name="pushButton_Go">
             <property name="text">
@@ -686,6 +693,13 @@
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_12">
            <item>
+            <widget class="QPushButton" name="pushButton_Save">
+             <property name="text">
+              <string>Save</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QPushButton" name="pushButton_Go3">
              <property name="text">
               <string>Go</string>
@@ -768,7 +782,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QComboBox" name="comboBox">
+          <widget class="QComboBox" name="comboBox_StatType">
            <item>
             <property name="text">
              <string>T-test</string>
@@ -884,7 +898,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>10</x>
@@ -917,9 +931,8 @@
        <zorder>layoutWidget</zorder>
        <zorder>layoutWidget</zorder>
        <zorder>layoutWidget</zorder>
+       <zorder>layoutWidget</zorder>
        <zorder>label_15</zorder>
-       <zorder>checkBox_wt_groups</zorder>
-       <zorder>checkBox_bw_groups</zorder>
       </widget>
      </widget>
     </item>
